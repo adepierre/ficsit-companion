@@ -1,0 +1,5321 @@
+{
+    "version": "0.8.3.3",
+    "items": [
+        {
+            "name": "Uranium Waste",
+            "icon": "icons/IconDesc_NuclearWaste_64.png"
+        },
+        {
+            "name": "Battery",
+            "icon": "icons/IconDesc_Battery_64.png"
+        },
+        {
+            "name": "Aluminum Ingot",
+            "icon": "icons/IconDesc_AluminiumIngot_64.png"
+        },
+        {
+            "name": "Color Cartridge",
+            "icon": "icons/IconDesc_ColorCartridge_64.png"
+        },
+        {
+            "name": "Cable",
+            "icon": "icons/IconDesc_Cables_64.png"
+        },
+        {
+            "name": "Concrete",
+            "icon": "icons/IconDesc_Concrete_64.png"
+        },
+        {
+            "name": "Modular Frame",
+            "icon": "icons/IconDesc_ModularFrame_64.png"
+        },
+        {
+            "name": "Steel Beam",
+            "icon": "icons/IconDesc_SteelBeam_64.png"
+        },
+        {
+            "name": "Non-fissile Uranium",
+            "icon": "icons/IconDesc_NonFissileUranium_64.png"
+        },
+        {
+            "name": "Plutonium Pellet",
+            "icon": "icons/IconDesc_PlutoniumPellet_64.png"
+        },
+        {
+            "name": "Encased Plutonium Cell",
+            "icon": "icons/IconDesc_EncasedPlutoniumCell_64.png"
+        },
+        {
+            "name": "Silica",
+            "icon": "icons/IconDesc_Silica_64.png"
+        },
+        {
+            "name": "Iron Plate",
+            "icon": "icons/IconDesc_IronPlates_64.png"
+        },
+        {
+            "name": "Power Shard",
+            "icon": "icons/PowerShard_64.png"
+        },
+        {
+            "name": "Iron Rod",
+            "icon": "icons/IconDesc_IronRods_64.png"
+        },
+        {
+            "name": "Wire",
+            "icon": "icons/IconDesc_Wire_64.png"
+        },
+        {
+            "name": "Iron Ingot",
+            "icon": "icons/IconDesc_IronIngot_64.png"
+        },
+        {
+            "name": "Reinforced Iron Plate",
+            "icon": "icons/IconDesc_ReinforcedIronPlates_64.png"
+        },
+        {
+            "name": "Rotor",
+            "icon": "icons/IconDesc_Rotor_64.png"
+        },
+        {
+            "name": "Copper Sheet",
+            "icon": "icons/IconDesc_CopperSheet_64.png"
+        },
+        {
+            "name": "Screw",
+            "icon": "icons/IconDesc_IronScrews_64.png"
+        },
+        {
+            "name": "Compacted Coal",
+            "icon": "icons/IconDesc_CompactedCoal_64.png"
+        },
+        {
+            "name": "Heavy Oil Residue",
+            "icon": "icons/IconDesc_LiquidHeavyOilResidue_Pipe_256.png"
+        },
+        {
+            "name": "Turbofuel",
+            "icon": "icons/IconDesc_LiquidTurboFuel_Pipe_256.png"
+        },
+        {
+            "name": "Empty Canister",
+            "icon": "icons/IconDesc_EmptyCannister_64.png"
+        },
+        {
+            "name": "Packaged Turbofuel",
+            "icon": "icons/IconDesc_TurboFuel_64.png"
+        },
+        {
+            "name": "Circuit Board",
+            "icon": "icons/IconDesc_CircuitBoard_64.png"
+        },
+        {
+            "name": "Plastic",
+            "icon": "icons/IconDesc_Plastic_64.png"
+        },
+        {
+            "name": "Motor",
+            "icon": "icons/IconDesc_Engine_64.png"
+        },
+        {
+            "name": "Encased Industrial Beam",
+            "icon": "icons/IconDesc_EncasedSteelBeam_64.png"
+        },
+        {
+            "name": "Steel Pipe",
+            "icon": "icons/IconDesc_SteelPipe_64.png"
+        },
+        {
+            "name": "Rubber",
+            "icon": "icons/IconDesc_Rubber_64.png"
+        },
+        {
+            "name": "Fuel",
+            "icon": "icons/IconDesc_LiquidFuel_Pipe_256.png"
+        },
+        {
+            "name": "Polymer Resin",
+            "icon": "icons/IconDesc_PolymerResin_64.png"
+        },
+        {
+            "name": "Petroleum Coke",
+            "icon": "icons/IconDesc_PetroleumCoke_64.png"
+        },
+        {
+            "name": "Steel Ingot",
+            "icon": "icons/IconDesc_SteelIngot_64.png"
+        },
+        {
+            "name": "Versatile Framework",
+            "icon": "icons/IconDesc_SpelevatorPart_2_256.png"
+        },
+        {
+            "name": "Heavy Modular Frame",
+            "icon": "icons/IconDesc_ModularFrameHeavy_64.png"
+        },
+        {
+            "name": "Packaged Fuel",
+            "icon": "icons/IconDesc_Fuel_64.png"
+        },
+        {
+            "name": "Packaged Oil",
+            "icon": "icons/OilResidue_64.png"
+        },
+        {
+            "name": "Packaged Heavy Oil Residue",
+            "icon": "icons/OilResidue_64.png"
+        },
+        {
+            "name": "Packaged Water",
+            "icon": "icons/IconDesc_PackagedWater_64.png"
+        },
+        {
+            "name": "Copper Ingot",
+            "icon": "icons/IconDesc_CopperIngot_64.png"
+        },
+        {
+            "name": "Quartz Crystal",
+            "icon": "icons/IconDesc_QuartzResource_64.png"
+        },
+        {
+            "name": "Caterium Ingot",
+            "icon": "icons/IconDesc_CateriumIngot_64.png"
+        },
+        {
+            "name": "Aluminum Scrap",
+            "icon": "icons/IconDesc_AluminiumScrap_64.png"
+        },
+        {
+            "name": "Sulfuric Acid",
+            "icon": "icons/IconDesc_LiquidSulfuricAcid_Pipe_256.png"
+        },
+        {
+            "name": "Encased Uranium Cell",
+            "icon": "icons/IconDesc_NuclearCell_64.png"
+        },
+        {
+            "name": "Heat Sink",
+            "icon": "icons/IconDesc_Heatsink_64.png"
+        },
+        {
+            "name": "Cooling System",
+            "icon": "icons/IconDesc_CoolingSystem_64.png"
+        },
+        {
+            "name": "Nitric Acid",
+            "icon": "icons/IconDesc_NitricAcid_64.png"
+        },
+        {
+            "name": "Aluminum Casing",
+            "icon": "icons/IconDesc_AluminiumCasing_64.png"
+        },
+        {
+            "name": "Radio Control Unit",
+            "icon": "icons/IconDesc_RadioControlUnit_64.png"
+        },
+        {
+            "name": "Alclad Aluminum Sheet",
+            "icon": "icons/IconDesc_AluminiumSheet_64.png"
+        },
+        {
+            "name": "Computer",
+            "icon": "icons/IconDesc_Computer_64.png"
+        },
+        {
+            "name": "Crystal Oscillator",
+            "icon": "icons/IconDesc_CrystalOscillator_64.png"
+        },
+        {
+            "name": "Alumina Solution",
+            "icon": "icons/LiquidAlumina_Pipe_256.png"
+        },
+        {
+            "name": "Smart Plating",
+            "icon": "icons/IconDesc_SpelevatorPart_1_256.png"
+        },
+        {
+            "name": "High-Speed Connector",
+            "icon": "icons/IconDesc_HighSpeedConnector_64.png"
+        },
+        {
+            "name": "Automated Wiring",
+            "icon": "icons/SpelevatorPart_3_256.png"
+        },
+        {
+            "name": "Stator",
+            "icon": "icons/IconDesc_Stator_64.png"
+        },
+        {
+            "name": "AI Limiter",
+            "icon": "icons/IconDesc_AILimiter_64.png"
+        },
+        {
+            "name": "Quickwire",
+            "icon": "icons/IconDesc_Quickwire_64.png"
+        },
+        {
+            "name": "Modular Engine",
+            "icon": "icons/IconDesc_SpelevatorPart_4_256.png"
+        },
+        {
+            "name": "Adaptive Control Unit",
+            "icon": "icons/IconDesc_SpelevatorPart_5_256.png"
+        },
+        {
+            "name": "Turbo Motor",
+            "icon": "icons/IconDesc_TurboMotor_64.png"
+        },
+        {
+            "name": "Pressure Conversion Cube",
+            "icon": "icons/IconDesc_ConversionCube_64.png"
+        },
+        {
+            "name": "Fused Modular Frame",
+            "icon": "icons/IconDesc_FusedModularFrame_64.png"
+        },
+        {
+            "name": "Supercomputer",
+            "icon": "icons/IconDesc_SuperComputer_64.png"
+        },
+        {
+            "name": "Electromagnetic Control Rod",
+            "icon": "icons/IconDesc_ElectromagneticControlRod_64.png"
+        },
+        {
+            "name": "Copper Powder",
+            "icon": "icons/IconDesc_CopperDust_64.png"
+        },
+        {
+            "name": "Empty Fluid Tank",
+            "icon": "icons/IconDesc_PressureTank_64.png"
+        },
+        {
+            "name": "Nuclear Pasta",
+            "icon": "icons/IconDesc_NuclearPasta_64.png"
+        },
+        {
+            "name": "Assembly Director System",
+            "icon": "icons/IconDesc_AssemblyDirectorSystem_64.png"
+        },
+        {
+            "name": "Magnetic Field Generator",
+            "icon": "icons/IconDesc_MagneticFieldGenerator_64.png"
+        },
+        {
+            "name": "Thermal Propulsion Rocket",
+            "icon": "icons/IconDesc_ThermalPropulsionRocket_64.png"
+        },
+        {
+            "name": "Black Powder",
+            "icon": "icons/IconDesc_GunpowderMk2_64.png"
+        },
+        {
+            "name": "Gas Filter",
+            "icon": "icons/IconDesc_GasMaskFilter_64.png"
+        },
+        {
+            "name": "Iodine Infused Filter",
+            "icon": "icons/IconDesc_HazmatFilter_64.png"
+        },
+        {
+            "name": "Alien Protein",
+            "icon": "icons/IconDesc_AlienProtein_64.png"
+        },
+        {
+            "name": "Alien DNA Capsule",
+            "icon": "icons/IconDesc_AlienDNA_64.png"
+        },
+        {
+            "name": "Purple Power Slug",
+            "icon": "icons/PowerSlugPurple_64.png"
+        },
+        {
+            "name": "Yellow Power Slug",
+            "icon": "icons/PowerSlugYellow_64.png"
+        },
+        {
+            "name": "Blue Power Slug",
+            "icon": "icons/PowerSlugGreen_64.png"
+        },
+        {
+            "name": "Smokeless Powder",
+            "icon": "icons/IconDesc_GunpowderMk2_64.png"
+        },
+        {
+            "name": "Water",
+            "icon": "icons/LiquidWater_Pipe_256.png"
+        },
+        {
+            "name": "Iron Ore",
+            "icon": "icons/IconDesc_iron_new_64.png"
+        },
+        {
+            "name": "Limestone",
+            "icon": "icons/Stone_64.png"
+        },
+        {
+            "name": "Coal",
+            "icon": "icons/IconDesc_CoalOre_64.png"
+        },
+        {
+            "name": "Sulfur",
+            "icon": "icons/Sulfur_64.png"
+        },
+        {
+            "name": "Crude Oil",
+            "icon": "icons/LiquidOil_Pipe_256.png"
+        },
+        {
+            "name": "Raw Quartz",
+            "icon": "icons/IconDesc_QuartzCrystal_64.png"
+        },
+        {
+            "name": "Copper Ore",
+            "icon": "icons/IconDesc_copper_new_64.png"
+        },
+        {
+            "name": "Caterium Ore",
+            "icon": "icons/IconDesc_CateriumOre_64.png"
+        },
+        {
+            "name": "Uranium",
+            "icon": "icons/IconDesc_UraniumOre_64.png"
+        },
+        {
+            "name": "Nitrogen Gas",
+            "icon": "icons/LiquidAlumina_Pipe_256.png"
+        },
+        {
+            "name": "Bauxite",
+            "icon": "icons/IconDesc_Bauxite_64.png"
+        },
+        {
+            "name": "Portable Miner",
+            "icon": "icons/IconDesc_PortableMiner_64.png"
+        },
+        {
+            "name": "Flower Petals",
+            "icon": "icons/FlowerPetals_Final_64.png"
+        },
+        {
+            "name": "Wood",
+            "icon": "icons/IconDesc_Wood_64.png"
+        },
+        {
+            "name": "Biomass",
+            "icon": "icons/IconDesc_Biomass_Final_64.png"
+        },
+        {
+            "name": "Solid Biofuel",
+            "icon": "icons/IconDesc_SolidBiofuel_64.png"
+        },
+        {
+            "name": "Liquid Biofuel",
+            "icon": "icons/IconDesc_LiquidBiofuel_Pipe_256.png"
+        },
+        {
+            "name": "Packaged Liquid Biofuel",
+            "icon": "icons/IconDesc_LiquidBiofuel_64.png"
+        },
+        {
+            "name": "Packaged Alumina Solution",
+            "icon": "icons/IconDesc_PackagedAluminaSolution_64.png"
+        },
+        {
+            "name": "Packaged Nitrogen Gas",
+            "icon": "icons/IconDesc_PackagedNitrogen_64.png"
+        },
+        {
+            "name": "Packaged Nitric Acid",
+            "icon": "icons/IconDesc_PackagedNitricAcid_64.png"
+        },
+        {
+            "name": "Packaged Sulfuric Acid",
+            "icon": "icons/IconDesc_PckagedSulphuricAcid_64.png"
+        },
+        {
+            "name": "Fabric",
+            "icon": "icons/IconDesc_Fabric_64.png"
+        },
+        {
+            "name": "Stinger Remains",
+            "icon": "icons/IconDesc_StingerPart_64.png"
+        },
+        {
+            "name": "Plasma Spitter Remains",
+            "icon": "icons/IconDesc_SpitterPart_64.png"
+        },
+        {
+            "name": "Hog Remains",
+            "icon": "icons/IconDesc_HogPart_64.png"
+        },
+        {
+            "name": "Hatcher Remains",
+            "icon": "icons/IconDesc_HatcherPart_64.png"
+        },
+        {
+            "name": "Mycelia",
+            "icon": "icons/IconDesc_Mycelia_64.png"
+        },
+        {
+            "name": "Leaves",
+            "icon": "icons/IconDesc_Leaves_256.png"
+        },
+        {
+            "name": "Uranium Fuel Rod",
+            "icon": "icons/IconDesc_NuclearFuelRod_64.png"
+        },
+        {
+            "name": "Plutonium Fuel Rod",
+            "icon": "icons/IconDesc_PlutoniumFuelRod_64.png"
+        },
+        {
+            "name": "Beacon",
+            "icon": "icons/IconDesc_Beacon_64.png"
+        },
+        {
+            "name": "Explosive Rebar",
+            "icon": "icons/IconDesc_ExpRebar_64.png"
+        },
+        {
+            "name": "Stun Rebar",
+            "icon": "icons/IconDesc_StunRebar_64.png"
+        },
+        {
+            "name": "Iron Rebar",
+            "icon": "icons/IconDesc_Rebar_64.png"
+        },
+        {
+            "name": "Homing Rifle Ammo",
+            "icon": "icons/IconDesc_HomingRifle_64.png"
+        },
+        {
+            "name": "Nobelisk",
+            "icon": "icons/IconDesc_Explosive_64.png"
+        },
+        {
+            "name": "Cluster Nobelisk",
+            "icon": "icons/IconDesc_Cluster_64.png"
+        },
+        {
+            "name": "Gas Nobelisk",
+            "icon": "icons/IconDesc_Gas_64.png"
+        },
+        {
+            "name": "Nuke Nobelisk",
+            "icon": "icons/IconDesc_Nuke_64.png"
+        },
+        {
+            "name": "Pulse Nobelisk",
+            "icon": "icons/IconDesc_Shock_64.png"
+        },
+        {
+            "name": "Shatter Rebar",
+            "icon": "icons/IconDesc_ScatterRebar_64.png"
+        },
+        {
+            "name": "Turbo Rifle Ammo",
+            "icon": "icons/IconDesc_TurboRifle_64.png"
+        },
+        {
+            "name": "Rifle Ammo",
+            "icon": "icons/IconDesc_Rifle_64.png"
+        }
+    ],
+    "recipes": [
+        {
+            "name": "Iron Plate",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Iron Ingot",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Iron Plate",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Iron Rod",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Iron Ingot",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Iron Rod",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Iron Ingot",
+            "alternate": false,
+            "time": 2.0,
+            "building": "Smelter",
+            "inputs": [
+                {
+                    "name": "Iron Ore",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Iron Ingot",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Wet Concrete",
+            "alternate": true,
+            "time": 3.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Limestone",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Concrete",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Color Cartridge",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Flower Petals",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Color Cartridge",
+                    "amount": 10.0
+                }
+            ]
+        },
+        {
+            "name": "Turbo Heavy Fuel",
+            "alternate": true,
+            "time": 8.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Compacted Coal",
+                    "amount": 4.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Turbofuel",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Packaged Turbofuel",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Turbofuel",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Packaged Turbofuel",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Unpackage Turbofuel",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Packaged Turbofuel",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Turbofuel",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Charcoal",
+            "alternate": true,
+            "time": 4.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Wood",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Coal",
+                    "amount": 10.0
+                }
+            ]
+        },
+        {
+            "name": "Biocoal",
+            "alternate": true,
+            "time": 8.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Biomass",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Coal",
+                    "amount": 6.0
+                }
+            ]
+        },
+        {
+            "name": "Compacted Coal",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Coal",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Sulfur",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Compacted Coal",
+                    "amount": 5.0
+                }
+            ]
+        },
+        {
+            "name": "Circuit Board",
+            "alternate": false,
+            "time": 8.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Copper Sheet",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Plastic",
+                    "amount": 4.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Circuit Board",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Fuel",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Crude Oil",
+                    "amount": 6.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Fuel",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Polymer Resin",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Petroleum Coke",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 4.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Petroleum Coke",
+                    "amount": 12.0
+                }
+            ]
+        },
+        {
+            "name": "Plastic",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Crude Oil",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Plastic",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Rubber",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Crude Oil",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Rubber",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Residual Fuel",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 6.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Fuel",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Residual Plastic",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Polymer Resin",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Plastic",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Residual Rubber",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Polymer Resin",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 4.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Rubber",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Steel Rod",
+            "alternate": true,
+            "time": 5.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Steel Ingot",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Iron Rod",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Steel Beam",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Steel Ingot",
+                    "amount": 4.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Steel Beam",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Steel Pipe",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Steel Ingot",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Steel Pipe",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Steel Ingot",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Foundry",
+            "inputs": [
+                {
+                    "name": "Iron Ore",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Coal",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Steel Ingot",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Versatile Framework",
+            "alternate": false,
+            "time": 24.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Modular Frame",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Steel Beam",
+                    "amount": 12.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Versatile Framework",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Steel Coated Plate",
+            "alternate": true,
+            "time": 24.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Steel Ingot",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Plastic",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Iron Plate",
+                    "amount": 18.0
+                }
+            ]
+        },
+        {
+            "name": "Steel Canister",
+            "alternate": true,
+            "time": 3.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Steel Ingot",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Empty Canister",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Plastic",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Empty Canister",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Packaged Fuel",
+            "alternate": false,
+            "time": 3.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Fuel",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Packaged Fuel",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Liquid Biofuel",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Solid Biofuel",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Liquid Biofuel",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Packaged Liquid Biofuel",
+            "alternate": false,
+            "time": 3.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Liquid Biofuel",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Packaged Liquid Biofuel",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Packaged Oil",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Crude Oil",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Packaged Oil",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Packaged Heavy Oil Residue",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Packaged Heavy Oil Residue",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Packaged Water",
+            "alternate": false,
+            "time": 2.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Water",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Packaged Water",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Unpackage Liquid Biofuel",
+            "alternate": false,
+            "time": 2.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Packaged Liquid Biofuel",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Liquid Biofuel",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Unpackage Fuel",
+            "alternate": false,
+            "time": 2.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Packaged Fuel",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Fuel",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Unpackage Oil",
+            "alternate": false,
+            "time": 2.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Packaged Oil",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Crude Oil",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Unpackage Heavy Oil Residue",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Packaged Heavy Oil Residue",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Unpackage Water",
+            "alternate": false,
+            "time": 1.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Packaged Water",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Water",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Steamed Copper Sheet",
+            "alternate": true,
+            "time": 8.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Copper Ingot",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Copper Sheet",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Rubber Concrete",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Limestone",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Concrete",
+                    "amount": 9.0
+                }
+            ]
+        },
+        {
+            "name": "Recycled Rubber",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Plastic",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Fuel",
+                    "amount": 6.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Rubber",
+                    "amount": 12.0
+                }
+            ]
+        },
+        {
+            "name": "Pure Quartz Crystal",
+            "alternate": true,
+            "time": 8.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Raw Quartz",
+                    "amount": 9.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Quartz Crystal",
+                    "amount": 7.0
+                }
+            ]
+        },
+        {
+            "name": "Quartz Crystal",
+            "alternate": false,
+            "time": 8.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Raw Quartz",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Quartz Crystal",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Pure Iron Ingot",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Iron Ore",
+                    "amount": 7.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 4.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Iron Ingot",
+                    "amount": 13.0
+                }
+            ]
+        },
+        {
+            "name": "Pure Copper Ingot",
+            "alternate": true,
+            "time": 24.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Copper Ore",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 4.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Copper Ingot",
+                    "amount": 15.0
+                }
+            ]
+        },
+        {
+            "name": "Pure Caterium Ingot",
+            "alternate": true,
+            "time": 5.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Caterium Ore",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Caterium Ingot",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Pure Aluminum Ingot",
+            "alternate": true,
+            "time": 2.0,
+            "building": "Smelter",
+            "inputs": [
+                {
+                    "name": "Aluminum Scrap",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Aluminum Ingot",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Encased Uranium Cell",
+            "alternate": false,
+            "time": 12.0,
+            "building": "Blender",
+            "inputs": [
+                {
+                    "name": "Uranium",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Concrete",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Sulfuric Acid",
+                    "amount": 8.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Encased Uranium Cell",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Sulfuric Acid",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Cooling System",
+            "alternate": false,
+            "time": 10.0,
+            "building": "Blender",
+            "inputs": [
+                {
+                    "name": "Heat Sink",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Nitrogen Gas",
+                    "amount": 25.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Cooling System",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Nitric Acid",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Blender",
+            "inputs": [
+                {
+                    "name": "Nitrogen Gas",
+                    "amount": 12.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Iron Plate",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Nitric Acid",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Non-fissile Uranium",
+            "alternate": false,
+            "time": 24.0,
+            "building": "Blender",
+            "inputs": [
+                {
+                    "name": "Uranium Waste",
+                    "amount": 15.0
+                },
+                {
+                    "name": "Silica",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Nitric Acid",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Sulfuric Acid",
+                    "amount": 6.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Non-fissile Uranium",
+                    "amount": 20.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 6.0
+                }
+            ]
+        },
+        {
+            "name": "Aluminum Casing",
+            "alternate": false,
+            "time": 2.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Aluminum Ingot",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Aluminum Casing",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Alclad Aluminum Sheet",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Aluminum Ingot",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Copper Ingot",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Alclad Aluminum Sheet",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Radio Control Unit",
+            "alternate": false,
+            "time": 48.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Aluminum Casing",
+                    "amount": 32.0
+                },
+                {
+                    "name": "Crystal Oscillator",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Computer",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Radio Control Unit",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Alumina Solution",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Bauxite",
+                    "amount": 12.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 18.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Alumina Solution",
+                    "amount": 12.0
+                },
+                {
+                    "name": "Silica",
+                    "amount": 5.0
+                }
+            ]
+        },
+        {
+            "name": "Aluminum Scrap",
+            "alternate": false,
+            "time": 1.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Alumina Solution",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Coal",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Aluminum Scrap",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Packaged Alumina Solution",
+            "alternate": false,
+            "time": 1.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Alumina Solution",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Packaged Alumina Solution",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Aluminum Ingot",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Foundry",
+            "inputs": [
+                {
+                    "name": "Aluminum Scrap",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Silica",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Aluminum Ingot",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Silica",
+            "alternate": false,
+            "time": 8.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Raw Quartz",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Silica",
+                    "amount": 5.0
+                }
+            ]
+        },
+        {
+            "name": "Crystal Oscillator",
+            "alternate": false,
+            "time": 120.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Quartz Crystal",
+                    "amount": 36.0
+                },
+                {
+                    "name": "Cable",
+                    "amount": 28.0
+                },
+                {
+                    "name": "Reinforced Iron Plate",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Crystal Oscillator",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Unpackage Alumina Solution",
+            "alternate": false,
+            "time": 1.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Packaged Alumina Solution",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Alumina Solution",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Polymer Resin",
+            "alternate": true,
+            "time": 6.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Crude Oil",
+                    "amount": 6.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Polymer Resin",
+                    "amount": 13.0
+                },
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Plastic Smart Plating",
+            "alternate": true,
+            "time": 24.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Reinforced Iron Plate",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Rotor",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Plastic",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Smart Plating",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Automated Speed Wiring",
+            "alternate": true,
+            "time": 32.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Stator",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Wire",
+                    "amount": 40.0
+                },
+                {
+                    "name": "High-Speed Connector",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Automated Wiring",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Encased Industrial Beam",
+            "alternate": false,
+            "time": 10.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Steel Beam",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Concrete",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Encased Industrial Beam",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Motor",
+            "alternate": false,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Rotor",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Stator",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Motor",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Stator",
+            "alternate": false,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Steel Pipe",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Wire",
+                    "amount": 8.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Stator",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Heavy Modular Frame",
+            "alternate": false,
+            "time": 30.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Modular Frame",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Steel Pipe",
+                    "amount": 15.0
+                },
+                {
+                    "name": "Encased Industrial Beam",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Screw",
+                    "amount": 100.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Heavy Modular Frame",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Automated Wiring",
+            "alternate": false,
+            "time": 24.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Stator",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Cable",
+                    "amount": 20.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Automated Wiring",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "AI Limiter",
+            "alternate": false,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Copper Sheet",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Quickwire",
+                    "amount": 20.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "AI Limiter",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Heavy Oil Residue",
+            "alternate": true,
+            "time": 6.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Crude Oil",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Polymer Resin",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Heavy Flexible Frame",
+            "alternate": true,
+            "time": 16.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Modular Frame",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Encased Industrial Beam",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 20.0
+                },
+                {
+                    "name": "Screw",
+                    "amount": 104.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Heavy Modular Frame",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Computer",
+            "alternate": false,
+            "time": 24.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Circuit Board",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Cable",
+                    "amount": 9.0
+                },
+                {
+                    "name": "Plastic",
+                    "amount": 18.0
+                },
+                {
+                    "name": "Screw",
+                    "amount": 52.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Computer",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Modular Engine",
+            "alternate": false,
+            "time": 60.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Motor",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 15.0
+                },
+                {
+                    "name": "Smart Plating",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Modular Engine",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Adaptive Control Unit",
+            "alternate": false,
+            "time": 120.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Automated Wiring",
+                    "amount": 15.0
+                },
+                {
+                    "name": "Circuit Board",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Heavy Modular Frame",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Computer",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Adaptive Control Unit",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Fused Wire",
+            "alternate": true,
+            "time": 20.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Copper Ingot",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Caterium Ingot",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Wire",
+                    "amount": 30.0
+                }
+            ]
+        },
+        {
+            "name": "Flexible Framework",
+            "alternate": true,
+            "time": 16.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Modular Frame",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Steel Beam",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 8.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Versatile Framework",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Electrode Circuit Board",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Rubber",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Petroleum Coke",
+                    "amount": 9.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Circuit Board",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Electrode Aluminum Scrap",
+            "alternate": true,
+            "time": 4.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Alumina Solution",
+                    "amount": 12.0
+                },
+                {
+                    "name": "Petroleum Coke",
+                    "amount": 4.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Aluminum Scrap",
+                    "amount": 20.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 7.0
+                }
+            ]
+        },
+        {
+            "name": "Diluted Packaged Fuel",
+            "alternate": true,
+            "time": 2.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Packaged Water",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Packaged Fuel",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Copper Rotor",
+            "alternate": true,
+            "time": 16.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Copper Sheet",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Screw",
+                    "amount": 52.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Rotor",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Modular Frame",
+            "alternate": false,
+            "time": 60.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Reinforced Iron Plate",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Iron Rod",
+                    "amount": 12.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Modular Frame",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Rotor",
+            "alternate": false,
+            "time": 15.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Iron Rod",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Screw",
+                    "amount": 25.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Rotor",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Copper Sheet",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Copper Ingot",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Copper Sheet",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Smart Plating",
+            "alternate": false,
+            "time": 30.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Reinforced Iron Plate",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Rotor",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Smart Plating",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Copper Alloy Ingot",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Foundry",
+            "inputs": [
+                {
+                    "name": "Copper Ore",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Iron Ore",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Copper Ingot",
+                    "amount": 20.0
+                }
+            ]
+        },
+        {
+            "name": "Coke Steel Ingot",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Foundry",
+            "inputs": [
+                {
+                    "name": "Iron Ore",
+                    "amount": 15.0
+                },
+                {
+                    "name": "Petroleum Coke",
+                    "amount": 15.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Steel Ingot",
+                    "amount": 20.0
+                }
+            ]
+        },
+        {
+            "name": "Coated Iron Plate",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Iron Ingot",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Plastic",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Iron Plate",
+                    "amount": 15.0
+                }
+            ]
+        },
+        {
+            "name": "Coated Iron Canister",
+            "alternate": true,
+            "time": 4.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Iron Plate",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Copper Sheet",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Empty Canister",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Coated Cable",
+            "alternate": true,
+            "time": 8.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Wire",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Cable",
+                    "amount": 9.0
+                }
+            ]
+        },
+        {
+            "name": "Bolted Frame",
+            "alternate": true,
+            "time": 24.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Reinforced Iron Plate",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Screw",
+                    "amount": 56.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Modular Frame",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Adhered Iron Plate",
+            "alternate": true,
+            "time": 16.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Iron Plate",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Reinforced Iron Plate",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Turbo Pressure Motor",
+            "alternate": true,
+            "time": 32.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Motor",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Pressure Conversion Cube",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Packaged Nitrogen Gas",
+                    "amount": 24.0
+                },
+                {
+                    "name": "Stator",
+                    "amount": 8.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Turbo Motor",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Encased Plutonium Cell",
+            "alternate": false,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Plutonium Pellet",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Concrete",
+                    "amount": 4.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Encased Plutonium Cell",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Pressure Conversion Cube",
+            "alternate": false,
+            "time": 60.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Fused Modular Frame",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Radio Control Unit",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Pressure Conversion Cube",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Copper Powder",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Copper Ingot",
+                    "amount": 30.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Copper Powder",
+                    "amount": 5.0
+                }
+            ]
+        },
+        {
+            "name": "Plutonium Pellet",
+            "alternate": false,
+            "time": 60.0,
+            "building": "Particle Accelerator",
+            "inputs": [
+                {
+                    "name": "Non-fissile Uranium",
+                    "amount": 100.0
+                },
+                {
+                    "name": "Uranium Waste",
+                    "amount": 25.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Plutonium Pellet",
+                    "amount": 30.0
+                }
+            ]
+        },
+        {
+            "name": "Plutonium Fuel Rod",
+            "alternate": false,
+            "time": 240.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Encased Plutonium Cell",
+                    "amount": 30.0
+                },
+                {
+                    "name": "Steel Beam",
+                    "amount": 18.0
+                },
+                {
+                    "name": "Electromagnetic Control Rod",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Heat Sink",
+                    "amount": 10.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Plutonium Fuel Rod",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Packaged Nitric Acid",
+            "alternate": false,
+            "time": 2.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Nitric Acid",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Empty Fluid Tank",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Packaged Nitric Acid",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Nuclear Pasta",
+            "alternate": false,
+            "time": 120.0,
+            "building": "Particle Accelerator",
+            "inputs": [
+                {
+                    "name": "Copper Powder",
+                    "amount": 200.0
+                },
+                {
+                    "name": "Pressure Conversion Cube",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Nuclear Pasta",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Unpackage Nitric Acid",
+            "alternate": false,
+            "time": 3.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Packaged Nitric Acid",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Nitric Acid",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Empty Fluid Tank",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Turbo Blend Fuel",
+            "alternate": true,
+            "time": 8.0,
+            "building": "Blender",
+            "inputs": [
+                {
+                    "name": "Fuel",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Sulfur",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Petroleum Coke",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Turbofuel",
+                    "amount": 6.0
+                }
+            ]
+        },
+        {
+            "name": "Super-State Computer",
+            "alternate": true,
+            "time": 50.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Computer",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Electromagnetic Control Rod",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Battery",
+                    "amount": 20.0
+                },
+                {
+                    "name": "Wire",
+                    "amount": 45.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Supercomputer",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Battery",
+            "alternate": false,
+            "time": 3.0,
+            "building": "Blender",
+            "inputs": [
+                {
+                    "name": "Sulfuric Acid",
+                    "amount": 2.5
+                },
+                {
+                    "name": "Alumina Solution",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Aluminum Casing",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Battery",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 1.5
+                }
+            ]
+        },
+        {
+            "name": "Supercomputer",
+            "alternate": false,
+            "time": 32.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Computer",
+                    "amount": 2.0
+                },
+                {
+                    "name": "AI Limiter",
+                    "amount": 2.0
+                },
+                {
+                    "name": "High-Speed Connector",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Plastic",
+                    "amount": 28.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Supercomputer",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Sulfuric Acid",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Sulfur",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Sulfuric Acid",
+                    "amount": 5.0
+                }
+            ]
+        },
+        {
+            "name": "Packaged Sulfuric Acid",
+            "alternate": false,
+            "time": 3.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Sulfuric Acid",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Packaged Sulfuric Acid",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Assembly Director System",
+            "alternate": false,
+            "time": 80.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Adaptive Control Unit",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Supercomputer",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Assembly Director System",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "High-Speed Connector",
+            "alternate": false,
+            "time": 16.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Quickwire",
+                    "amount": 56.0
+                },
+                {
+                    "name": "Cable",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Circuit Board",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "High-Speed Connector",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Unpackage Sulfuric Acid",
+            "alternate": false,
+            "time": 1.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Packaged Sulfuric Acid",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Sulfuric Acid",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Empty Canister",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Electromagnetic Control Rod",
+            "alternate": false,
+            "time": 30.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Stator",
+                    "amount": 3.0
+                },
+                {
+                    "name": "AI Limiter",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Electromagnetic Control Rod",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Uranium Fuel Rod",
+            "alternate": false,
+            "time": 150.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Encased Uranium Cell",
+                    "amount": 50.0
+                },
+                {
+                    "name": "Encased Industrial Beam",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Electromagnetic Control Rod",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Uranium Fuel Rod",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Magnetic Field Generator",
+            "alternate": false,
+            "time": 120.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Versatile Framework",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Electromagnetic Control Rod",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Battery",
+                    "amount": 10.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Magnetic Field Generator",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Sloppy Alumina",
+            "alternate": true,
+            "time": 3.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Bauxite",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 10.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Alumina Solution",
+                    "amount": 12.0
+                }
+            ]
+        },
+        {
+            "name": "Radio Control System",
+            "alternate": true,
+            "time": 40.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Crystal Oscillator",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Circuit Board",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Aluminum Casing",
+                    "amount": 60.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 30.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Radio Control Unit",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Plutonium Fuel Unit",
+            "alternate": true,
+            "time": 120.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Encased Plutonium Cell",
+                    "amount": 20.0
+                },
+                {
+                    "name": "Pressure Conversion Cube",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Plutonium Fuel Rod",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "OC Supercomputer",
+            "alternate": true,
+            "time": 20.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Radio Control Unit",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Cooling System",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Supercomputer",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Heat Sink",
+            "alternate": false,
+            "time": 8.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Alclad Aluminum Sheet",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Copper Sheet",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Heat Sink",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Fused Modular Frame",
+            "alternate": false,
+            "time": 40.0,
+            "building": "Blender",
+            "inputs": [
+                {
+                    "name": "Heavy Modular Frame",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Aluminum Casing",
+                    "amount": 50.0
+                },
+                {
+                    "name": "Nitrogen Gas",
+                    "amount": 25.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Fused Modular Frame",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Empty Fluid Tank",
+            "alternate": false,
+            "time": 1.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Aluminum Ingot",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Empty Fluid Tank",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Packaged Nitrogen Gas",
+            "alternate": false,
+            "time": 1.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Nitrogen Gas",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Empty Fluid Tank",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Packaged Nitrogen Gas",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Unpackage Nitrogen Gas",
+            "alternate": false,
+            "time": 1.0,
+            "building": "Packager",
+            "inputs": [
+                {
+                    "name": "Packaged Nitrogen Gas",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Nitrogen Gas",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Empty Fluid Tank",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Instant Scrap",
+            "alternate": true,
+            "time": 6.0,
+            "building": "Blender",
+            "inputs": [
+                {
+                    "name": "Bauxite",
+                    "amount": 15.0
+                },
+                {
+                    "name": "Coal",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Sulfuric Acid",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 6.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Aluminum Scrap",
+                    "amount": 30.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 5.0
+                }
+            ]
+        },
+        {
+            "name": "Instant Plutonium Cell",
+            "alternate": true,
+            "time": 120.0,
+            "building": "Particle Accelerator",
+            "inputs": [
+                {
+                    "name": "Non-fissile Uranium",
+                    "amount": 150.0
+                },
+                {
+                    "name": "Aluminum Casing",
+                    "amount": 20.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Encased Plutonium Cell",
+                    "amount": 20.0
+                }
+            ]
+        },
+        {
+            "name": "Heat-Fused Frame",
+            "alternate": true,
+            "time": 20.0,
+            "building": "Blender",
+            "inputs": [
+                {
+                    "name": "Heavy Modular Frame",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Aluminum Ingot",
+                    "amount": 50.0
+                },
+                {
+                    "name": "Nitric Acid",
+                    "amount": 8.0
+                },
+                {
+                    "name": "Fuel",
+                    "amount": 10.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Fused Modular Frame",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Fertile Uranium",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Blender",
+            "inputs": [
+                {
+                    "name": "Uranium",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Uranium Waste",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Nitric Acid",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Sulfuric Acid",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Non-fissile Uranium",
+                    "amount": 20.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 8.0
+                }
+            ]
+        },
+        {
+            "name": "Electric Motor",
+            "alternate": true,
+            "time": 16.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Electromagnetic Control Rod",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Rotor",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Motor",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Diluted Fuel",
+            "alternate": true,
+            "time": 6.0,
+            "building": "Blender",
+            "inputs": [
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 10.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Fuel",
+                    "amount": 10.0
+                }
+            ]
+        },
+        {
+            "name": "Cooling Device",
+            "alternate": true,
+            "time": 32.0,
+            "building": "Blender",
+            "inputs": [
+                {
+                    "name": "Heat Sink",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Motor",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Nitrogen Gas",
+                    "amount": 24.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Cooling System",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Classic Battery",
+            "alternate": true,
+            "time": 8.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Sulfur",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Alclad Aluminum Sheet",
+                    "amount": 7.0
+                },
+                {
+                    "name": "Plastic",
+                    "amount": 8.0
+                },
+                {
+                    "name": "Wire",
+                    "amount": 12.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Battery",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Automated Miner",
+            "alternate": true,
+            "time": 60.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Motor",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Steel Pipe",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Iron Rod",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Iron Plate",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Portable Miner",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Alclad Casing",
+            "alternate": true,
+            "time": 8.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Aluminum Ingot",
+                    "amount": 20.0
+                },
+                {
+                    "name": "Copper Ingot",
+                    "amount": 10.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Aluminum Casing",
+                    "amount": 15.0
+                }
+            ]
+        },
+        {
+            "name": "Caterium Wire",
+            "alternate": true,
+            "time": 4.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Caterium Ingot",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Wire",
+                    "amount": 8.0
+                }
+            ]
+        },
+        {
+            "name": "Iron Wire",
+            "alternate": true,
+            "time": 24.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Iron Ingot",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Wire",
+                    "amount": 9.0
+                }
+            ]
+        },
+        {
+            "name": "Infused Uranium Cell",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Uranium",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Silica",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Sulfur",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Quickwire",
+                    "amount": 15.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Encased Uranium Cell",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Caterium Ingot",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Smelter",
+            "inputs": [
+                {
+                    "name": "Caterium Ore",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Caterium Ingot",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Turbo Electric Motor",
+            "alternate": true,
+            "time": 64.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Motor",
+                    "amount": 7.0
+                },
+                {
+                    "name": "Radio Control Unit",
+                    "amount": 9.0
+                },
+                {
+                    "name": "Electromagnetic Control Rod",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Rotor",
+                    "amount": 7.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Turbo Motor",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Turbo Motor",
+            "alternate": false,
+            "time": 32.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Cooling System",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Radio Control Unit",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Motor",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 24.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Turbo Motor",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Thermal Propulsion Rocket",
+            "alternate": false,
+            "time": 120.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Modular Engine",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Turbo Motor",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Cooling System",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Fused Modular Frame",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Thermal Propulsion Rocket",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Turbofuel",
+            "alternate": false,
+            "time": 16.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Fuel",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Compacted Coal",
+                    "amount": 4.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Turbofuel",
+                    "amount": 5.0
+                }
+            ]
+        },
+        {
+            "name": "Quickwire Stator",
+            "alternate": true,
+            "time": 15.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Steel Pipe",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Quickwire",
+                    "amount": 15.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Stator",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Cheap Silica",
+            "alternate": true,
+            "time": 16.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Raw Quartz",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Limestone",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Silica",
+                    "amount": 7.0
+                }
+            ]
+        },
+        {
+            "name": "Steel Screw",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Steel Beam",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Screw",
+                    "amount": 52.0
+                }
+            ]
+        },
+        {
+            "name": "Cast Screw",
+            "alternate": true,
+            "time": 24.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Iron Ingot",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Screw",
+                    "amount": 20.0
+                }
+            ]
+        },
+        {
+            "name": "Steel Rotor",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Steel Pipe",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Wire",
+                    "amount": 6.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Rotor",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Encased Industrial Pipe",
+            "alternate": true,
+            "time": 15.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Steel Pipe",
+                    "amount": 7.0
+                },
+                {
+                    "name": "Concrete",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Encased Industrial Beam",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Stitched Iron Plate",
+            "alternate": true,
+            "time": 32.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Iron Plate",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Wire",
+                    "amount": 20.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Reinforced Iron Plate",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Bolted Iron Plate",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Iron Plate",
+                    "amount": 18.0
+                },
+                {
+                    "name": "Screw",
+                    "amount": 50.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Reinforced Iron Plate",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Radio Connection Unit",
+            "alternate": true,
+            "time": 16.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Heat Sink",
+                    "amount": 4.0
+                },
+                {
+                    "name": "High-Speed Connector",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Quartz Crystal",
+                    "amount": 12.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Radio Control Unit",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Fused Quickwire",
+            "alternate": true,
+            "time": 8.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Caterium Ingot",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Copper Ingot",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Quickwire",
+                    "amount": 12.0
+                }
+            ]
+        },
+        {
+            "name": "Recycled Plastic",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Rubber",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Fuel",
+                    "amount": 6.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Plastic",
+                    "amount": 12.0
+                }
+            ]
+        },
+        {
+            "name": "Uranium Fuel Unit",
+            "alternate": true,
+            "time": 300.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Encased Uranium Cell",
+                    "amount": 100.0
+                },
+                {
+                    "name": "Electromagnetic Control Rod",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Crystal Oscillator",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Beacon",
+                    "amount": 6.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Uranium Fuel Rod",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Rigour Motor",
+            "alternate": true,
+            "time": 48.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Rotor",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Stator",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Crystal Oscillator",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Motor",
+                    "amount": 6.0
+                }
+            ]
+        },
+        {
+            "name": "Steeled Frame",
+            "alternate": true,
+            "time": 60.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Reinforced Iron Plate",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Steel Pipe",
+                    "amount": 10.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Modular Frame",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Compacted Steel Ingot",
+            "alternate": true,
+            "time": 16.0,
+            "building": "Foundry",
+            "inputs": [
+                {
+                    "name": "Iron Ore",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Compacted Coal",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Steel Ingot",
+                    "amount": 10.0
+                }
+            ]
+        },
+        {
+            "name": "Solid Steel Ingot",
+            "alternate": true,
+            "time": 3.0,
+            "building": "Foundry",
+            "inputs": [
+                {
+                    "name": "Iron Ingot",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Coal",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Steel Ingot",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Iron Alloy Ingot",
+            "alternate": true,
+            "time": 6.0,
+            "building": "Foundry",
+            "inputs": [
+                {
+                    "name": "Iron Ore",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Copper Ore",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Iron Ingot",
+                    "amount": 5.0
+                }
+            ]
+        },
+        {
+            "name": "Silicon High-Speed Connector",
+            "alternate": true,
+            "time": 40.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Quickwire",
+                    "amount": 60.0
+                },
+                {
+                    "name": "Silica",
+                    "amount": 25.0
+                },
+                {
+                    "name": "Circuit Board",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "High-Speed Connector",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Heavy Encased Frame",
+            "alternate": true,
+            "time": 64.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Modular Frame",
+                    "amount": 8.0
+                },
+                {
+                    "name": "Encased Industrial Beam",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Steel Pipe",
+                    "amount": 36.0
+                },
+                {
+                    "name": "Concrete",
+                    "amount": 22.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Heavy Modular Frame",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Heat Exchanger",
+            "alternate": true,
+            "time": 6.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Aluminum Casing",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Heat Sink",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Fine Black Powder",
+            "alternate": true,
+            "time": 16.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Sulfur",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Compacted Coal",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Black Powder",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Electromagnetic Connection Rod",
+            "alternate": true,
+            "time": 15.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Stator",
+                    "amount": 2.0
+                },
+                {
+                    "name": "High-Speed Connector",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Electromagnetic Control Rod",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Insulated Crystal Oscillator",
+            "alternate": true,
+            "time": 32.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Quartz Crystal",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 7.0
+                },
+                {
+                    "name": "AI Limiter",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Crystal Oscillator",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Fine Concrete",
+            "alternate": true,
+            "time": 24.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Silica",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Limestone",
+                    "amount": 12.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Concrete",
+                    "amount": 10.0
+                }
+            ]
+        },
+        {
+            "name": "Crystal Computer",
+            "alternate": true,
+            "time": 64.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Circuit Board",
+                    "amount": 8.0
+                },
+                {
+                    "name": "Crystal Oscillator",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Computer",
+                    "amount": 3.0
+                }
+            ]
+        },
+        {
+            "name": "Caterium Computer",
+            "alternate": true,
+            "time": 16.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Circuit Board",
+                    "amount": 7.0
+                },
+                {
+                    "name": "Quickwire",
+                    "amount": 28.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 12.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Computer",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Caterium Circuit Board",
+            "alternate": true,
+            "time": 48.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Plastic",
+                    "amount": 10.0
+                },
+                {
+                    "name": "Quickwire",
+                    "amount": 30.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Circuit Board",
+                    "amount": 7.0
+                }
+            ]
+        },
+        {
+            "name": "Silicon Circuit Board",
+            "alternate": true,
+            "time": 24.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Copper Sheet",
+                    "amount": 11.0
+                },
+                {
+                    "name": "Silica",
+                    "amount": 11.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Circuit Board",
+                    "amount": 5.0
+                }
+            ]
+        },
+        {
+            "name": "Quickwire Cable",
+            "alternate": true,
+            "time": 24.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Quickwire",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Cable",
+                    "amount": 11.0
+                }
+            ]
+        },
+        {
+            "name": "Insulated Cable",
+            "alternate": true,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Wire",
+                    "amount": 9.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 6.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Cable",
+                    "amount": 20.0
+                }
+            ]
+        },
+        {
+            "name": "Crystal Beacon",
+            "alternate": true,
+            "time": 120.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Steel Beam",
+                    "amount": 4.0
+                },
+                {
+                    "name": "Steel Pipe",
+                    "amount": 16.0
+                },
+                {
+                    "name": "Crystal Oscillator",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Beacon",
+                    "amount": 20.0
+                }
+            ]
+        },
+        {
+            "name": "Iodine Infused Filter",
+            "alternate": false,
+            "time": 16.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Gas Filter",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Quickwire",
+                    "amount": 8.0
+                },
+                {
+                    "name": "Aluminum Casing",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Iodine Infused Filter",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Gas Filter",
+            "alternate": false,
+            "time": 8.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Coal",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Rubber",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Fabric",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Gas Filter",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Solid Biofuel",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Biomass",
+                    "amount": 8.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Solid Biofuel",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Beacon",
+            "alternate": false,
+            "time": 8.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Iron Plate",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Iron Rod",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Wire",
+                    "amount": 15.0
+                },
+                {
+                    "name": "Cable",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Beacon",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Stinger Protein",
+            "alternate": false,
+            "time": 3.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Stinger Remains",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Alien Protein",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Spitter Protein",
+            "alternate": false,
+            "time": 3.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Plasma Spitter Remains",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Alien Protein",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Hog Protein",
+            "alternate": false,
+            "time": 3.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Hog Remains",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Alien Protein",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Hatcher Protein",
+            "alternate": false,
+            "time": 3.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Hatcher Remains",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Alien Protein",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Alien DNA Capsule",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Alien Protein",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Alien DNA Capsule",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Biomass (Alien Protein)",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Alien Protein",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Biomass",
+                    "amount": 100.0
+                }
+            ]
+        },
+        {
+            "name": "Iron Rebar",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Iron Rod",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Iron Rebar",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Homing Rifle Ammo",
+            "alternate": false,
+            "time": 24.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Rifle Ammo",
+                    "amount": 20.0
+                },
+                {
+                    "name": "High-Speed Connector",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Homing Rifle Ammo",
+                    "amount": 10.0
+                }
+            ]
+        },
+        {
+            "name": "Stun Rebar",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Iron Rebar",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Quickwire",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Stun Rebar",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Quickwire",
+            "alternate": false,
+            "time": 5.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Caterium Ingot",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Quickwire",
+                    "amount": 5.0
+                }
+            ]
+        },
+        {
+            "name": "Gas Nobelisk",
+            "alternate": false,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Nobelisk",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Biomass",
+                    "amount": 10.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Gas Nobelisk",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Polyester Fabric",
+            "alternate": true,
+            "time": 2.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Polymer Resin",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Fabric",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Fabric",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Mycelia",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Biomass",
+                    "amount": 5.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Fabric",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Biomass (Mycelia)",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Mycelia",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Biomass",
+                    "amount": 10.0
+                }
+            ]
+        },
+        {
+            "name": "Power Shard (5)",
+            "alternate": false,
+            "time": 24.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Purple Power Slug",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Power Shard",
+                    "amount": 5.0
+                }
+            ]
+        },
+        {
+            "name": "Power Shard (2)",
+            "alternate": false,
+            "time": 12.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Yellow Power Slug",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Power Shard",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Power Shard (1)",
+            "alternate": false,
+            "time": 8.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Blue Power Slug",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Power Shard",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Pulse Nobelisk",
+            "alternate": false,
+            "time": 60.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Nobelisk",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Crystal Oscillator",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Pulse Nobelisk",
+                    "amount": 5.0
+                }
+            ]
+        },
+        {
+            "name": "Shatter Rebar",
+            "alternate": false,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Iron Rebar",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Quartz Crystal",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Shatter Rebar",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Turbo Rifle Ammo",
+            "alternate": false,
+            "time": 12.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Rifle Ammo",
+                    "amount": 25.0
+                },
+                {
+                    "name": "Aluminum Casing",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Packaged Turbofuel",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Turbo Rifle Ammo",
+                    "amount": 50.0
+                }
+            ]
+        },
+        {
+            "name": "Turbo Rifle Ammo",
+            "alternate": false,
+            "time": 12.0,
+            "building": "Blender",
+            "inputs": [
+                {
+                    "name": "Rifle Ammo",
+                    "amount": 25.0
+                },
+                {
+                    "name": "Aluminum Casing",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Turbofuel",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Turbo Rifle Ammo",
+                    "amount": 50.0
+                }
+            ]
+        },
+        {
+            "name": "Nuke Nobelisk",
+            "alternate": false,
+            "time": 120.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Nobelisk",
+                    "amount": 5.0
+                },
+                {
+                    "name": "Encased Uranium Cell",
+                    "amount": 20.0
+                },
+                {
+                    "name": "Smokeless Powder",
+                    "amount": 10.0
+                },
+                {
+                    "name": "AI Limiter",
+                    "amount": 6.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Nuke Nobelisk",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Rifle Ammo",
+            "alternate": false,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Copper Sheet",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Smokeless Powder",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Rifle Ammo",
+                    "amount": 15.0
+                }
+            ]
+        },
+        {
+            "name": "Explosive Rebar",
+            "alternate": false,
+            "time": 12.0,
+            "building": "Manufacturer",
+            "inputs": [
+                {
+                    "name": "Iron Rebar",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Smokeless Powder",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Steel Pipe",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Explosive Rebar",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Cluster Nobelisk",
+            "alternate": false,
+            "time": 24.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Nobelisk",
+                    "amount": 3.0
+                },
+                {
+                    "name": "Smokeless Powder",
+                    "amount": 4.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Cluster Nobelisk",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Nobelisk",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Black Powder",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Steel Pipe",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Nobelisk",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Smokeless Powder",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Refinery",
+            "inputs": [
+                {
+                    "name": "Black Powder",
+                    "amount": 2.0
+                },
+                {
+                    "name": "Heavy Oil Residue",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Smokeless Powder",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Black Powder",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Coal",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Sulfur",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Black Powder",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Biomass (Leaves)",
+            "alternate": false,
+            "time": 5.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Leaves",
+                    "amount": 10.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Biomass",
+                    "amount": 5.0
+                }
+            ]
+        },
+        {
+            "name": "Biomass (Wood)",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Wood",
+                    "amount": 4.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Biomass",
+                    "amount": 20.0
+                }
+            ]
+        },
+        {
+            "name": "Reinforced Iron Plate",
+            "alternate": false,
+            "time": 12.0,
+            "building": "Assembler",
+            "inputs": [
+                {
+                    "name": "Iron Plate",
+                    "amount": 6.0
+                },
+                {
+                    "name": "Screw",
+                    "amount": 12.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Reinforced Iron Plate",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Concrete",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Limestone",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Concrete",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Screw",
+            "alternate": false,
+            "time": 6.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Iron Rod",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Screw",
+                    "amount": 4.0
+                }
+            ]
+        },
+        {
+            "name": "Cable",
+            "alternate": false,
+            "time": 2.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Wire",
+                    "amount": 2.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Cable",
+                    "amount": 1.0
+                }
+            ]
+        },
+        {
+            "name": "Wire",
+            "alternate": false,
+            "time": 4.0,
+            "building": "Constructor",
+            "inputs": [
+                {
+                    "name": "Copper Ingot",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Wire",
+                    "amount": 2.0
+                }
+            ]
+        },
+        {
+            "name": "Copper Ingot",
+            "alternate": false,
+            "time": 2.0,
+            "building": "Smelter",
+            "inputs": [
+                {
+                    "name": "Copper Ore",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Copper Ingot",
+                    "amount": 1.0
+                }
+            ]
+        }
+    ]
+}

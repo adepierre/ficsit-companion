@@ -1,0 +1,100 @@
+name: Build
+
+on:
+  push:
+    tags-ignore:
+      - "**"
+    branches:
+      - "**"
+    paths-ignore:
+      - "scripts/*"
+      - ".gitignore"
+      - "LICENSE"
+      - "README.md"
+  pull_request:
+    paths-ignore:
+      - "scripts/*"
+      - ".gitignore"
+      - "LICENSE"
+      - "README.md"
+  workflow_call:
+
+jobs:
+  build-desktop:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt install -y xorg-dev
+
+      - name: Set universal build for macOS (as an env variable because of the ;)
+        if: runner.os == 'macOS'
+        run: echo "CMAKE_OSX_ARCHITECTURES=arm64;x86_64" >> $GITHUB_ENV
+
+        # TODO: caching built SDL could be a good idea to save time/compute
+      - name: Configure cmake
+        run: >
+          cmake
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          -S ${{ github.workspace }}
+          -B ${{ github.workspace }}/build
+
+      - name: Build
+        run: cmake --build ${{ github.workspace }}/build --config Release --parallel 2
+
+      - name: Install
+        run: cmake --install ${{ github.workspace }}/build --config Release --prefix ${{ github.workspace }}/build/install/${{ github.event.repository.name }}
+
+      - name: Create artifact archive
+        working-directory: ${{ github.workspace }}/build/install
+        run: cmake -E tar "cf" "${{ github.event.repository.name }}.zip" --format=zip ${{ github.event.repository.name }}/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-${{ runner.os }}
+          path: ${{ github.workspace }}/build/install/${{ github.event.repository.name }}.zip
+          retention-days: 1
+
+  build-web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Emscripten
+        run: |
+          wget -q https://github.com/emscripten-core/emsdk/archive/master.tar.gz
+          tar -xvf master.tar.gz
+          emsdk-master/emsdk update
+          emsdk-master/emsdk install latest
+          emsdk-master/emsdk activate latest
+
+      - name: Configure cmake
+        run: |
+          source ${{ github.workspace }}/emsdk-master/emsdk_env.sh
+          emcmake cmake -DCMAKE_BUILD_TYPE=Release -S ${{ github.workspace }} -B ${{ github.workspace }}/build
+
+      - name: Build
+        run: cmake --build ${{ github.workspace }}/build --config Release --parallel 2
+
+      - name: Create artifact archive
+        working-directory: ${{ github.workspace }}/build
+        run: cmake -E tar "cf" "${{ github.event.repository.name }}.zip" --format=zip web/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-web
+          path: ${{ github.workspace }}/build/${{ github.event.repository.name }}.zip
+          retention-days: 1
