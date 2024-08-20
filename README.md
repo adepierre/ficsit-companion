@@ -122,7 +122,7 @@ cmake --build . --config Release
 
 ## Updating
 
-The recipes are currently up to date with version 0.8.3.3 of the game. To update to a different version, one can use the [provided script](scripts/data_extractor.py). It requires having the Docs.json file provided in the game files as well as item icons extracted from the game (you can refer to [this tutorial](https://docs.ficsit.app/satisfactory-modding/latest/Development/ExtractGameFiles.html) to do so).
+The recipes are currently up to date with version 0.8.3.3 of the game. To update to a different version, one can use the [provided script](scripts/data_extractor.py). It requires having the Docs.json file provided in the game files as well as item icons extracted from the game. For more informations about the Docs.json file you can check the official [wiki page](https://satisfactory.wiki.gg/wiki/Community_resources) and for icons extraction you can refer to [this tutorial](https://docs.ficsit.app/satisfactory-modding/latest/Development/ExtractGameFiles.html).
 
 ## Credits
 
