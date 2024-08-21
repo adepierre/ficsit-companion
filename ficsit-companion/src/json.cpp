@@ -148,6 +148,11 @@ namespace Json
         return is<Array>();
     }
 
+    bool Value::is_bool() const
+    {
+        return is<bool>();
+    }
+
     bool Value::is_integer() const
     {
         return std::holds_alternative<long long int>(val) ||
