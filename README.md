@@ -62,6 +62,12 @@ Creating large production chains can pretty quickly lead to cluttered environmen
 </details>
 
 <details>
+<summary>Color modifiers</summary>
+
+Adding the ability to change colors for links/nodes would definitely help having better organized graphs.
+</details>
+
+<details>
 <summary>Automatic tests</summary>
 
 This is more a developper thing, but adding automatic tests using the [ImGui Test Engine](https://github.com/ocornut/imgui_test_engine) would be very helpful to speed up development and debugging, avoid regressions etc...
