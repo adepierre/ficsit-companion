@@ -11,6 +11,7 @@
 #include <emscripten.h>
 #endif
 
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
@@ -770,8 +771,49 @@ EM_ASYNC_JS(void, waitForFileInput, (), {
 
 void App::RenderLeftPanel()
 {
-    float buttons_width = ImGui::CalcTextSize("Save").x + ImGui::CalcTextSize("Load").x + ImGui::GetStyle().FramePadding.x * 4;
-    float input_text_width = ImGui::GetContentRegionAvail().x - buttons_width - ImGui::GetStyle().ItemSpacing.x * 2;
+    ImGui::BeginDisabled(ImGui::IsPopupOpen("##ControlsPopup"));
+    if (ImGui::Button("Show controls list"))
+    {
+        ImGui::OpenPopup("##ControlsPopup");
+    }
+    ImGui::EndDisabled();
+
+    ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), 0, ImVec2(0.5f, 0.5f));
+    if (ImGui::BeginPopup("##ControlsPopup", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
+    {
+        if (ImGui::BeginTable("##controls_table", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV))
+        {
+            static constexpr std::array controls = {
+                std::make_pair("Right click",         "Add node"),
+                std::make_pair("Right click + mouse", "Move view"),
+                std::make_pair("Left click",          "Select node/link"),
+                std::make_pair("Left click + mouse",  "Move node/link"),
+                std::make_pair("Mouse wheel",         "Zoom/Unzoom"),
+                std::make_pair("Del",                 "Delete selection"),
+                std::make_pair("F",                   "Show selection/full graph"),
+            };
+            for (const auto [k, s] : controls)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextUnformatted(k);
+                ImGui::TableSetColumnIndex(1);
+                ImGui::SetCursorPosX(std::max(ImGui::GetCursorPosX(), ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x));
+                ImGui::TextUnformatted(s);
+            }
+
+            ImGui::EndTable();
+        }
+
+        if (!ImGui::IsWindowFocused())
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    const float save_load_buttons_width = ImGui::CalcTextSize("Save").x + ImGui::CalcTextSize("Load").x + ImGui::GetStyle().FramePadding.x * 4;
+    const float input_text_width = ImGui::GetContentRegionAvail().x - save_load_buttons_width - ImGui::GetStyle().ItemSpacing.x * 2;
 
     ImGui::PushItemWidth(input_text_width);
     ImGui::InputTextWithHint("##save_text", "Name to save/load...", &save_name);
