@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <optional>
 
 class FractionalNumber
 {
@@ -31,8 +32,8 @@ private:
     long long int numerator;
     long long int denominator;
     double value;
-    std::string str_fraction;
-    std::string str_float;
+    std::optional<std::string> str_fraction;
+    std::optional<std::string> str_float;
 };
 
 FractionalNumber operator*(FractionalNumber lhs, const FractionalNumber& rhs);

@@ -79,7 +79,7 @@ double FractionalNumber::GetValue() const
 
 std::string& FractionalNumber::GetStringFraction()
 {
-    if (str_fraction.empty())
+    if (!str_fraction.has_value())
     {
         if (denominator == 1)
         {
@@ -90,18 +90,19 @@ std::string& FractionalNumber::GetStringFraction()
             str_fraction = std::to_string(numerator) + "/" + std::to_string(denominator);
         }
     }
-    return str_fraction;
+
+    return str_fraction.value();
 }
 
 std::string& FractionalNumber::GetStringFloat()
 {
-    if (str_float.empty())
+    if (!str_float.has_value())
     {
         std::stringstream sstream;
         sstream << std::fixed << std::setprecision(3) << value;
         str_float = sstream.str();
     }
-    return str_float;
+    return str_float.value();
 }
 
 FractionalNumber& FractionalNumber::operator*=(const FractionalNumber& rhs)
@@ -159,8 +160,8 @@ void FractionalNumber::Simplify()
 void FractionalNumber::UpdateValue()
 {
     value = static_cast<double>(numerator) / denominator;
-    str_float = "";
-    str_fraction = "";
+    str_float.reset();
+    str_fraction.reset();
 }
 
 FractionalNumber operator*(FractionalNumber lhs, const FractionalNumber& rhs)
