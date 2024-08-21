@@ -104,30 +104,3 @@ unsigned int LoadTextureFromFile(const std::string& path)
     cached_textures[path] = image_index;
     return image_index;
 }
-
-int LevenshteinDistance(const std::string& s1, const std::string& s2)
-{
-    const size_t size_1 = s1.size();
-    const size_t size_2 = s2.size();
-
-    std::vector<std::vector<int>> dist(size_1 + 1, std::vector<int>(size_2 + 1));
-
-    for (size_t i = 0; i <= size_1; ++i)
-    {
-        dist[i][0] = i;
-    }
-    for (size_t i = 0; i <= size_2; ++i)
-    {
-        dist[0][i] = i;
-    }
-
-    for (size_t i = 1; i <= size_1; ++i)
-    {
-        for (size_t j = 1; j <= size_2; ++j)
-        {
-            dist[i][j] = std::min({ dist[i - 1][j] + 1, dist[i][j - 1] + 1, dist[i - 1][j - 1] + (s1[i - 1] == s2[j - 1] ? 0 : 1) });
-        }
-    }
-
-    return dist[size_1][size_2];
-}

@@ -24,8 +24,15 @@ struct Recipe
 {
     Recipe(const std::vector<CountedItem>& ins, const std::vector<CountedItem>& outs, const std::string& machine, const bool alternate, const std::string& name = "");
 
-    bool MatchName(const std::string& s) const;
-    bool MatchIngredients(const std::string& s) const;
+    /// @brief Search for a string in this recipe name, case insensitive
+    /// @param s String to search
+    /// @return The position the string was found in this recipe name, or std::string::npos if not found
+    size_t FindInName(const std::string& s) const;
+
+    /// @brief Search for a string in this recipe ingredients, case insensitive
+    /// @param s String to search
+    /// @return The position the string was found in this recipe ingredients name, or std::string::npos if not found
+    size_t FindInIngredients(const std::string& s) const;
 
     const std::string name;
     const std::vector<CountedItem> ins;

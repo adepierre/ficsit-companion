@@ -40,26 +40,24 @@ Recipe::Recipe(const std::vector<CountedItem>& ins, const std::vector<CountedIte
     }
 }
 
-bool Recipe::MatchName(const std::string& s) const
+size_t Recipe::FindInName(const std::string& s) const
 {
     std::string lower_s = s;
     std::transform(lower_s.begin(), lower_s.end(), lower_s.begin(), [](unsigned char c) { return std::tolower(c); });
 
-    return lower_name.find(lower_s) != std::string::npos;
+    return lower_name.find(lower_s);
 }
 
-bool Recipe::MatchIngredients(const std::string& s) const
+size_t Recipe::FindInIngredients(const std::string& s) const
 {
     std::string lower_s = s;
     std::transform(lower_s.begin(), lower_s.end(), lower_s.begin(), [](unsigned char c) { return std::tolower(c); });
 
+    size_t min_pos = std::string::npos;
     for (const auto& s : lower_ingredients)
     {
-        if (s.find(lower_s) != std::string::npos)
-        {
-            return true;
-        }
+        min_pos = std::min(min_pos, s.find(lower_s));
     }
 
-    return false;
+    return min_pos;
 }

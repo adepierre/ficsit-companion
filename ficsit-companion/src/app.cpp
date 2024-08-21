@@ -3,7 +3,6 @@
 #include "link.hpp"
 #include "node.hpp"
 #include "pin.hpp"
-#include "utils.hpp"
 
 #include <misc/cpp/imgui_stdlib.h>
 
@@ -827,7 +826,7 @@ void App::RenderLeftPanel()
         ImGui::OpenPopup("##AutocompletePopup");
     }
     {
-        std::vector<std::pair<std::string, int>> suggestions;
+        std::vector<std::pair<std::string, size_t>> suggestions;
         if (!std::filesystem::is_directory("saved"))
         {
             std::filesystem::create_directory("saved");
@@ -837,10 +836,10 @@ void App::RenderLeftPanel()
             if (f.is_regular_file())
             {
                 const std::string filename = f.path().stem().string();
-                suggestions.emplace_back(filename, LevenshteinDistance(save_name, filename));
+                suggestions.emplace_back(filename, filename.find(save_name));
             }
         }
-        std::sort(suggestions.begin(), suggestions.end(), [](const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) { return a.second < b.second; });
+        std::sort(suggestions.begin(), suggestions.end(), [](const std::pair<std::string, size_t>& a, const std::pair<std::string, size_t>& b) { return a.second < b.second; });
 
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
         ImGui::SetNextWindowSize({ ImGui::GetItemRectSize().x, ImGui::GetTextLineHeightWithSpacing() * 5.0f });
@@ -1367,7 +1366,8 @@ void App::AddNewNode()
             recipe_index = 1;
         }
         ImGui::Separator();
-        std::vector<int> recipe_indices;
+        // Stores the recipe index and a "match score" to sort them in the display
+        std::vector<std::pair<int, size_t>> recipe_indices;
         recipe_indices.reserve(recipes.size());
         // If this is already linked to another node
         // only display matching recipes
@@ -1385,7 +1385,7 @@ void App::AddNewNode()
                 {
                     if (matching_pins[j].item->new_line_name == item_name)
                     {
-                        recipe_indices.push_back(i);
+                        recipe_indices.push_back({ i, 0 });
                         break;
                     }
                 }
@@ -1401,35 +1401,38 @@ void App::AddNewNode()
             {
                 for (int i = 0; i < recipes.size(); ++i)
                 {
-                    recipe_indices.push_back(i);
+                    recipe_indices.push_back({ i, 0 });
                 }
             }
             // Else display first all recipes with matching name, then matching ingredients
             else
             {
+                // A recipe goes on top if it matched the search string "before" another
+                // If they both matched at the same place, the alternate goes after
+                auto scored_recipe_sorting = [&](const std::pair<int, size_t>& a, const std::pair<int, size_t>& b) {
+                    return a.second < b.second || (a.second == b.second && !recipes[a.first].alternate && recipes[b.first].alternate);
+                };
                 for (int i = 0; i < recipes.size(); ++i)
                 {
-                    if (!recipes[i].alternate && recipes[i].MatchName(recipe_filter))
+                    if (const size_t pos = recipes[i].FindInName(recipe_filter); pos != std::string::npos)
                     {
-                        recipe_indices.push_back(i);
+                        recipe_indices.push_back({ i, pos });
                     }
                 }
+                std::sort(recipe_indices.begin(), recipe_indices.end(), scored_recipe_sorting);
+                const size_t num_recipe_match = recipe_indices.size();
 
                 for (int i = 0; i < recipes.size(); ++i)
                 {
-                    if (recipes[i].alternate && recipes[i].MatchName(recipe_filter))
+                    if (recipes[i].FindInName(recipe_filter) == std::string::npos)
                     {
-                        recipe_indices.push_back(i);
+                        if (const size_t pos = recipes[i].FindInIngredients(recipe_filter); pos != std::string::npos)
+                        {
+                            recipe_indices.push_back({ i, pos });
+                        }
                     }
                 }
-
-                for (int i = 0; i < recipes.size(); ++i)
-                {
-                    if (!recipes[i].MatchName(recipe_filter) && recipes[i].MatchIngredients(recipe_filter))
-                    {
-                        recipe_indices.push_back(i);
-                    }
-                }
+                std::sort(recipe_indices.begin() + num_recipe_match, recipe_indices.end(), scored_recipe_sorting);
             }
         }
 
@@ -1457,7 +1460,7 @@ void App::AddNewNode()
         );
 
         const ImVec2 default_spacing = ImGui::GetStyle().ItemSpacing;
-        for (const auto i : recipe_indices)
+        for (const auto [i, score_ignored] : recipe_indices)
         {
             ImGui::GetStyle().ItemSpacing = default_spacing;
             ImGui::TableNextRow();
