@@ -1347,7 +1347,14 @@ void App::AddNewNode()
     };
 
     ax::NodeEditor::Suspend();
-    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(ImGui::GetTextLineHeightWithSpacing() * 25.0f, ImGui::GetTextLineHeightWithSpacing() * 15.0f));
+    ImGui::SetNextWindowSizeConstraints(
+        ImVec2(0.0f, 0.0f),
+        ImVec2(
+            ImGui::GetTextLineHeightWithSpacing() * 25.0f,
+            // Max height is whatever space left to the bottom of the screen, clamped between 10 and 25 lines
+            std::clamp(ImGui::GetContentRegionAvail().y - new_node_position.y, ImGui::GetTextLineHeightWithSpacing() * 10.0f, ImGui::GetTextLineHeightWithSpacing() * 25.0f)
+        )
+    );
     if (ImGui::BeginPopup("Add Node"))
     {
         int recipe_index = -1;
