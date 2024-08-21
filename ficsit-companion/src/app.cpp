@@ -1305,7 +1305,7 @@ void App::AddNewNode()
     };
 
     ax::NodeEditor::Suspend();
-    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(ImGui::GetTextLineHeightWithSpacing() * 25.0f, ImGui::GetTextLineHeightWithSpacing() * 10.0f));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(ImGui::GetTextLineHeightWithSpacing() * 25.0f, ImGui::GetTextLineHeightWithSpacing() * 15.0f));
     if (ImGui::BeginPopup("Add Node"))
     {
         int recipe_index = -1;
