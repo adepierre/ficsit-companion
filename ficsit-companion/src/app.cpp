@@ -4,6 +4,7 @@
 #include "node.hpp"
 #include "pin.hpp"
 
+// For InputText with std::string
 #include <misc/cpp/imgui_stdlib.h>
 
 #if defined(__EMSCRIPTEN__)
@@ -19,6 +20,8 @@ App::App()
 {
     next_id = 1;
     config.SettingsFile = nullptr;
+    config.EnableSmoothZoom = true;
+
     context = ax::NodeEditor::CreateEditor(&config);
 
     popup_opened = false;
