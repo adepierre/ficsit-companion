@@ -1391,6 +1391,16 @@ void App::AddNewNode()
         // Otherwise display all recipes, with a filter option
         else if (recipe_index == -1 || (new_node_pin != nullptr && new_node_pin->item == nullptr))
         {
+            if (ImGui::IsWindowAppearing())
+            {
+                // This automatically "click" on the input filter on the first popup frame.
+                // A consequence is that it is no longer possible to reopen the menu at
+                // another location without closing it first.
+                // It's not necessarily a bad thing but may be a bit weird for first users.
+                // Could use something to check if it's the case and reopen the popup further away ?
+                // ?? ImGui::IsMouseClicked(config.ContextMenuButtonIndex) && !ImGui::IsWindowHovered() ??
+                ImGui::SetKeyboardFocusHere();
+            }
             ImGui::InputTextWithHint("##recipe_filter", "Filter...", &recipe_filter);
 
             // If no filter, display all recipes in alphabetical order
