@@ -3,6 +3,7 @@
 #include <memory>
 #include <queue>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -78,6 +79,9 @@ private:
     /// @brief Used in saved files to track when format change. Might be used one day to update files saved with previous versions
     static constexpr int SAVE_VERSION = 1;
 
+    /// @brief Window id used for the Add Node popup
+    static constexpr std::string_view add_node_popup_id = "Add Node";
+
     /// @brief Version of the game the items/recipes are from
     std::string recipes_version;
     /// @brief All known items
@@ -98,7 +102,6 @@ private:
 
     /* Values used during the rendering pass to save UI state between frames */
     std::string save_name;
-    bool creating_new_node;
     bool popup_opened;
     ImVec2 new_node_position;
     Pin* new_node_pin;

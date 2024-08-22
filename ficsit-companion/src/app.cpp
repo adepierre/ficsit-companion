@@ -21,7 +21,6 @@ App::App()
     config.SettingsFile = nullptr;
     context = ax::NodeEditor::CreateEditor(&config);
 
-    creating_new_node = false;
     popup_opened = false;
     new_node_pin = nullptr;
 
@@ -722,11 +721,8 @@ void App::Render()
     RenderNodes();
     RenderLinks();
 
-    if (!creating_new_node)
-    {
-        DragLink();
-        DeleteNodesLinks();
-    }
+    DragLink();
+    DeleteNodesLinks();
 
     AddNewNode();
 
@@ -1285,10 +1281,9 @@ void App::DragLink()
             }
             else if (ax::NodeEditor::AcceptNewItem())
             {
-                creating_new_node = true;
                 new_node_pin = input_pin;
                 ax::NodeEditor::Suspend();
-                ImGui::OpenPopup("Add Node");
+                ImGui::OpenPopup(add_node_popup_id.data());
                 ax::NodeEditor::Resume();
             }
         }
@@ -1326,21 +1321,23 @@ void App::AddNewNode()
     ax::NodeEditor::Suspend();
     if (ax::NodeEditor::ShowBackgroundContextMenu())
     {
-        creating_new_node = true;
         new_node_pin = nullptr;
-        ImGui::OpenPopup("Add Node");
+        ImGui::OpenPopup(add_node_popup_id.data());
     }
     ax::NodeEditor::Resume();
 
-    if (creating_new_node && !popup_opened)
+    // We can't use IsWindowAppearing to detect the first frame as
+    // we need new_node_position before BeginPopup for the
+    // window max size computation. popup_opened is thus needed
+    if (ImGui::IsPopupOpen(add_node_popup_id.data()) && !popup_opened)
     {
         popup_opened = true;
         new_node_position = ImGui::GetMousePos();
     }
 
+    // Callback called to clean/reset state once popup is closed
     auto on_popup_close = [&]() {
         recipe_filter = "";
-        creating_new_node = false;
         popup_opened = false;
         new_node_pin = nullptr;
     };
@@ -1354,7 +1351,7 @@ void App::AddNewNode()
             std::clamp(ImGui::GetMainViewport()->Size.y - ax::NodeEditor::CanvasToScreen(new_node_position).y, ImGui::GetTextLineHeightWithSpacing() * 10.0f, ImGui::GetTextLineHeightWithSpacing() * 25.0f)
         )
     );
-    if (ImGui::BeginPopup("Add Node"))
+    if (ImGui::BeginPopup(add_node_popup_id.data()))
     {
         int recipe_index = -1;
         if (ImGui::MenuItem("Merger"))
