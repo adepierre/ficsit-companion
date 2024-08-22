@@ -128,14 +128,14 @@ void App::CreateLink(Pin* start, Pin* end)
     end->link = links.back().get();
     if (start->node->GetKind() != Node::Kind::Craft)
     {
-        if (OrganizerNode* organizer_node = reinterpret_cast<OrganizerNode*>(start->node); organizer_node->item == nullptr)
+        if (OrganizerNode* organizer_node = static_cast<OrganizerNode*>(start->node); organizer_node->item == nullptr)
         {
             organizer_node->ChangeItem(end->item);
         }
     }
     if (end->node->GetKind() != Node::Kind::Craft)
     {
-        if (OrganizerNode* organizer_node = reinterpret_cast<OrganizerNode*>(end->node); organizer_node->item == nullptr)
+        if (OrganizerNode* organizer_node = static_cast<OrganizerNode*>(end->node); organizer_node->item == nullptr)
         {
             organizer_node->ChangeItem(start->item);
         }
@@ -155,7 +155,7 @@ void App::DeleteLink(const ax::NodeEditor::LinkId id)
             // If either end was an organizer node, check the name is still valid
             if (start->node->GetKind() != Node::Kind::Craft)
             {
-                reinterpret_cast<OrganizerNode*>(start->node)->RemoveItemIfNotForced();
+                static_cast<OrganizerNode*>(start->node)->RemoveItemIfNotForced();
             }
         }
         if (Pin* end = (*it)->end; end != nullptr)
@@ -164,7 +164,7 @@ void App::DeleteLink(const ax::NodeEditor::LinkId id)
             // If either end was an organizer node, check the name is still valid
             if (end->node->GetKind() != Node::Kind::Craft)
             {
-                reinterpret_cast<OrganizerNode*>(end->node)->RemoveItemIfNotForced();
+                static_cast<OrganizerNode*>(end->node)->RemoveItemIfNotForced();
             }
         }
         links.erase(it);
@@ -222,7 +222,7 @@ void App::UpdateNodesRate()
         {
         case Node::Kind::Craft:
         {
-            CraftNode* node = reinterpret_cast<CraftNode*>(updating_pin->node);
+            CraftNode* node = static_cast<CraftNode*>(updating_pin->node);
             node->current_rate = updating_pin->current_rate / updating_pin->base_rate;
             for (auto& p : node->ins)
             {
@@ -416,7 +416,7 @@ void App::UpdateNodesRate()
             continue;
         }
 
-        CraftNode* node = dynamic_cast<CraftNode*>(n.get());
+        CraftNode* node = static_cast<CraftNode*>(n.get());
 
         for (auto& p : n->ins)
         {
@@ -448,7 +448,7 @@ void App::ExportToFile(const std::string& filename) const
         };
         if (n->GetKind() == Node::Kind::Craft)
         {
-            const CraftNode* craft_n = reinterpret_cast<const CraftNode*>(n.get());
+            const CraftNode* craft_n = static_cast<const CraftNode*>(n.get());
             node["rate"] = {
                 { "num", craft_n->current_rate.GetNumerator()},
                 { "den", craft_n->current_rate.GetDenominator()}
@@ -457,7 +457,7 @@ void App::ExportToFile(const std::string& filename) const
         }
         else
         {
-            const OrganizerNode* org_n = reinterpret_cast<const OrganizerNode*>(n.get());
+            const OrganizerNode* org_n = static_cast<const OrganizerNode*>(n.get());
             node["item"] = org_n->item == nullptr ? "" : org_n->item->name;
             node["ins"] = Json::Array();
             for (auto& i : n->ins)
@@ -616,7 +616,7 @@ void App::LoadFromFile(const std::string& filename)
             nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipe, std::bind(&App::GetNextId, this)));
             ax::NodeEditor::SetNodePosition(nodes.back()->id, ImVec2(n["pos"]["x"].get<float>(), n["pos"]["y"].get<float>()));
 
-            CraftNode* craft_node = reinterpret_cast<CraftNode*>(nodes.back().get());
+            CraftNode* craft_node = static_cast<CraftNode*>(nodes.back().get());
 
             craft_node->current_rate = FractionalNumber(n["rate"]["num"].get<long long int>(), n["rate"]["den"].get<long long int>());
             for (auto& p : craft_node->ins)
@@ -649,7 +649,7 @@ void App::LoadFromFile(const std::string& filename)
                 break;
             }
 
-            OrganizerNode* org_node = reinterpret_cast<OrganizerNode*>(nodes.back().get());
+            OrganizerNode* org_node = static_cast<OrganizerNode*>(nodes.back().get());
             org_node->ChangeItem(item_it->second.get());
 
             for (int i = 0; i < n["ins"].size(); ++i)
@@ -924,7 +924,7 @@ void App::RenderLeftPanel()
 
         if (n->GetKind() == Node::Kind::Craft)
         {
-            const CraftNode* node = reinterpret_cast<const CraftNode*>(n.get());
+            const CraftNode* node = static_cast<const CraftNode*>(n.get());
             machines[node->recipe->machine] += node->current_rate;
         }
     }
@@ -983,7 +983,7 @@ void App::RenderNodes()
     const float rate_width = ImGui::CalcTextSize("0000.000").x;
     for (const auto& node : nodes)
     {
-        const bool isnt_balanced = node->GetKind() != Node::Kind::Craft && !reinterpret_cast<OrganizerNode*>(node.get())->IsBalanced();
+        const bool isnt_balanced = node->GetKind() != Node::Kind::Craft && !static_cast<OrganizerNode*>(node.get())->IsBalanced();
         if (isnt_balanced)
         {
             ax::NodeEditor::PushStyleColor(ax::NodeEditor::StyleColor_NodeBorder, ImColor(255, 0, 0));
@@ -997,7 +997,7 @@ void App::RenderNodes()
                 switch (node->GetKind())
                 {
                 case Node::Kind::Craft:
-                    ImGui::TextUnformatted(reinterpret_cast<CraftNode*>(node.get())->recipe->name.c_str());
+                    ImGui::TextUnformatted(static_cast<CraftNode*>(node.get())->recipe->name.c_str());
                     break;
                 case Node::Kind::Merger:
                     ImGui::TextUnformatted("Merger");
@@ -1167,7 +1167,7 @@ void App::RenderNodes()
                 ImGui::SetNextItemWidth(rate_width);
                 if (node->GetKind() == Node::Kind::Craft)
                 {
-                    CraftNode* craft_node = reinterpret_cast<CraftNode*>(node.get());
+                    CraftNode* craft_node = static_cast<CraftNode*>(node.get());
                     ImGui::InputText("##rate", &craft_node->current_rate.GetStringFloat(), ImGuiInputTextFlags_CharsDecimal);
                     if (ImGui::IsItemDeactivatedAfterEdit())
                     {
@@ -1199,7 +1199,7 @@ void App::RenderNodes()
                 }
                 else
                 {
-                    OrganizerNode* org_node = reinterpret_cast<OrganizerNode*>(node.get());
+                    OrganizerNode* org_node = static_cast<OrganizerNode*>(node.get());
                     if (org_node->item != nullptr)
                     {
                         ImGui::Spring(0.0f);

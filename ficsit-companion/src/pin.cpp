@@ -8,7 +8,7 @@ Pin::Pin(const ax::NodeEditor::PinId id, const ax::NodeEditor::PinKind direction
 {
     if (node->GetKind() == Node::Kind::Craft)
     {
-        current_rate = reinterpret_cast<CraftNode*>(node)->current_rate * base_rate;
+        current_rate = static_cast<CraftNode*>(node)->current_rate * base_rate;
     }
 }
 
