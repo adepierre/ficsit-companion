@@ -100,6 +100,7 @@ private:
     std::string save_name;
     bool creating_new_node;
     bool popup_opened;
+    bool popup_is_first_open;
     ImVec2 new_node_position;
     Pin* new_node_pin;
     std::string recipe_filter;

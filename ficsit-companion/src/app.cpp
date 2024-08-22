@@ -24,6 +24,7 @@ App::App()
     creating_new_node = false;
     popup_opened = false;
     new_node_pin = nullptr;
+    popup_is_first_open = false;
 
     recipe_filter = "";
 
@@ -1335,6 +1336,7 @@ void App::AddNewNode()
     if (creating_new_node && !popup_opened)
     {
         popup_opened = true;
+        popup_is_first_open = true;
         new_node_position = ImGui::GetMousePos();
     }
 
@@ -1342,6 +1344,7 @@ void App::AddNewNode()
         recipe_filter = "";
         creating_new_node = false;
         popup_opened = false;
+        popup_is_first_open = false;
         new_node_pin = nullptr;
     };
 
@@ -1394,6 +1397,11 @@ void App::AddNewNode()
         // Otherwise display all recipes, with a filter option
         else if (recipe_index == -1 || (new_node_pin != nullptr && new_node_pin->item == nullptr))
         {
+            if (popup_is_first_open) 
+            {
+                ImGui::SetKeyboardFocusHere();
+                popup_is_first_open = false;
+            }
             ImGui::InputTextWithHint("##recipe_filter", "Filter...", &recipe_filter);
 
             // If no filter, display all recipes in alphabetical order
