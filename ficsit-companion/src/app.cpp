@@ -11,6 +11,7 @@
 #include <emscripten.h>
 #endif
 
+#include <algorithm>
 #include <array>
 #include <filesystem>
 #include <fstream>
@@ -838,7 +839,7 @@ void App::RenderLeftPanel()
                 suggestions.emplace_back(filename, filename.find(save_name));
             }
         }
-        std::sort(suggestions.begin(), suggestions.end(), [](const std::pair<std::string, size_t>& a, const std::pair<std::string, size_t>& b) { return a.second < b.second; });
+        std::stable_sort(suggestions.begin(), suggestions.end(), [](const std::pair<std::string, size_t>& a, const std::pair<std::string, size_t>& b) { return a.second < b.second; });
 
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
         ImGui::SetNextWindowSize({ ImGui::GetItemRectSize().x, ImGui::GetTextLineHeightWithSpacing() * 5.0f });
@@ -1429,7 +1430,7 @@ void App::AddNewNode()
                         recipe_indices.push_back({ i, pos });
                     }
                 }
-                std::sort(recipe_indices.begin(), recipe_indices.end(), scored_recipe_sorting);
+                std::stable_sort(recipe_indices.begin(), recipe_indices.end(), scored_recipe_sorting);
                 const size_t num_recipe_match = recipe_indices.size();
 
                 for (int i = 0; i < recipes.size(); ++i)
@@ -1442,7 +1443,7 @@ void App::AddNewNode()
                         }
                     }
                 }
-                std::sort(recipe_indices.begin() + num_recipe_match, recipe_indices.end(), scored_recipe_sorting);
+                std::stable_sort(recipe_indices.begin() + num_recipe_match, recipe_indices.end(), scored_recipe_sorting);
             }
         }
 
