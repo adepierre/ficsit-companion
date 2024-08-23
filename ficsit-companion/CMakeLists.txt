@@ -65,7 +65,6 @@ else()
         "-sWASM=1"
         "-sALLOW_MEMORY_GROWTH=1"
         "-sNO_EXIT_RUNTIME=0"
-        "-sASSERTIONS=1"
         "-sDISABLE_EXCEPTION_CATCHING=0"
         "-sASYNCIFY" # TODO: switch to JSPI once there is better support
         "--preload-file" "${CMAKE_CURRENT_SOURCE_DIR}/../assets@/"
