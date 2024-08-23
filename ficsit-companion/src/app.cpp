@@ -181,14 +181,14 @@ void App::DeleteNode(const ax::NodeEditor::NodeId id)
         {
             if (p->link != nullptr)
             {
-                p->link->end = nullptr;
+                DeleteLink(p->link->id);
             }
         }
         for (auto& p : (*it)->outs)
         {
             if (p->link != nullptr)
             {
-                p->link->start = nullptr;
+                DeleteLink(p->link->id);
             }
         }
         nodes.erase(it);
@@ -744,12 +744,12 @@ void App::Render()
 
     ax::NodeEditor::Begin("Graph", ImGui::GetContentRegionAvail());
 
+    DeleteNodesLinks();
+    DragLink();
+
     NudgeNodes();
     RenderNodes();
     RenderLinks();
-
-    DragLink();
-    DeleteNodesLinks();
 
     AddNewNode();
 
