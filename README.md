@@ -40,7 +40,7 @@ In this case, it is not clear which option should be displayed in the production
 <details>
 <summary>Pin reordering</summary>
 
-Inside a node, in/out pins order is irrelevant. However, being able to reorder them could be helpful to get cleaner layouts with less link crossing overall.
+Inside a node, in/out pins order is irrelevant. However, being able to reorder them could be helpful to get cleaner layouts with less link crossing overall. Currently a partial solution is implemented: pins are automatically sorted based on the position of the linked node (if any).
 </details>
 
 <details>
