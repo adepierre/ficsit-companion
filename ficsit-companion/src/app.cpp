@@ -790,6 +790,7 @@ void App::RenderLeftPanel()
                 std::make_pair("Mouse wheel",         "Zoom/Unzoom"),
                 std::make_pair("Del",                 "Delete selection"),
                 std::make_pair("F",                   "Show selection/full graph"),
+                std::make_pair("Alt",                 "Disable grid snapping"),
             };
             for (const auto [k, s] : controls)
             {
