@@ -14,6 +14,26 @@ Node::~Node()
 
 }
 
+bool Node::IsCraft() const
+{
+    return false;
+}
+
+bool Node::IsOrganizer() const
+{
+    return false;
+}
+
+bool Node::IsMerger() const
+{
+    return false;
+}
+
+bool Node::IsSplitter() const
+{
+    return false;
+}
+
 CraftNode::CraftNode(const ax::NodeEditor::NodeId id, const Recipe* recipe, const std::function<unsigned long long int()>& id_generator) :
     Node(id), recipe(recipe), current_rate(1, 1)
 {
@@ -32,6 +52,11 @@ CraftNode::~CraftNode()
 
 }
 
+bool CraftNode::IsCraft() const
+{
+    return true;
+}
+
 Node::Kind CraftNode::GetKind() const
 {
     return Node::Kind::Craft;
@@ -45,6 +70,11 @@ OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const std::functio
 OrganizerNode::~OrganizerNode()
 {
 
+}
+
+bool OrganizerNode::IsOrganizer() const
+{
+    return true;
 }
 
 void OrganizerNode::ChangeItem(const Item* item)
@@ -113,6 +143,11 @@ SplitterNode::~SplitterNode()
 {
 }
 
+bool SplitterNode::IsSplitter() const
+{
+    return true;
+}
+
 Node::Kind SplitterNode::GetKind() const
 {
     return Node::Kind::Splitter;
@@ -128,6 +163,11 @@ MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsi
 MergerNode::~MergerNode()
 {
 
+}
+
+bool MergerNode::IsMerger() const
+{
+    return true;
 }
 
 Node::Kind MergerNode::GetKind() const

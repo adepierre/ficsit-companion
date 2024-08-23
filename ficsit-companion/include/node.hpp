@@ -26,6 +26,10 @@ struct Node
     virtual ~Node();
 
     virtual Kind GetKind() const = 0;
+    virtual bool IsCraft() const;
+    virtual bool IsOrganizer() const;
+    virtual bool IsMerger() const;
+    virtual bool IsSplitter() const;
 
     const ax::NodeEditor::NodeId id;
 
@@ -38,6 +42,7 @@ struct CraftNode : public Node
     CraftNode(const ax::NodeEditor::NodeId id, const Recipe* recipe,
         const std::function<unsigned long long int()>& id_generator);
     virtual ~CraftNode();
+    virtual bool IsCraft() const override;
 
     virtual Kind GetKind() const override;
 
@@ -49,6 +54,7 @@ struct OrganizerNode : public Node
 {
     OrganizerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator);
     virtual ~OrganizerNode();
+    virtual bool IsOrganizer() const override;
 
     void ChangeItem(const Item* item);
     void RemoveItemIfNotForced();
@@ -61,6 +67,7 @@ struct SplitterNode : public OrganizerNode
 {
     SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator);
     virtual ~SplitterNode();
+    virtual bool IsSplitter() const override;
 
     virtual Kind GetKind() const override;
 };
@@ -69,6 +76,7 @@ struct MergerNode : public OrganizerNode
 {
     MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator);
     virtual ~MergerNode();
+    virtual bool IsMerger() const override;
 
     virtual Kind GetKind() const override;
 };

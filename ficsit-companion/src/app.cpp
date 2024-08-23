@@ -218,7 +218,7 @@ void App::UpdateNodesRate()
         updated_count[updating_pin] += 1;
 
         // Update node from this pin
-        switch (updating_pin->node->GetKind())
+        switch (const Node::Kind kind = updating_pin->node->GetKind())
         {
         case Node::Kind::Craft:
         {
@@ -265,11 +265,11 @@ void App::UpdateNodesRate()
         case Node::Kind::Merger:
         {
             Node* node = updating_pin->node;
-            std::vector<std::unique_ptr<Pin>>& one_pin = node->GetKind() == Node::Kind::Splitter ? node->ins : node->outs;
-            std::vector<std::unique_ptr<Pin>>& multi_pin = node->GetKind() == Node::Kind::Splitter ? node->outs : node->ins;
+            std::vector<std::unique_ptr<Pin>>& one_pin = kind == Node::Kind::Splitter ? node->ins : node->outs;
+            std::vector<std::unique_ptr<Pin>>& multi_pin = kind == Node::Kind::Splitter ? node->outs : node->ins;
             // One of the "multi pin" side has been updated
-            if ((node->GetKind() == Node::Kind::Splitter && updating_pin->direction == ax::NodeEditor::PinKind::Output) ||
-                (node->GetKind() == Node::Kind::Merger && updating_pin->direction == ax::NodeEditor::PinKind::Input))
+            if ((kind == Node::Kind::Splitter && updating_pin->direction == ax::NodeEditor::PinKind::Output) ||
+                (kind == Node::Kind::Merger && updating_pin->direction == ax::NodeEditor::PinKind::Input))
             {
                 const Constraint constraint = GetConstraint(one_pin[0].get());
                 // Easy case, just sum all "multi pin" and update "single pin" side with the new value
@@ -446,7 +446,7 @@ void App::ExportToFile(const std::string& filename) const
             { "x", pos.x },
             { "y", pos.y }
         };
-        if (n->GetKind() == Node::Kind::Craft)
+        if (n->IsCraft())
         {
             const CraftNode* craft_n = static_cast<const CraftNode*>(n.get());
             node["rate"] = {
@@ -923,7 +923,7 @@ void App::RenderLeftPanel()
             }
         }
 
-        if (n->GetKind() == Node::Kind::Craft)
+        if (n->IsCraft())
         {
             const CraftNode* node = static_cast<const CraftNode*>(n.get());
             machines[node->recipe->machine] += node->current_rate;
@@ -984,7 +984,7 @@ void App::RenderNodes()
     const float rate_width = ImGui::CalcTextSize("0000.000").x;
     for (const auto& node : nodes)
     {
-        const bool isnt_balanced = node->GetKind() != Node::Kind::Craft && !static_cast<OrganizerNode*>(node.get())->IsBalanced();
+        const bool isnt_balanced = node->IsOrganizer() && !static_cast<OrganizerNode*>(node.get())->IsBalanced();
         if (isnt_balanced)
         {
             ax::NodeEditor::PushStyleColor(ax::NodeEditor::StyleColor_NodeBorder, ImColor(255, 0, 0));
@@ -1068,7 +1068,7 @@ void App::RenderNodes()
                                 frame_tooltips.push_back(p->current_rate.GetStringFraction());
                             }
 
-                            if (node->GetKind() == Node::Kind::Craft)
+                            if (node->IsCraft())
                             {
                                 ImGui::Spring(0.0f);
                                 ImGui::Image((void*)(intptr_t)p->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
@@ -1100,7 +1100,7 @@ void App::RenderNodes()
                         ax::NodeEditor::BeginPin(p->id, p->direction);
                         ImGui::BeginHorizontal(p->id.AsPointer());
                         {
-                            if (node->GetKind() == Node::Kind::Craft)
+                            if (node->IsCraft())
                             {
                                 ImGui::Spring(0.0f);
                                 ImGui::TextUnformatted(p->item->new_line_name.c_str());
@@ -1166,7 +1166,7 @@ void App::RenderNodes()
             {
                 ImGui::Spring(1.0f);
                 ImGui::SetNextItemWidth(rate_width);
-                if (node->GetKind() == Node::Kind::Craft)
+                if (node->IsCraft())
                 {
                     CraftNode* craft_node = static_cast<CraftNode*>(node.get());
                     ImGui::InputText("##rate", &craft_node->current_rate.GetStringFloat(), ImGuiInputTextFlags_CharsDecimal);
