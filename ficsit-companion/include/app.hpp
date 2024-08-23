@@ -52,6 +52,9 @@ private:
     /// @brief Propagate rates updates from updating_pins through the graph
     void UpdateNodesRate();
 
+    /// @brief Check for Arrow key inputs and nudge selected nodes if required
+    void NudgeNodes();
+
     /// @brief Export the current nodes and links to a file, if in web, will also download the file
     /// @param filename Filename to save the state to. fcs extension will be added
     void ExportToFile(const std::string& filename) const;

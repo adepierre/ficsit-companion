@@ -429,6 +429,28 @@ void App::UpdateNodesRate()
     }
 }
 
+void App::NudgeNodes()
+{
+    ImVec2 nudge{
+        -1.0f * ImGui::IsKeyPressed(ImGuiKey_LeftArrow, false) + 1.0f * ImGui::IsKeyPressed(ImGuiKey_RightArrow),
+        -1.0f * ImGui::IsKeyPressed(ImGuiKey_UpArrow, false) + 1.0f * ImGui::IsKeyPressed(ImGuiKey_DownArrow)
+    };
+
+    if (nudge.x == 0.0f && nudge.y == 0.0f)
+    {
+        return;
+    }
+
+    for (const auto& n : nodes)
+    {
+        if (ax::NodeEditor::IsNodeSelected(n->id))
+        {
+            const ImVec2 pos = ax::NodeEditor::GetNodePosition(n->id);
+            ax::NodeEditor::SetNodePosition(n->id, { pos.x + nudge.x, pos.y + nudge.y });
+        }
+    }
+}
+
 void App::ExportToFile(const std::string& filename) const
 {
     Json::Value output;
@@ -722,6 +744,7 @@ void App::Render()
 
     ax::NodeEditor::Begin("Graph", ImGui::GetContentRegionAvail());
 
+    NudgeNodes();
     RenderNodes();
     RenderLinks();
 
@@ -791,6 +814,7 @@ void App::RenderLeftPanel()
                 std::make_pair("Del",                 "Delete selection"),
                 std::make_pair("F",                   "Show selection/full graph"),
                 std::make_pair("Alt",                 "Disable grid snapping"),
+                std::make_pair("Arrows",              "Nudge selection"),
             };
             for (const auto [k, s] : controls)
             {
