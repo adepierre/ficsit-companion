@@ -1006,6 +1006,36 @@ void App::RenderLeftPanel()
 void App::RenderNodes()
 {
     const float rate_width = ImGui::CalcTextSize("0000.000").x;
+    // Vector that will be reused to sort pins for all nodes (instead of creating two per nodes)
+    std::vector<size_t> sorted_pin_indices(4);
+    auto sort_pin_indices = [&](const std::vector<std::unique_ptr<Pin>>& pins) {
+        // Make sure there is enough elements in the vector
+        const size_t N = pins.size();
+        if (N > sorted_pin_indices.size())
+        {
+            sorted_pin_indices.resize(N);
+        }
+        for (size_t i = 0; i < N; ++i)
+        {
+            sorted_pin_indices[i] = i;
+        }
+        // Don't need to use stable sort as pins don't usually have the exact same Y coordinates
+        std::sort(sorted_pin_indices.begin(), sorted_pin_indices.begin() + N, [&](const size_t i1, const size_t i2) {
+            const std::unique_ptr<Pin>& p1 = pins[i1];
+            const std::unique_ptr<Pin>& p2 = pins[i2];
+            const Link* l1 = p1->link;
+            const Link* l2 = p2->link;
+            // Place pin with link above the others, and if multiple pin have a link, sort by linked node Y position
+            return l1 != nullptr && (
+                l2 == nullptr ||
+                (p1->direction == ax::NodeEditor::PinKind::Input &&
+                    ax::NodeEditor::GetNodePosition(l1->start->node->id).y < ax::NodeEditor::GetNodePosition(l2->start->node->id).y) ||
+                (p1->direction == ax::NodeEditor::PinKind::Output &&
+                    ax::NodeEditor::GetNodePosition(l1->end->node->id).y < ax::NodeEditor::GetNodePosition(l2->end->node->id).y)
+            );
+        });
+    };
+
     for (const auto& node : nodes)
     {
         const bool isnt_balanced = node->IsOrganizer() && !static_cast<OrganizerNode*>(node.get())->IsBalanced();
@@ -1046,8 +1076,10 @@ void App::RenderNodes()
                     ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_PivotAlignment, ImVec2(0, 0.5f));
                     ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_PivotSize, ImVec2(0, 0));
 
-                    for (const auto& p : node->ins)
+                    sort_pin_indices(node->ins);
+                    for (int idx = 0; idx < node->ins.size(); ++idx)
                     {
+                        const auto& p = node->ins[sorted_pin_indices[idx]];
                         ax::NodeEditor::BeginPin(p->id, p->direction);
                         ImGui::BeginHorizontal(p->id.AsPointer());
                         {
@@ -1119,8 +1151,10 @@ void App::RenderNodes()
                     // Set where the link will connect to (right center)
                     ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_PivotAlignment, ImVec2(1.0f, 0.5f));
                     ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_PivotSize, ImVec2(0, 0));
-                    for (const auto& p : node->outs)
+                    sort_pin_indices(node->outs);
+                    for (int idx = 0; idx < node->outs.size(); ++idx)
                     {
+                        const auto& p = node->outs[sorted_pin_indices[idx]];
                         ax::NodeEditor::BeginPin(p->id, p->direction);
                         ImGui::BeginHorizontal(p->id.AsPointer());
                         {
