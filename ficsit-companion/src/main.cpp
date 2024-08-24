@@ -172,11 +172,7 @@ int main(int argc, char* argv[])
     unsigned char* img = stbi_load("icon.png", &width, &height, &channels, 4);
     if (img == nullptr)
     {
-        img = stbi_load("default.png", &width, &height, &channels, 4);
-        if (img == nullptr)
-        {
-            printf("Warning, error loading window icon");
-        }
+        printf("Warning, error loading window icon");
     }
     SDL_Surface* icon = nullptr;
     if (img != nullptr)
