@@ -696,54 +696,6 @@ void App::NudgeNodes()
     }
 }
 
-void App::ExportToFile(const std::string& filename) const
-{
-    const std::string path = std::filesystem::path(filename).stem().string() + ".fcs";
-    const std::string content = Serialize();
-
-#if defined(__EMSCRIPTEN__)
-    EM_ASM({
-        var filename = UTF8ToString($0);
-        var content = UTF8ToString($1);
-        var blob = new Blob([content], { type: "text/plain" });
-        var link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }, path.c_str(), content.c_str());
-#else
-    if (!std::filesystem::is_directory("saved"))
-    {
-        std::filesystem::create_directory("saved");
-    }
-    std::ofstream f("saved/" + path, std::ios::out);
-    f << content;
-    f.close();
-#endif
-}
-
-void App::LoadFromFile(const std::string& filename)
-{
-    std::filesystem::path path;
-#if defined(__EMSCRIPTEN__)
-    path = filename;
-#else
-    path = "saved/" + std::filesystem::path(filename).stem().string() + ".fcs";
-#endif
-    if (!std::filesystem::exists(path))
-    {
-        return;
-    }
-
-    std::ifstream f(path, std::ios::in);
-    const std::string content = std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
-    f.close();
-
-    Deserialize(content);
-}
-
 void App::PullNodesPosition()
 {
     for (auto& n : nodes)
@@ -819,6 +771,10 @@ void App::Render()
     PullNodesPosition();
 
     ax::NodeEditor::SetCurrentEditor(nullptr);
+
+    // Render the tooltips after we exited the NodeEditor context so
+    // we are in the main window coordinates system instead of the
+    // one from the graph view
     RenderTooltips();
 }
 
@@ -863,38 +819,49 @@ void App::RenderLeftPanel()
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), 0, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopup("##ControlsPopup", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
     {
-        if (ImGui::BeginTable("##controls_table", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV))
-        {
-            static constexpr std::array controls = {
-                std::make_pair("Right click",         "Add node"),
-                std::make_pair("Right click + mouse", "Move view"),
-                std::make_pair("Left click",          "Select node/link"),
-                std::make_pair("Left click + mouse",  "Move node/link"),
-                std::make_pair("Mouse wheel",         "Zoom/Unzoom"),
-                std::make_pair("Del",                 "Delete selection"),
-                std::make_pair("F",                   "Show selection/full graph"),
-                std::make_pair("Alt",                 "Disable grid snapping"),
-                std::make_pair("Arrows",              "Nudge selection"),
-            };
-            for (const auto [k, s] : controls)
-            {
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted(k);
-                ImGui::TableSetColumnIndex(1);
-                ImGui::SetCursorPosX(std::max(ImGui::GetCursorPosX(), ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x));
-                ImGui::TextUnformatted(s);
-            }
-
-            ImGui::EndTable();
-        }
-
-        if (!ImGui::IsWindowFocused())
-        {
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
+        RenderControlsPopup();
     }
+
+    // If web version, add an option to load from disk and download
+#if defined(__EMSCRIPTEN__)
+    ImGui::SameLine();
+    if (ImGui::Button("Download"))
+    {
+        const std::string path = "production_chain.fcs";
+        const std::string content = Serialize();
+        EM_ASM({
+            var filename = UTF8ToString($0);
+            var content = UTF8ToString($1);
+            var blob = new Blob([content], { type: "text/plain" });
+            var link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            }, path.c_str(), content.c_str());
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("%s", "Save current production chain to disk");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Upload"))
+    {
+        waitForFileInput();
+        if (std::filesystem::exists("_internal_load_file"))
+        {
+            std::ifstream f("_internal_load_file", std::ios::in);
+            const std::string content = std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+            f.close();
+            Deserialize(content);
+        }
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("%s", "Load a production chain from disk");
+    }
+#endif
 
     const float save_load_buttons_width = ImGui::CalcTextSize("Save").x + ImGui::CalcTextSize("Load").x + ImGui::GetStyle().FramePadding.x * 4;
     const float input_text_width = ImGui::GetContentRegionAvail().x - save_load_buttons_width - ImGui::GetStyle().ItemSpacing.x * 2;
@@ -903,34 +870,71 @@ void App::RenderLeftPanel()
     ImGui::InputTextWithHint("##save_text", "Name to save/load...", &save_name);
     ImGui::PopItemWidth();
 
-    // Autocomplete with save present on disk, only for desktop version
-#if !defined(__EMSCRIPTEN__)
+    // Autocomplete with save present locally
     const bool save_name_active = ImGui::IsItemActive();
     if (ImGui::IsItemActivated())
     {
         ImGui::OpenPopup("##AutocompletePopup");
     }
     {
-        std::vector<std::pair<std::string, size_t>> suggestions;
-        if (!std::filesystem::is_directory("saved"))
-        {
-            std::filesystem::create_directory("saved");
-        }
-        for (const auto& f : std::filesystem::directory_iterator("saved"))
-        {
-            if (f.is_regular_file())
-            {
-                const std::string filename = f.path().stem().string();
-                suggestions.emplace_back(filename, filename.find(save_name));
-            }
-        }
-        std::stable_sort(suggestions.begin(), suggestions.end(), [](const std::pair<std::string, size_t>& a, const std::pair<std::string, size_t>& b) { return a.second < b.second; });
-
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
-        ImGui::SetNextWindowSize({ ImGui::GetItemRectSize().x, ImGui::GetTextLineHeightWithSpacing() * 5.0f });
+        ImGui::SetNextWindowSizeConstraints({ ImGui::GetItemRectSize().x , 0.0f }, { ImGui::GetItemRectSize().x, ImGui::GetTextLineHeightWithSpacing() * 5.0f });
         if (ImGui::BeginPopup("##AutocompletePopup", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
         {
-            for (const auto& s : suggestions)
+            if (ImGui::IsWindowAppearing())
+            {
+                file_suggestions.clear();
+                // Retrieve existing saved files
+#if !defined(__EMSCRIPTEN__)
+                if (!std::filesystem::is_directory(save_folder))
+                {
+                    std::filesystem::create_directory(save_folder);
+                }
+                for (const auto& f : std::filesystem::recursive_directory_iterator(save_folder))
+                {
+                    if (f.is_regular_file())
+                    {
+                        std::string path = f.path().string();
+                        path = path.substr(0, path.size() - 4);
+                        path = path.substr(save_folder.size() + 1);
+                        file_suggestions.emplace_back(path, path.find(save_name));
+                    }
+                }
+#else
+                int names_size = 0;
+                // Get all existing keys in localStorage starting with save_folder
+                // return a pointer to string array and save array length in names_size
+                // TODO/CHECK: are pointers always guaranteed to be 32 bits?
+                char** names = static_cast<char**>(EM_ASM_PTR({
+                    const keys = Object.keys(localStorage).filter(k => k.startsWith(UTF8ToString($0)));
+                    var length = keys.length;
+                    var buffer = _malloc(length * 4);
+                    for (var i = 0; i < length; ++i)
+                    {
+                        var key = keys[i];
+                        var key_length = lengthBytesUTF8(key) + 1;
+                        var key_ptr = _malloc(key_length + 1);
+                        stringToUTF8(key, key_ptr, key_length);
+                        setValue(buffer + i * 4, key_ptr, "i32");
+                    }
+                    setValue($1, length, "i32");
+                    return buffer;
+                }, save_folder.data(), &names_size));
+
+                for (int i = 0; i < names_size; ++i)
+                {
+                    std::string filename = std::string(names[i]).substr(save_folder.size() + 1);
+                    filename = filename.substr(0, filename.size() - 4);
+                    file_suggestions.emplace_back(filename, filename.find(save_name));
+                    free(static_cast<void*>(names[i]));
+                }
+                free(static_cast<void*>(names));
+#endif
+            }
+
+            std::stable_sort(file_suggestions.begin(), file_suggestions.end(), [](const std::pair<std::string, size_t>& a, const std::pair<std::string, size_t>& b) { return a.second < b.second; });
+
+            for (const auto& s : file_suggestions)
             {
                 if (ImGui::Selectable(s.first.c_str()))
                 {
@@ -947,42 +951,65 @@ void App::RenderLeftPanel()
             ImGui::EndPopup();
         }
     }
-#endif
 
     ImGui::SameLine();
     ImGui::BeginDisabled(save_name.empty());
     if (ImGui::Button("Save"))
     {
-        ExportToFile(save_name);
+        const std::string path = std::string(save_folder) + "/" + save_name;
+        const std::string content = Serialize();
+
+        // Save current state using provided name
+#if defined(__EMSCRIPTEN__)
+        EM_ASM({ localStorage.setItem(UTF8ToString($0), UTF8ToString($1)); }, (path + ".fcs").c_str(), content.c_str());
+#else
+        std::filesystem::create_directories(std::filesystem::path(path).parent_path());
+        std::ofstream f(path + ".fcs", std::ios::out);
+        f << content;
+        f.close();
+#endif
         save_name = "";
     }
+    ImGui::EndDisabled();
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     {
-        ImGui::SetTooltip("%s", "Save current production chain to disk");
+        ImGui::SetTooltip("%s", "Save current production chain");
     }
-    ImGui::EndDisabled();
     ImGui::SameLine();
 
-#if defined(__EMSCRIPTEN__)
+    ImGui::BeginDisabled(file_suggestions.end() == std::find_if(file_suggestions.begin(), file_suggestions.end(), [&](const std::pair<std::string, size_t>& p) { return p.first == save_name; }));
     if (ImGui::Button("Load"))
     {
-        waitForFileInput();
-        LoadFromFile("_internal_load_file");
-        std::remove("_internal_load_file");
-    }
+        const std::string path = std::string(save_folder) + "/" + save_name + ".fcs";
+
+        std::string content = "{}";
+#if !defined(__EMSCRIPTEN__)
+        if (std::filesystem::exists(path))
+        {
+            std::ifstream f(path, std::ios::in);
+            content = std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+            f.close();
+        }
 #else
-    ImGui::BeginDisabled(save_name.empty());
-    if (ImGui::Button("Load"))
-    {
-        LoadFromFile(save_name);
+        // Read from localStorage
+        char* content_raw = static_cast<char*>(EM_ASM_PTR({
+            var str = localStorage.getItem(UTF8ToString($0)) || "{}";
+            var length = lengthBytesUTF8(str) + 1;
+            var str_wasm = _malloc(length);
+            stringToUTF8(str, str_wasm, length);
+            return str_wasm;
+            }, path.c_str()));
+        content = std::string(content_raw);
+        free(static_cast<void*>(content_raw));
+#endif
+        Deserialize(content);
         save_name = "";
     }
     ImGui::EndDisabled();
-#endif
 
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     {
-        ImGui::SetTooltip("%s", "Load production chain from disk");
+        ImGui::SetTooltip("%s", "Load current production chain");
     }
 
     std::map<const Item*, FractionalNumber> inputs;
@@ -1682,4 +1709,39 @@ void App::RenderTooltips()
         ImGui::SetTooltip("%s", s.c_str());
     }
     frame_tooltips.clear();
+}
+
+void App::RenderControlsPopup()
+{
+    if (ImGui::BeginTable("##controls_table", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV))
+    {
+        static constexpr std::array controls = {
+            std::make_pair("Right click",         "Add node"),
+            std::make_pair("Right click + mouse", "Move view"),
+            std::make_pair("Left click",          "Select node/link"),
+            std::make_pair("Left click + mouse",  "Move node/link"),
+            std::make_pair("Mouse wheel",         "Zoom/Unzoom"),
+            std::make_pair("Del",                 "Delete selection"),
+            std::make_pair("F",                   "Show selection/full graph"),
+            std::make_pair("Alt",                 "Disable grid snapping"),
+            std::make_pair("Arrows",              "Nudge selection"),
+        };
+        for (const auto [k, s] : controls)
+        {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::TextUnformatted(k);
+            ImGui::TableSetColumnIndex(1);
+            ImGui::SetCursorPosX(std::max(ImGui::GetCursorPosX(), ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x));
+            ImGui::TextUnformatted(s);
+        }
+
+        ImGui::EndTable();
+    }
+
+    if (!ImGui::IsWindowFocused())
+    {
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
 }

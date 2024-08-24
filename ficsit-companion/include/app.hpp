@@ -67,14 +67,6 @@ private:
     /// @brief Check for Arrow key inputs and nudge selected nodes if required
     void NudgeNodes();
 
-    /// @brief Export the current nodes and links to a file, if in web, will also download the file
-    /// @param filename Filename to save the state to. fcs extension will be added
-    void ExportToFile(const std::string& filename) const;
-
-    /// @brief Remove all current nodes and links and replace them with the given file content
-    /// @param filename Filename to load. Will append .fcs extension to it before loading
-    void LoadFromFile(const std::string& filename);
-
     /// @brief Copy the position from the graph into the nodes struct
     void PullNodesPosition();
 
@@ -93,6 +85,8 @@ private:
     void AddNewNode();
     /// @brief Tooltips in the graph view are rendered in a second pass after everything else. Otherwise they are not at the right place
     void RenderTooltips();
+    /// @brief Display a popup centered in the screen with all controls
+    void RenderControlsPopup();
 
 private:
     /// @brief Used in saved files to track when format change. Might be used one day to update files saved with previous versions
@@ -100,6 +94,9 @@ private:
 
     /// @brief Window id used for the Add Node popup
     static constexpr std::string_view add_node_popup_id = "Add Node";
+    /// @brief Folder to save/load the serialized graph
+    static constexpr std::string_view save_folder = "saved";
+
 
     /// @brief Version of the game the items/recipes are from
     std::string recipes_version;
@@ -121,6 +118,7 @@ private:
 
     /* Values used during the rendering pass to save UI state between frames */
     std::string save_name;
+    std::vector<std::pair<std::string, size_t>> file_suggestions;
     bool popup_opened;
     ImVec2 new_node_position;
     Pin* new_node_pin;
