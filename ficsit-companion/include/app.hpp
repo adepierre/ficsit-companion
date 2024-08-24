@@ -23,7 +23,19 @@ public:
     ~App();
     void Render();
 
+public:
+    /// @brief Path used to save last session file upon closing
+    static constexpr std::string_view session_file = "last_session.fcs";
+
+    /// @brief Serialize the app state to a string
+    /// @return Serialized state of this app
+    std::string Serialize() const;
+
 private:
+    /// @brief Restore app state from a string
+    /// @param s Serialized app state to load
+    void Deserialize(const std::string& s);
+
     /// @brief Get the next available id for node-editor
     /// @return The next id to use
     unsigned long long int GetNextId();
@@ -62,6 +74,10 @@ private:
     /// @brief Remove all current nodes and links and replace them with the given file content
     /// @param filename Filename to load. Will append .fcs extension to it before loading
     void LoadFromFile(const std::string& filename);
+
+    /// @brief Copy the position from the graph into the nodes struct
+    void PullNodesPosition();
+
 
     /// @brief Render the panel on the left with global info (inputs/outputs/etc...)
     void RenderLeftPanel();

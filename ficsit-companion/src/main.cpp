@@ -11,6 +11,7 @@
 
 #if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
+#include <emscripten/html5.h> // emscripten_set_beforeunload_callback
 #else
 // STB_IMAGE_IMPLEMENTATION is already defined in utils.cpp
 #include "stb_image.h"
@@ -216,14 +217,25 @@ int main(int argc, char* argv[])
 
     }
 #else
+    // Write to localStorage when quitting
+    emscripten_set_beforeunload_callback(static_cast<void*>(&app), [](int event_type, const void* reserved, void* user_data) {
+        App* app = static_cast<App*>(user_data);
+
+        const char* location = App::session_file.data();
+        const std::string text = app->Serialize();
+
+        EM_ASM({ localStorage.setItem(UTF8ToString($0), UTF8ToString($1)); }, location, text.c_str());
+
+        // return empty string does not trigger the popup asking if we *really* want to quit
+        return "";
+    });
+
     struct WindowApp { SDL_Window* window; App* app; };
     WindowApp arg{ window, &app };
-    emscripten_set_main_loop_arg(
-        [](void* arg)
-        {
-            WindowApp* window_app = static_cast<WindowApp*>(arg);
-            Render(window_app->window, window_app->app);
-        }, &arg, 0, true);
+    emscripten_set_main_loop_arg([](void* arg) {
+        WindowApp* window_app = static_cast<WindowApp*>(arg);
+        Render(window_app->window, window_app->app);
+    }, &arg, 0, true);
 #endif
 
     // ImGui cleaning

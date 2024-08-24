@@ -36,12 +36,258 @@ App::App()
 App::~App()
 {
     ax::NodeEditor::DestroyEditor(context);
+
+    // Save current state
+    // Destructor is not called in emscripten, we're using emscripten_set_beforeunload_callback in main.cpp instead
+#if !defined(__EMSCRIPTEN__)
+    std::ofstream f(session_file.data(), std::ios::out);
+    f << Serialize();
+    f.close();
+#endif
 }
 
 
 /******************************************************\
 *             Non render related functions             *
 \******************************************************/
+std::string App::Serialize() const
+{
+    Json::Value output;
+    output["save_version"] = SAVE_VERSION;
+    output["game_version"] = recipes_version;
+
+    Json::Array saved_nodes;
+    saved_nodes.reserve(nodes.size());
+    for (const auto& n : nodes)
+    {
+        Json::Value node;
+        node["kind"] = static_cast<int>(n->GetKind());
+        node["pos"] = {
+            { "x", n->pos.x },
+            { "y", n->pos.y }
+        };
+        if (n->IsCraft())
+        {
+            const CraftNode* craft_n = static_cast<const CraftNode*>(n.get());
+            node["rate"] = {
+                { "num", craft_n->current_rate.GetNumerator()},
+                { "den", craft_n->current_rate.GetDenominator()}
+            };
+            node["recipe"] = craft_n->recipe->name;
+        }
+        else
+        {
+            const OrganizerNode* org_n = static_cast<const OrganizerNode*>(n.get());
+            node["item"] = org_n->item == nullptr ? "" : org_n->item->name;
+            node["ins"] = Json::Array();
+            for (auto& i : n->ins)
+            {
+                node["ins"].push_back({
+                    { "num", i->current_rate.GetNumerator() },
+                    { "den", i->current_rate.GetDenominator() },
+                    });
+            }
+            node["outs"] = Json::Array();
+            for (auto& o : n->outs)
+            {
+                node["outs"].push_back({
+                    { "num", o->current_rate.GetNumerator() },
+                    { "den", o->current_rate.GetDenominator() },
+                    });
+            }
+        }
+        saved_nodes.push_back(node);
+
+    }
+    output["nodes"] = saved_nodes;
+
+
+    auto get_node_index = [&](const Node* n) -> int
+        {
+            for (int i = 0; i < nodes.size(); ++i)
+            {
+                if (nodes[i].get() == n)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        };
+
+    auto get_pin_index = [&](const Node* n, const Pin* p, const bool out) -> int
+        {
+            const std::vector<std::unique_ptr<Pin>>& pins = out ? n->outs : n->ins;
+            for (int i = 0; i < pins.size(); ++i)
+            {
+                if (pins[i].get() == p)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        };
+    Json::Array saved_links;
+    saved_links.reserve(links.size());
+    for (const auto& l : links)
+    {
+        saved_links.push_back({
+            { "start", {
+                { "node", get_node_index(l->start->node) },
+                { "is_out", l->start->direction == ax::NodeEditor::PinKind::Output },
+                { "pin", get_pin_index(l->start->node, l->start, l->start->direction == ax::NodeEditor::PinKind::Output) }
+            }},
+            { "end", {
+                { "node", get_node_index(l->end->node) },
+                { "is_out", l->end->direction == ax::NodeEditor::PinKind::Output },
+                { "pin", get_pin_index(l->end->node, l->end, l->end->direction == ax::NodeEditor::PinKind::Output) }
+            }}
+        });
+    }
+    output["links"] = saved_links;
+
+    return output.Dump();
+}
+
+void App::Deserialize(const std::string& s)
+{
+    Json::Value content = Json::Parse(s);
+    if (content.is_null() || content.size() == 0)
+    {
+        return;
+    }
+
+    if (content["save_version"].get<int>() != SAVE_VERSION)
+    {
+        printf("Old save format not supported");
+        return;
+    }
+
+    // Clean current content
+    for (const auto& n : nodes)
+    {
+        ax::NodeEditor::DeleteNode(n->id);
+    }
+    nodes.clear();
+
+    for (const auto& l : links)
+    {
+        ax::NodeEditor::DeleteLink(l->id);
+    }
+    links.clear();
+
+    auto get_recipe = [&](const std::string& name) -> const Recipe* {
+        for (const auto& r : recipes)
+        {
+            if (r.name == name)
+            {
+                return &r;
+            }
+        }
+        return nullptr;
+    };
+
+    // Load nodes
+    for (const auto& n : content["nodes"].get_array())
+    {
+        const Node::Kind kind = static_cast<Node::Kind>(n["kind"].get<int>());
+        switch (kind)
+        {
+        case Node::Kind::Craft:
+        {
+            const Recipe* recipe = get_recipe(n["recipe"].get_string());
+            if (recipe == nullptr)
+            {
+                break;
+            }
+            nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipe, std::bind(&App::GetNextId, this)));
+            ax::NodeEditor::SetNodePosition(nodes.back()->id, ImVec2(n["pos"]["x"].get<float>(), n["pos"]["y"].get<float>()));
+
+            CraftNode* craft_node = static_cast<CraftNode*>(nodes.back().get());
+
+            craft_node->current_rate = FractionalNumber(n["rate"]["num"].get<long long int>(), n["rate"]["den"].get<long long int>());
+            for (auto& p : craft_node->ins)
+            {
+                p->current_rate = p->base_rate * craft_node->current_rate;
+            }
+            for (auto& p : craft_node->outs)
+            {
+                p->current_rate = p->base_rate * craft_node->current_rate;
+            }
+
+            break;
+        }
+        case Node::Kind::Merger:
+        case Node::Kind::Splitter:
+        {
+            if (kind == Node::Kind::Merger)
+            {
+                nodes.emplace_back(std::make_unique<MergerNode>(GetNextId(), std::bind(&App::GetNextId, this)));
+            }
+            else
+            {
+                nodes.emplace_back(std::make_unique<SplitterNode>(GetNextId(), std::bind(&App::GetNextId, this)));
+            }
+            ax::NodeEditor::SetNodePosition(nodes.back()->id, ImVec2(n["pos"]["x"].get<float>(), n["pos"]["y"].get<float>()));
+
+            auto item_it = items.find(n["item"].get_string());
+            if (item_it == items.end())
+            {
+                break;
+            }
+
+            OrganizerNode* org_node = static_cast<OrganizerNode*>(nodes.back().get());
+            org_node->ChangeItem(item_it->second.get());
+
+            for (int i = 0; i < n["ins"].size(); ++i)
+            {
+                if (i >= org_node->ins.size())
+                {
+                    break;
+                }
+                org_node->ins[i]->current_rate = FractionalNumber(n["ins"][i]["num"].get<long long int>(), n["ins"][i]["den"].get<long long int>());
+            }
+            for (int i = 0; i < n["outs"].size(); ++i)
+            {
+                if (i >= org_node->outs.size())
+                {
+                    break;
+                }
+                org_node->outs[i]->current_rate = FractionalNumber(n["outs"][i]["num"].get<long long int>(), n["outs"][i]["den"].get<long long int>());
+            }
+
+            break;
+        }
+        }
+    }
+
+    // Load links
+    for (const auto& l : content["links"].get_array())
+    {
+        const int start_node_index = l["start"]["node"].get<int>();
+        const int end_node_index = l["end"]["node"].get<int>();
+        if (start_node_index >= nodes.size() || end_node_index >= nodes.size())
+        {
+            continue;
+        }
+
+        const Node* start_node = nodes[start_node_index].get();
+        const Node* end_node = nodes[end_node_index].get();
+
+        const auto& start_pins = (l["start"]["is_out"].get<bool>() ? start_node->outs : start_node->ins);
+        const auto& end_pins = (l["end"]["is_out"].get<bool>() ? end_node->outs : end_node->ins);
+
+        const int start_pin_index = l["start"]["pin"].get<int>();
+        const int end_pin_index = l["end"]["pin"].get<int>();
+
+        if (start_pin_index >= start_pins.size() || end_pin_index >= end_pins.size())
+        {
+            continue;
+        }
+
+        CreateLink(start_pins[start_pin_index].get(), end_pins[end_pin_index].get());
+    }
+}
+
 unsigned long long int App::GetNextId()
 {
     return next_id++;
@@ -445,111 +691,15 @@ void App::NudgeNodes()
     {
         if (ax::NodeEditor::IsNodeSelected(n->id))
         {
-            const ImVec2 pos = ax::NodeEditor::GetNodePosition(n->id);
-            ax::NodeEditor::SetNodePosition(n->id, { pos.x + nudge.x, pos.y + nudge.y });
+            ax::NodeEditor::SetNodePosition(n->id, { n->pos.x + nudge.x, n->pos.y + nudge.y });
         }
     }
 }
 
 void App::ExportToFile(const std::string& filename) const
 {
-    Json::Value output;
-    output["save_version"] = SAVE_VERSION;
-    output["game_version"] = recipes_version;
-
-    Json::Array saved_nodes;
-    saved_nodes.reserve(nodes.size());
-    for (const auto& n : nodes)
-    {
-        Json::Value node;
-        node["kind"] = static_cast<int>(n->GetKind());
-        const ImVec2 pos = ax::NodeEditor::GetNodePosition(n->id);
-        node["pos"] = {
-            { "x", pos.x },
-            { "y", pos.y }
-        };
-        if (n->IsCraft())
-        {
-            const CraftNode* craft_n = static_cast<const CraftNode*>(n.get());
-            node["rate"] = {
-                { "num", craft_n->current_rate.GetNumerator()},
-                { "den", craft_n->current_rate.GetDenominator()}
-            };
-            node["recipe"] = craft_n->recipe->name;
-        }
-        else
-        {
-            const OrganizerNode* org_n = static_cast<const OrganizerNode*>(n.get());
-            node["item"] = org_n->item == nullptr ? "" : org_n->item->name;
-            node["ins"] = Json::Array();
-            for (auto& i : n->ins)
-            {
-                node["ins"].push_back({
-                    { "num", i->current_rate.GetNumerator() },
-                    { "den", i->current_rate.GetDenominator() },
-                });
-            }
-            node["outs"] = Json::Array();
-            for (auto& o : n->outs)
-            {
-                node["outs"].push_back({
-                    { "num", o->current_rate.GetNumerator() },
-                    { "den", o->current_rate.GetDenominator() },
-                });
-            }
-        }
-        saved_nodes.push_back(node);
-
-    }
-    output["nodes"] = saved_nodes;
-
-
-    auto get_node_index = [&](const Node* n) -> int
-        {
-            for (int i = 0; i < nodes.size(); ++i)
-            {
-                if (nodes[i].get() == n)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        };
-
-    auto get_pin_index = [&](const Node* n, const Pin* p, const bool out) -> int
-        {
-            const std::vector<std::unique_ptr<Pin>>& pins = out ? n->outs : n->ins;
-            for (int i = 0; i < pins.size(); ++i)
-            {
-                if (pins[i].get() == p)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        };
-    Json::Array saved_links;
-    saved_links.reserve(links.size());
-    for (const auto& l : links)
-    {
-        saved_links.push_back({
-            { "start", {
-                { "node", get_node_index(l->start->node) },
-                { "is_out", l->start->direction == ax::NodeEditor::PinKind::Output },
-                { "pin", get_pin_index(l->start->node, l->start, l->start->direction == ax::NodeEditor::PinKind::Output) }
-            }},
-            { "end", {
-                { "node", get_node_index(l->end->node) },
-                { "is_out", l->end->direction == ax::NodeEditor::PinKind::Output },
-                { "pin", get_pin_index(l->end->node, l->end, l->end->direction == ax::NodeEditor::PinKind::Output) }
-            }}
-        });
-    }
-    output["links"] = saved_links;
-
-
     const std::string path = std::filesystem::path(filename).stem().string() + ".fcs";
-    const std::string content = output.Dump();
+    const std::string content = Serialize();
 
 #if defined(__EMSCRIPTEN__)
     EM_ASM({
@@ -586,141 +736,19 @@ void App::LoadFromFile(const std::string& filename)
     {
         return;
     }
-    Json::Value content;
+
     std::ifstream f(path, std::ios::in);
-    f >> content;
+    const std::string content = std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
     f.close();
 
-    if (content["save_version"].get<int>() != SAVE_VERSION)
+    Deserialize(content);
+}
+
+void App::PullNodesPosition()
+{
+    for (auto& n : nodes)
     {
-        printf("Old save format not supported");
-        return;
-    }
-
-    // Clean current content
-    for (const auto& n: nodes)
-    {
-        ax::NodeEditor::DeleteNode(n->id);
-    }
-    nodes.clear();
-
-    for (const auto& l : links)
-    {
-        ax::NodeEditor::DeleteLink(l->id);
-    }
-    links.clear();
-
-    auto get_recipe = [&](const std::string& name) -> const Recipe*
-        {
-            for (const auto& r : recipes)
-            {
-                if (r.name == name)
-                {
-                    return &r;
-                }
-            }
-            return nullptr;
-        };
-
-    // Load nodes
-    for (const auto& n : content["nodes"].get_array())
-    {
-        const Node::Kind kind = static_cast<Node::Kind>(n["kind"].get<int>());
-        switch (kind)
-        {
-        case Node::Kind::Craft:
-        {
-            const Recipe* recipe = get_recipe(n["recipe"].get_string());
-            if (recipe == nullptr)
-            {
-                break;
-            }
-            nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipe, std::bind(&App::GetNextId, this)));
-            ax::NodeEditor::SetNodePosition(nodes.back()->id, ImVec2(n["pos"]["x"].get<float>(), n["pos"]["y"].get<float>()));
-
-            CraftNode* craft_node = static_cast<CraftNode*>(nodes.back().get());
-
-            craft_node->current_rate = FractionalNumber(n["rate"]["num"].get<long long int>(), n["rate"]["den"].get<long long int>());
-            for (auto& p : craft_node->ins)
-            {
-                p->current_rate = p->base_rate * craft_node->current_rate;
-            }
-            for (auto& p : craft_node->outs)
-            {
-                p->current_rate = p->base_rate * craft_node->current_rate;
-            }
-
-            break;
-        }
-        case Node::Kind::Merger:
-        case Node::Kind::Splitter:
-        {
-            if (kind == Node::Kind::Merger)
-            {
-                nodes.emplace_back(std::make_unique<MergerNode>(GetNextId(), std::bind(&App::GetNextId, this)));
-            }
-            else
-            {
-                nodes.emplace_back(std::make_unique<SplitterNode>(GetNextId(), std::bind(&App::GetNextId, this)));
-            }
-            ax::NodeEditor::SetNodePosition(nodes.back()->id, ImVec2(n["pos"]["x"].get<float>(), n["pos"]["y"].get<float>()));
-
-            auto item_it = items.find(n["item"].get_string());
-            if (item_it == items.end())
-            {
-                break;
-            }
-
-            OrganizerNode* org_node = static_cast<OrganizerNode*>(nodes.back().get());
-            org_node->ChangeItem(item_it->second.get());
-
-            for (int i = 0; i < n["ins"].size(); ++i)
-            {
-                if (i >= org_node->ins.size())
-                {
-                    break;
-                }
-                org_node->ins[i]->current_rate = FractionalNumber(n["ins"][i]["num"].get<long long int>(), n["ins"][i]["den"].get<long long int>());
-            }
-            for (int i = 0; i < n["outs"].size(); ++i)
-            {
-                if (i >= org_node->outs.size())
-                {
-                    break;
-                }
-                org_node->outs[i]->current_rate = FractionalNumber(n["outs"][i]["num"].get<long long int>(), n["outs"][i]["den"].get<long long int>());
-            }
-
-            break;
-        }
-        }
-    }
-
-    // Load links
-    for (const auto& l : content["links"].get_array())
-    {
-        const int start_node_index = l["start"]["node"].get<int>();
-        const int end_node_index = l["end"]["node"].get<int>();
-        if (start_node_index >= nodes.size() || end_node_index >= nodes.size())
-        {
-            continue;
-        }
-
-        const Node* start_node = nodes[start_node_index].get();
-        const Node* end_node = nodes[end_node_index].get();
-
-        const auto& start_pins = (l["start"]["is_out"].get<bool>() ? start_node->outs : start_node->ins);
-        const auto& end_pins = (l["end"]["is_out"].get<bool>() ? end_node->outs : end_node->ins);
-
-        const int start_pin_index = l["start"]["pin"].get<int>();
-        const int end_pin_index = l["end"]["pin"].get<int>();
-
-        if (start_pin_index >= start_pins.size() || end_pin_index >= end_pins.size())
-        {
-            continue;
-        }
-
-        CreateLink(start_pins[start_pin_index].get(), end_pins[end_pin_index].get());
+        n->pos = ax::NodeEditor::GetNodePosition(n->id);
     }
 }
 
@@ -744,6 +772,33 @@ void App::Render()
 
     ax::NodeEditor::Begin("Graph", ImGui::GetContentRegionAvail());
 
+    // First frame, try to load session file
+    if (ImGui::IsWindowAppearing())
+    {
+#if !defined(__EMSCRIPTEN__)
+        // Load session file if it exists
+        if (std::filesystem::exists(session_file))
+        {
+            std::ifstream f(session_file.data(), std::ios::in);
+            const std::string content = std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+            f.close();
+
+            Deserialize(content);
+        }
+#else
+        // Read from localStorage
+        char* content = static_cast<char*>(EM_ASM_PTR({
+            var str = localStorage.getItem(UTF8ToString($0)) || "{}";
+            var length = lengthBytesUTF8(str) + 1;
+            var str_wasm = _malloc(length);
+            stringToUTF8(str, str_wasm, length);
+            return str_wasm;
+        }, session_file.data()));
+        Deserialize(content);
+        free(static_cast<void*>(content));
+#endif
+    }
+
     DeleteNodesLinks();
     DragLink();
 
@@ -758,6 +813,11 @@ void App::Render()
     ax::NodeEditor::End();
     ax::NodeEditor::PopStyleColor();
     ax::NodeEditor::PopStyleColor();
+
+    // We manually copy the pos of each node at each frame to make
+    // sure they are available for serialization
+    PullNodesPosition();
+
     ax::NodeEditor::SetCurrentEditor(nullptr);
     RenderTooltips();
 }
@@ -1028,10 +1088,8 @@ void App::RenderNodes()
             // Place pin with link above the others, and if multiple pin have a link, sort by linked node Y position
             return l1 != nullptr && (
                 l2 == nullptr ||
-                (p1->direction == ax::NodeEditor::PinKind::Input &&
-                    ax::NodeEditor::GetNodePosition(l1->start->node->id).y < ax::NodeEditor::GetNodePosition(l2->start->node->id).y) ||
-                (p1->direction == ax::NodeEditor::PinKind::Output &&
-                    ax::NodeEditor::GetNodePosition(l1->end->node->id).y < ax::NodeEditor::GetNodePosition(l2->end->node->id).y)
+                (p1->direction == ax::NodeEditor::PinKind::Input && l1->start->node->pos.y < l2->start->node->pos.y) ||
+                (p1->direction == ax::NodeEditor::PinKind::Output && l1->end->node->pos.y < l2->end->node->pos.y)
             );
         });
     };

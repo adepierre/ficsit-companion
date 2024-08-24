@@ -35,6 +35,7 @@ struct Node
 
     std::vector<std::unique_ptr<Pin>> ins;
     std::vector<std::unique_ptr<Pin>> outs;
+    ImVec2 pos;
 };
 
 struct CraftNode : public Node
