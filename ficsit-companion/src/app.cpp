@@ -1048,11 +1048,11 @@ void App::RenderLeftPanel()
         ImGui::SetNextItemWidth(rate_width);
         ImGui::BeginDisabled();
         ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
+        ImGui::EndDisabled();
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
         {
             ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
         }
-        ImGui::EndDisabled();
         ImGui::SameLine();
         ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
         ImGui::SameLine();
@@ -1064,11 +1064,11 @@ void App::RenderLeftPanel()
         ImGui::SetNextItemWidth(rate_width);
         ImGui::BeginDisabled();
         ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
+        ImGui::EndDisabled();
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
         {
             ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
         }
-        ImGui::EndDisabled();
         ImGui::SameLine();
         ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
         ImGui::SameLine();
@@ -1080,11 +1080,11 @@ void App::RenderLeftPanel()
         ImGui::SetNextItemWidth(rate_width);
         ImGui::BeginDisabled();
         ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
+        ImGui::EndDisabled();
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
         {
             ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
         }
-        ImGui::EndDisabled();
         ImGui::SameLine();
         ImGui::TextUnformatted(machine.c_str());
     }
