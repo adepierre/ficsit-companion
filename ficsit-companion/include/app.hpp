@@ -91,8 +91,8 @@ private:
     void CustomKeyControl();
 
 private:
-    /// @brief Used in saved files to track when format change. Might be used one day to update files saved with previous versions
-    static constexpr int SAVE_VERSION = 1;
+    /// @brief Used in saved files to track when format change. Used to update files saved with previous versions
+    static constexpr int SAVE_VERSION = 2;
 
     /// @brief Window id used for the Add Node popup
     static constexpr std::string_view add_node_popup_id = "Add Node";

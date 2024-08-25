@@ -104,3 +104,36 @@ unsigned int LoadTextureFromFile(const std::string& path)
     cached_textures[path] = image_index;
     return image_index;
 }
+
+bool UpdateSave(Json::Value& save, const int to)
+{
+    if (save["save_version"].get<int>() == to)
+    {
+        return true;
+    }
+
+    // No backward support
+    if (save["save_version"].get<int>() > to)
+    {
+        return false;
+    }
+
+    // From 1 to 2, remove all "is_out" from pins as they are now directional
+    if (save["save_version"].get<int>() == 1)
+    {
+        for (auto& l : save["links"].get_array())
+        {
+            l["start"].get_object().erase("is_out");
+            l["end"].get_object().erase("is_out");
+        }
+
+        save["save_version"] = 2;
+    }
+
+    if (save["save_version"].get<int>() == to)
+    {
+        return true;
+    }
+
+    return false;
+}

@@ -3,6 +3,7 @@
 #include "link.hpp"
 #include "node.hpp"
 #include "pin.hpp"
+#include "utils.hpp"
 
 // For InputText with std::string
 #include <misc/cpp/imgui_stdlib.h>
@@ -65,30 +66,29 @@ std::string App::Serialize() const
     output["nodes"] = saved_nodes;
 
 
-    auto get_node_index = [&](const Node* n) -> int
+    auto get_node_index = [&](const Node* n) -> int {
+        for (int i = 0; i < nodes.size(); ++i)
         {
-            for (int i = 0; i < nodes.size(); ++i)
+            if (nodes[i].get() == n)
             {
-                if (nodes[i].get() == n)
-                {
-                    return i;
-                }
+                return i;
             }
-            return -1;
-        };
+        }
+        return -1;
+    };
 
-    auto get_pin_index = [&](const Node* n, const Pin* p, const bool out) -> int
+    auto get_pin_index = [&](const Node* n, const Pin* p, const bool out) -> int {
+        const std::vector<std::unique_ptr<Pin>>& pins = out ? n->outs : n->ins;
+        for (int i = 0; i < pins.size(); ++i)
         {
-            const std::vector<std::unique_ptr<Pin>>& pins = out ? n->outs : n->ins;
-            for (int i = 0; i < pins.size(); ++i)
+            if (pins[i].get() == p)
             {
-                if (pins[i].get() == p)
-                {
-                    return i;
-                }
+                return i;
             }
-            return -1;
-        };
+        }
+        return -1;
+    };
+
     Json::Array saved_links;
     saved_links.reserve(links.size());
     for (const auto& l : links)
@@ -96,13 +96,11 @@ std::string App::Serialize() const
         saved_links.push_back({
             { "start", {
                 { "node", get_node_index(l->start->node) },
-                { "is_out", l->start->direction == ax::NodeEditor::PinKind::Output },
-                { "pin", get_pin_index(l->start->node, l->start, l->start->direction == ax::NodeEditor::PinKind::Output) }
+                { "pin", get_pin_index(l->start->node, l->start, true) }
             }},
             { "end", {
                 { "node", get_node_index(l->end->node) },
-                { "is_out", l->end->direction == ax::NodeEditor::PinKind::Output },
-                { "pin", get_pin_index(l->end->node, l->end, l->end->direction == ax::NodeEditor::PinKind::Output) }
+                { "pin", get_pin_index(l->end->node, l->end, false) }
             }}
         });
     }
@@ -119,9 +117,9 @@ void App::Deserialize(const std::string& s)
         return;
     }
 
-    if (content["save_version"].get<int>() != SAVE_VERSION)
+    if (!UpdateSave(content, SAVE_VERSION))
     {
-        printf("Old save format not supported");
+        printf("Save format not supported with this version (%i VS %i)", content["save_version"].get<int>(), SAVE_VERSION);
         return;
     }
 
@@ -236,18 +234,15 @@ void App::Deserialize(const std::string& s)
         const Node* start_node = nodes[start_node_index].get();
         const Node* end_node = nodes[end_node_index].get();
 
-        const auto& start_pins = (l["start"]["is_out"].get<bool>() ? start_node->outs : start_node->ins);
-        const auto& end_pins = (l["end"]["is_out"].get<bool>() ? end_node->outs : end_node->ins);
-
         const int start_pin_index = l["start"]["pin"].get<int>();
         const int end_pin_index = l["end"]["pin"].get<int>();
 
-        if (start_pin_index >= start_pins.size() || end_pin_index >= end_pins.size())
+        if (start_pin_index >= start_node->outs.size() || end_pin_index >= end_node->ins.size())
         {
             continue;
         }
 
-        CreateLink(start_pins[start_pin_index].get(), end_pins[end_pin_index].get());
+        CreateLink(start_node->outs[start_pin_index].get(), end_node->ins[end_pin_index].get());
     }
 }
 
