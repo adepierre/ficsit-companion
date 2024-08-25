@@ -716,7 +716,7 @@ void App::Render()
     ax::NodeEditor::PushStyleColor(ax::NodeEditor::StyleColor_Flow, ImColor(1.0f, 1.0f, 0.0f));
     ax::NodeEditor::PushStyleColor(ax::NodeEditor::StyleColor_FlowMarker, ImColor(1.0f, 1.0f, 0.0f));
 
-    ImGui::BeginChild("#left_panel", ImVec2(0.2f * ImGui::GetWindowSize().x, 0.0f));
+    ImGui::BeginChild("#left_panel", ImVec2(0.2f * ImGui::GetWindowSize().x, 0.0f), false, ImGuiWindowFlags_HorizontalScrollbar);
     RenderLeftPanel();
     ImGui::EndChild();
 
@@ -1014,8 +1014,8 @@ void App::RenderLeftPanel()
 
     std::map<const Item*, FractionalNumber> inputs;
     std::map<const Item*, FractionalNumber> outputs;
-    std::map<std::string, FractionalNumber> machines;
-    std::map<std::pair<std::string, const Recipe*>, FractionalNumber> machines_pr_item;
+    std::map<std::string, FractionalNumber> total_machines;
+    std::map<std::string, std::map<const Recipe*, FractionalNumber>> detailed_machines;
 
     // Gather all inputs/outputs/machines
     for (const auto& n : nodes)
@@ -1038,8 +1038,8 @@ void App::RenderLeftPanel()
         if (n->IsCraft())
         {
             const CraftNode* node = static_cast<const CraftNode*>(n.get());
-            machines[node->recipe->machine] += node->current_rate;
-			machines_pr_item[{node->recipe->machine, node->recipe}] += node->current_rate;
+            total_machines[node->recipe->machine] += node->current_rate;
+            detailed_machines[node->recipe->machine][node->recipe] += node->current_rate;
         }
     }
 
@@ -1060,6 +1060,7 @@ void App::RenderLeftPanel()
         ImGui::SameLine();
         ImGui::TextUnformatted(item->name.c_str());
     }
+
     ImGui::SeparatorText("Outputs");
     for (auto& [item, n] : outputs)
     {
@@ -1076,9 +1077,19 @@ void App::RenderLeftPanel()
         ImGui::SameLine();
         ImGui::TextUnformatted(item->name.c_str());
     }
+
     ImGui::SeparatorText("Machines");
-    for (auto& [machine, n] : machines)
+    for (auto& [machine, n] : total_machines)
     {
+        // No visible color change when hovered/click
+        ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderActive, ImVec4(0, 0, 0, 0));
+        const bool display_details = ImGui::TreeNodeEx(("##" + machine).c_str(), ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanAvailWidth);
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+
+        // Displayed over the TreeNodeEx element (same line)
+        ImGui::SameLine();
         ImGui::SetNextItemWidth(rate_width);
         ImGui::BeginDisabled();
         ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
@@ -1089,34 +1100,58 @@ void App::RenderLeftPanel()
         }
         ImGui::SameLine();
         ImGui::TextUnformatted(machine.c_str());
-    }
-    ImGui::SeparatorText("Machines pr Item");
-    for (auto& [key, n] : machines_pr_item)
-    {
-        ImGui::SetNextItemWidth(rate_width);
-        ImGui::BeginDisabled();
-        ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
-        ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+
+        // Detailed list of recipes if the tree node is open
+        if (display_details)
         {
-            ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
-        }
-        ImGui::SameLine();
-        ImGui::TextUnformatted(key.first.c_str());
-        bool first_item = true;
-        for (auto& item : key.second->outs)
-        {
-            if (!first_item) {
-                //ImGui::SameLine();
-				ImGui::TextUnformatted("        ");
+            ImGui::Indent();
+            for (auto& [recipe, n2] : detailed_machines[machine])
+            {
+                ImGui::SetNextItemWidth(rate_width);
+                ImGui::BeginDisabled();
+                ImGui::InputText("##rate", &n2.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
+                ImGui::EndDisabled();
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                {
+                    ImGui::SetTooltip("%s", n2.GetStringFraction().c_str());
+                }
                 ImGui::SameLine();
-				ImGui::TextUnformatted(std::string(key.first.length(), ' ').c_str());
+
+                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, ImGui::GetStyle().ItemSpacing.y));
+                for (const auto& in : recipe->ins)
+                {
+                    ImGui::Image((void*)(intptr_t)in.item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                    {
+                        ImGui::SetTooltip("%s", in.item->name.c_str());
+                    }
+                    ImGui::SameLine();
+                }
+
+                ImGui::TextUnformatted("-->");
+
+                for (const auto& out : recipe->outs)
+                {
+                    ImGui::SameLine();
+                    ImGui::Image((void*)(intptr_t)out.item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                    {
+                        ImGui::SetTooltip("%s", out.item->name.c_str());
+                    }
+                }
+                ImGui::PopStyleVar();
+
+                ImGui::SameLine();
+                ImGui::TextUnformatted(recipe->name.c_str());
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                {
+                    ImGui::SetTooltip(recipe->name.c_str());
+                }
             }
-            ImGui::SameLine();
-			ImGui::Image((void*)(intptr_t)item.item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-			ImGui::SameLine();
-			ImGui::TextUnformatted(item.item->name.c_str());
-            first_item = false;
+
+            ImGui::Unindent();
+
+            ImGui::TreePop();
         }
     }
 }
