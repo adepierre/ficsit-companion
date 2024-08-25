@@ -34,20 +34,60 @@ bool Render(SDL_Window* window, App* app)
         // It may be a windows only issue though, so this hack *may* break stuff for other OS ?
         if (event.type == SDL_KEYDOWN)
         {
-            if (SDLK_KP_1 <= event.key.keysym.sym && event.key.keysym.sym <= SDLK_KP_9)
+            switch (event.key.keysym.sym)
             {
-                const char c = '1' + static_cast<char>(event.key.keysym.sym - SDLK_KP_1);
-                ImGui::GetIO().AddInputCharactersUTF8(&c);
-            }
-            else if (event.key.keysym.sym == SDLK_KP_0)
+            case SDLK_KP_0:
             {
                 const char c = '0';
                 ImGui::GetIO().AddInputCharactersUTF8(&c);
+                break;
             }
-            else if (event.key.keysym.sym == SDLK_KP_PERIOD)
+            case SDLK_KP_1:
+            case SDLK_KP_2:
+            case SDLK_KP_3:
+            case SDLK_KP_4:
+            case SDLK_KP_5:
+            case SDLK_KP_6:
+            case SDLK_KP_7:
+            case SDLK_KP_8:
+            case SDLK_KP_9:
+            {
+                const char c = '1' + static_cast<char>(event.key.keysym.sym - SDLK_KP_1);
+                ImGui::GetIO().AddInputCharactersUTF8(&c);
+                break;
+            }
+            case SDLK_KP_PERIOD:
             {
                 const char c = '.';
                 ImGui::GetIO().AddInputCharactersUTF8(&c);
+                break;
+            }
+            case SDLK_KP_DIVIDE:
+            {
+                const char c = '/';
+                ImGui::GetIO().AddInputCharactersUTF8(&c);
+                break;
+            }
+            case SDLK_KP_MULTIPLY:
+            {
+                const char c = '*';
+                ImGui::GetIO().AddInputCharactersUTF8(&c);
+                break;
+            }
+            case SDLK_KP_MINUS:
+            {
+                const char c = '-';
+                ImGui::GetIO().AddInputCharactersUTF8(&c);
+                break;
+            }
+            case SDLK_KP_PLUS:
+            {
+                const char c = '+';
+                ImGui::GetIO().AddInputCharactersUTF8(&c);
+                break;
+            }
+            default:
+                break;
             }
         }
 #endif
