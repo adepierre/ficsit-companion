@@ -87,6 +87,8 @@ private:
     void RenderTooltips();
     /// @brief Display a popup centered in the screen with all controls
     void RenderControlsPopup();
+    /// @brief React to app-specific key pressed
+    void CustomKeyControl();
 
 private:
     /// @brief Used in saved files to track when format change. Might be used one day to update files saved with previous versions

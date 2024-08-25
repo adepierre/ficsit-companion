@@ -761,6 +761,7 @@ void App::Render()
     AddNewNode();
 
     UpdateNodesRate();
+    CustomKeyControl();
 
     ax::NodeEditor::End();
     ax::NodeEditor::PopStyleColor();
@@ -1725,6 +1726,7 @@ void App::RenderControlsPopup()
             std::make_pair("F",                   "Show selection/full graph"),
             std::make_pair("Alt",                 "Disable grid snapping"),
             std::make_pair("Arrows",              "Nudge selection"),
+            std::make_pair("Ctrl + A",            "Select all nodes"),
         };
         for (const auto [k, s] : controls)
         {
@@ -1744,4 +1746,15 @@ void App::RenderControlsPopup()
         ImGui::CloseCurrentPopup();
     }
     ImGui::EndPopup();
+}
+
+void App::CustomKeyControl()
+{
+    if (ImGui::IsKeyPressed(ImGuiKey_A, false) && ImGui::GetIO().KeyCtrl)
+    {
+        for (const auto& n : nodes)
+        {
+            ax::NodeEditor::SelectNode(n->id, true);
+        }
+    }
 }
