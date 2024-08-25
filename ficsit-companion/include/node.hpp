@@ -32,6 +32,7 @@ struct Node
     virtual bool IsMerger() const;
     virtual bool IsSplitter() const;
     virtual Json::Value Serialize() const;
+    virtual bool Deserialize(const Json::Value& v);
 
     const ax::NodeEditor::NodeId id;
 
@@ -48,6 +49,7 @@ struct CraftNode : public Node
     virtual Kind GetKind() const override;
     virtual bool IsCraft() const override;
     virtual Json::Value Serialize() const override;
+    virtual bool Deserialize(const Json::Value& v) override;
 
     const Recipe* recipe;
     FractionalNumber current_rate;
@@ -55,10 +57,11 @@ struct CraftNode : public Node
 
 struct OrganizerNode : public Node
 {
-    OrganizerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator);
+    OrganizerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item = nullptr);
     virtual ~OrganizerNode();
     virtual bool IsOrganizer() const override;
     virtual Json::Value Serialize() const override;
+    virtual bool Deserialize(const Json::Value& v) override;
 
     void ChangeItem(const Item* item);
     void RemoveItemIfNotForced();
@@ -69,7 +72,7 @@ struct OrganizerNode : public Node
 
 struct SplitterNode : public OrganizerNode
 {
-    SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator);
+    SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item = nullptr);
     virtual ~SplitterNode();
     virtual bool IsSplitter() const override;
 
@@ -78,7 +81,7 @@ struct SplitterNode : public OrganizerNode
 
 struct MergerNode : public OrganizerNode
 {
-    MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator);
+    MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item = nullptr);
     virtual ~MergerNode();
     virtual bool IsMerger() const override;
 

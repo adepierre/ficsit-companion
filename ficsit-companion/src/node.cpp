@@ -46,6 +46,14 @@ Json::Value Node::Serialize() const
     return node;
 }
 
+bool Node::Deserialize(const Json::Value& v)
+{
+    pos.x = v["pos"]["x"].get<float>();
+    pos.y = v["pos"]["y"].get<float>();
+
+    return true;
+}
+
 CraftNode::CraftNode(const ax::NodeEditor::NodeId id, const Recipe* recipe, const std::function<unsigned long long int()>& id_generator) :
     Node(id), recipe(recipe), current_rate(1, 1)
 {
@@ -81,14 +89,36 @@ Json::Value CraftNode::Serialize() const
     return node;
 }
 
+bool CraftNode::Deserialize(const Json::Value& v)
+{
+    Node::Deserialize(v);
+
+    if (recipe->name != v["recipe"].get_string())
+    {
+        return false;
+    }
+
+    current_rate = FractionalNumber(v["rate"]["num"].get<long long int>(), v["rate"]["den"].get<long long int>());
+    for (auto& p : ins)
+    {
+        p->current_rate = p->base_rate * current_rate;
+    }
+    for (auto& p : outs)
+    {
+        p->current_rate = p->base_rate * current_rate;
+    }
+
+    return true;
+}
+
 Node::Kind CraftNode::GetKind() const
 {
     return Node::Kind::Craft;
 }
 
-OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator) : Node(id), item(nullptr)
+OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : Node(id)
 {
-
+    ChangeItem(item);
 }
 
 OrganizerNode::~OrganizerNode()
@@ -130,6 +160,35 @@ Json::Value OrganizerNode::Serialize() const
     serialized["outs"] = outs_array;
 
     return serialized;
+}
+
+bool OrganizerNode::Deserialize(const Json::Value& v)
+{
+    Node::Deserialize(v);
+
+    if (item->name != v["item"].get_string())
+    {
+        return false;
+    }
+
+    for (int i = 0; i < v["ins"].size(); ++i)
+    {
+        if (i >= ins.size())
+        {
+            break;
+        }
+        ins[i]->current_rate = FractionalNumber(v["ins"][i]["num"].get<long long int>(), v["ins"][i]["den"].get<long long int>());
+    }
+    for (int i = 0; i < v["outs"].size(); ++i)
+    {
+        if (i >= outs.size())
+        {
+            break;
+        }
+        outs[i]->current_rate = FractionalNumber(v["outs"][i]["num"].get<long long int>(), v["outs"][i]["den"].get<long long int>());
+    }
+
+    return true;
 }
 
 void OrganizerNode::ChangeItem(const Item* item)
@@ -187,7 +246,7 @@ bool OrganizerNode::IsBalanced() const
     return input_sum == output_sum;
 }
 
-SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator) : OrganizerNode(id, id_generator)
+SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : OrganizerNode(id, id_generator, item)
 {
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
@@ -208,7 +267,7 @@ Node::Kind SplitterNode::GetKind() const
     return Node::Kind::Splitter;
 }
 
-MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator) : OrganizerNode(id, id_generator)
+MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : OrganizerNode(id, id_generator, item)
 {
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));

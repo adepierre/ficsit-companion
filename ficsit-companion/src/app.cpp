@@ -148,6 +148,8 @@ void App::Deserialize(const std::string& s)
     };
 
     // Load nodes
+    // TODO: need to remap the indices of the nodes before loading the links
+    // in case some nodes are not loaded properly and thus not added
     for (const auto& n : content["nodes"].get_array())
     {
         const Node::Kind kind = static_cast<Node::Kind>(n["kind"].get<int>());
@@ -161,64 +163,40 @@ void App::Deserialize(const std::string& s)
                 break;
             }
             nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipe, std::bind(&App::GetNextId, this)));
-            ax::NodeEditor::SetNodePosition(nodes.back()->id, ImVec2(n["pos"]["x"].get<float>(), n["pos"]["y"].get<float>()));
-
-            CraftNode* craft_node = static_cast<CraftNode*>(nodes.back().get());
-
-            craft_node->current_rate = FractionalNumber(n["rate"]["num"].get<long long int>(), n["rate"]["den"].get<long long int>());
-            for (auto& p : craft_node->ins)
+            if (!nodes.back()->Deserialize(n))
             {
-                p->current_rate = p->base_rate * craft_node->current_rate;
+                nodes.pop_back();
             }
-            for (auto& p : craft_node->outs)
-            {
-                p->current_rate = p->base_rate * craft_node->current_rate;
-            }
-
             break;
         }
         case Node::Kind::Merger:
         case Node::Kind::Splitter:
         {
+            auto item_it = items.find(n["item"].get_string());
+            const Item* item = item_it == items.end() ? nullptr : item_it->second.get();
+
             if (kind == Node::Kind::Merger)
             {
-                nodes.emplace_back(std::make_unique<MergerNode>(GetNextId(), std::bind(&App::GetNextId, this)));
+                nodes.emplace_back(std::make_unique<MergerNode>(GetNextId(), std::bind(&App::GetNextId, this), item));
             }
             else
             {
-                nodes.emplace_back(std::make_unique<SplitterNode>(GetNextId(), std::bind(&App::GetNextId, this)));
-            }
-            ax::NodeEditor::SetNodePosition(nodes.back()->id, ImVec2(n["pos"]["x"].get<float>(), n["pos"]["y"].get<float>()));
-
-            auto item_it = items.find(n["item"].get_string());
-            if (item_it == items.end())
-            {
-                break;
+                nodes.emplace_back(std::make_unique<SplitterNode>(GetNextId(), std::bind(&App::GetNextId, this), item));
             }
 
-            OrganizerNode* org_node = static_cast<OrganizerNode*>(nodes.back().get());
-            org_node->ChangeItem(item_it->second.get());
-
-            for (int i = 0; i < n["ins"].size(); ++i)
+            if (!nodes.back()->Deserialize(n))
             {
-                if (i >= org_node->ins.size())
-                {
-                    break;
-                }
-                org_node->ins[i]->current_rate = FractionalNumber(n["ins"][i]["num"].get<long long int>(), n["ins"][i]["den"].get<long long int>());
-            }
-            for (int i = 0; i < n["outs"].size(); ++i)
-            {
-                if (i >= org_node->outs.size())
-                {
-                    break;
-                }
-                org_node->outs[i]->current_rate = FractionalNumber(n["outs"][i]["num"].get<long long int>(), n["outs"][i]["den"].get<long long int>());
+                nodes.pop_back();
             }
 
             break;
         }
         }
+    }
+
+    for (const auto& n : nodes)
+    {
+        ax::NodeEditor::SetNodePosition(n->id, n->pos);
     }
 
     // Load links
