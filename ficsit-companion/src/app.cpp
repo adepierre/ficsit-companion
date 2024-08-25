@@ -1015,6 +1015,7 @@ void App::RenderLeftPanel()
     std::map<const Item*, FractionalNumber> inputs;
     std::map<const Item*, FractionalNumber> outputs;
     std::map<std::string, FractionalNumber> machines;
+    std::map<std::pair<std::string, const Item*>, FractionalNumber> machinesPrItem;
 
     // Gather all inputs/outputs/machines
     for (const auto& n : nodes)
@@ -1038,6 +1039,10 @@ void App::RenderLeftPanel()
         {
             const CraftNode* node = static_cast<const CraftNode*>(n.get());
             machines[node->recipe->machine] += node->current_rate;
+            for (const auto& p : node->outs) 
+            {
+                machinesPrItem[{node->recipe->machine, p->item}] += node->current_rate;
+            }
         }
     }
 
@@ -1087,6 +1092,24 @@ void App::RenderLeftPanel()
         ImGui::EndDisabled();
         ImGui::SameLine();
         ImGui::TextUnformatted(machine.c_str());
+    }
+    ImGui::SeparatorText("Machines pr Item");
+    for (auto& [key, n] : machinesPrItem)
+    {
+        ImGui::SetNextItemWidth(rate_width);
+        ImGui::BeginDisabled();
+        ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
+        }
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+        ImGui::TextUnformatted(key.first.c_str());
+        ImGui::SameLine();
+        ImGui::Image((void*)(intptr_t)key.second->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+        ImGui::SameLine();
+        ImGui::TextUnformatted(key.second->name.c_str());
     }
 }
 
