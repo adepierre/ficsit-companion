@@ -1015,7 +1015,7 @@ void App::RenderLeftPanel()
     std::map<const Item*, FractionalNumber> inputs;
     std::map<const Item*, FractionalNumber> outputs;
     std::map<std::string, FractionalNumber> machines;
-    std::map<std::pair<std::string, const Item*>, FractionalNumber> machinesPrItem;
+    std::map<std::pair<std::string, const Item*>, FractionalNumber> machines_pr_item;
 
     // Gather all inputs/outputs/machines
     for (const auto& n : nodes)
@@ -1041,7 +1041,7 @@ void App::RenderLeftPanel()
             machines[node->recipe->machine] += node->current_rate;
             for (const auto& p : node->outs) 
             {
-                machinesPrItem[{node->recipe->machine, p->item}] += node->current_rate;
+                machines_pr_item[{node->recipe->machine, p->item}] += node->current_rate;
             }
         }
     }
@@ -1053,11 +1053,11 @@ void App::RenderLeftPanel()
         ImGui::SetNextItemWidth(rate_width);
         ImGui::BeginDisabled();
         ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
+        ImGui::EndDisabled();
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
         {
             ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
         }
-        ImGui::EndDisabled();
         ImGui::SameLine();
         ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
         ImGui::SameLine();
@@ -1069,11 +1069,11 @@ void App::RenderLeftPanel()
         ImGui::SetNextItemWidth(rate_width);
         ImGui::BeginDisabled();
         ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
+        ImGui::EndDisabled();
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
         {
             ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
         }
-        ImGui::EndDisabled();
         ImGui::SameLine();
         ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
         ImGui::SameLine();
@@ -1085,25 +1085,25 @@ void App::RenderLeftPanel()
         ImGui::SetNextItemWidth(rate_width);
         ImGui::BeginDisabled();
         ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
+        ImGui::EndDisabled();
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
         {
             ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
         }
-        ImGui::EndDisabled();
         ImGui::SameLine();
         ImGui::TextUnformatted(machine.c_str());
     }
     ImGui::SeparatorText("Machines pr Item");
-    for (auto& [key, n] : machinesPrItem)
+    for (auto& [key, n] : machines_pr_item)
     {
         ImGui::SetNextItemWidth(rate_width);
         ImGui::BeginDisabled();
         ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
+        ImGui::EndDisabled();
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
         {
             ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
         }
-        ImGui::EndDisabled();
         ImGui::SameLine();
         ImGui::TextUnformatted(key.first.c_str());
         ImGui::SameLine();
