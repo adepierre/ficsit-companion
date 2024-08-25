@@ -1015,7 +1015,7 @@ void App::RenderLeftPanel()
     std::map<const Item*, FractionalNumber> inputs;
     std::map<const Item*, FractionalNumber> outputs;
     std::map<std::string, FractionalNumber> machines;
-    std::map<std::pair<std::string, const Item*>, FractionalNumber> machines_pr_item;
+    std::map<std::pair<std::string, const Recipe*>, FractionalNumber> machines_pr_item;
 
     // Gather all inputs/outputs/machines
     for (const auto& n : nodes)
@@ -1039,10 +1039,7 @@ void App::RenderLeftPanel()
         {
             const CraftNode* node = static_cast<const CraftNode*>(n.get());
             machines[node->recipe->machine] += node->current_rate;
-            for (const auto& p : node->outs) 
-            {
-                machines_pr_item[{node->recipe->machine, p->item}] += node->current_rate;
-            }
+			machines_pr_item[{node->recipe->machine, node->recipe}] += node->current_rate;
         }
     }
 
@@ -1106,10 +1103,21 @@ void App::RenderLeftPanel()
         }
         ImGui::SameLine();
         ImGui::TextUnformatted(key.first.c_str());
-        ImGui::SameLine();
-        ImGui::Image((void*)(intptr_t)key.second->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-        ImGui::SameLine();
-        ImGui::TextUnformatted(key.second->name.c_str());
+        bool first_item = true;
+        for (auto& item : key.second->outs)
+        {
+            if (!first_item) {
+                //ImGui::SameLine();
+				ImGui::TextUnformatted("        ");
+                ImGui::SameLine();
+				ImGui::TextUnformatted(std::string(key.first.length(), ' ').c_str());
+            }
+            ImGui::SameLine();
+			ImGui::Image((void*)(intptr_t)item.item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+			ImGui::SameLine();
+			ImGui::TextUnformatted(item.item->name.c_str());
+            first_item = false;
+        }
     }
 }
 
