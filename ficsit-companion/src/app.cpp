@@ -804,7 +804,13 @@ void App::RenderLeftPanel()
     const float input_text_width = ImGui::GetContentRegionAvail().x - save_load_buttons_width - ImGui::GetStyle().ItemSpacing.x * 2;
 
     ImGui::PushItemWidth(input_text_width);
-    ImGui::InputTextWithHint("##save_text", "Name to save/load...", &save_name);
+    if (ImGui::InputTextWithHint("##save_text", "Name to save/load...", &save_name))
+    {
+        for (auto& [filename, match] : file_suggestions)
+        {
+            match = filename.find(save_name);
+        }
+    }
     ImGui::PopItemWidth();
 
     // Autocomplete with save present locally
