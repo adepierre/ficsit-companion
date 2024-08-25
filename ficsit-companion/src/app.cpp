@@ -1645,10 +1645,8 @@ void App::AddNewNode()
             ImGuiTableColumnFlags_NoHeaderWidth
         );
 
-        const ImVec2 default_spacing = ImGui::GetStyle().ItemSpacing;
         for (const auto [i, score_ignored] : recipe_indices)
         {
-            ImGui::GetStyle().ItemSpacing = default_spacing;
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             if (ImGui::MenuItem(((recipes[i].alternate ? "*" : "") + recipes[i].name).c_str()))
@@ -1657,7 +1655,8 @@ void App::AddNewNode()
                 break;
             }
             ImGui::TableSetColumnIndex(1);
-            ImGui::GetStyle().ItemSpacing = ImVec2(0.0f, default_spacing.y);
+
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, ImGui::GetStyle().ItemSpacing.y));
             for (const auto& in : recipes[i].ins)
             {
                 ImGui::Image((void*)(intptr_t)in.item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
@@ -1677,8 +1676,8 @@ void App::AddNewNode()
                     ImGui::SetTooltip("%s", out.item->name.c_str());
                 }
             }
+            ImGui::PopStyleVar();
         }
-        ImGui::GetStyle().ItemSpacing = default_spacing;
         ImGui::EndTable();
 
         if (recipe_index != -1)
