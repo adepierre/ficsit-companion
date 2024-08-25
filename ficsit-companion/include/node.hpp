@@ -8,6 +8,7 @@
 #include <imgui_node_editor.h>
 
 #include "fractional_number.hpp"
+#include "json.hpp"
 
 struct Item;
 struct Pin;
@@ -30,6 +31,7 @@ struct Node
     virtual bool IsOrganizer() const;
     virtual bool IsMerger() const;
     virtual bool IsSplitter() const;
+    virtual Json::Value Serialize() const;
 
     const ax::NodeEditor::NodeId id;
 
@@ -43,9 +45,9 @@ struct CraftNode : public Node
     CraftNode(const ax::NodeEditor::NodeId id, const Recipe* recipe,
         const std::function<unsigned long long int()>& id_generator);
     virtual ~CraftNode();
-    virtual bool IsCraft() const override;
-
     virtual Kind GetKind() const override;
+    virtual bool IsCraft() const override;
+    virtual Json::Value Serialize() const override;
 
     const Recipe* recipe;
     FractionalNumber current_rate;
@@ -56,6 +58,7 @@ struct OrganizerNode : public Node
     OrganizerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator);
     virtual ~OrganizerNode();
     virtual bool IsOrganizer() const override;
+    virtual Json::Value Serialize() const override;
 
     void ChangeItem(const Item* item);
     void RemoveItemIfNotForced();

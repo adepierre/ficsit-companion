@@ -60,44 +60,7 @@ std::string App::Serialize() const
     saved_nodes.reserve(nodes.size());
     for (const auto& n : nodes)
     {
-        Json::Value node;
-        node["kind"] = static_cast<int>(n->GetKind());
-        node["pos"] = {
-            { "x", n->pos.x },
-            { "y", n->pos.y }
-        };
-        if (n->IsCraft())
-        {
-            const CraftNode* craft_n = static_cast<const CraftNode*>(n.get());
-            node["rate"] = {
-                { "num", craft_n->current_rate.GetNumerator()},
-                { "den", craft_n->current_rate.GetDenominator()}
-            };
-            node["recipe"] = craft_n->recipe->name;
-        }
-        else
-        {
-            const OrganizerNode* org_n = static_cast<const OrganizerNode*>(n.get());
-            node["item"] = org_n->item == nullptr ? "" : org_n->item->name;
-            node["ins"] = Json::Array();
-            for (auto& i : n->ins)
-            {
-                node["ins"].push_back({
-                    { "num", i->current_rate.GetNumerator() },
-                    { "den", i->current_rate.GetDenominator() },
-                    });
-            }
-            node["outs"] = Json::Array();
-            for (auto& o : n->outs)
-            {
-                node["outs"].push_back({
-                    { "num", o->current_rate.GetNumerator() },
-                    { "den", o->current_rate.GetDenominator() },
-                    });
-            }
-        }
-        saved_nodes.push_back(node);
-
+        saved_nodes.push_back(n->Serialize());
     }
     output["nodes"] = saved_nodes;
 
