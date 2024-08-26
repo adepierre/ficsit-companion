@@ -34,6 +34,8 @@ struct Recipe
     /// @return The position the string was found in this recipe ingredients name, or std::string::npos if not found
     size_t FindInIngredients(const std::string& s) const;
 
+    void Render(const bool display_name = true, const bool display_items_icons = true) const;
+
     const std::string name;
     const std::vector<CountedItem> ins;
     const std::vector<CountedItem> outs;

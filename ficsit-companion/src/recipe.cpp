@@ -1,6 +1,8 @@
 #include "recipe.hpp"
 #include "utils.hpp"
 
+#include <imgui.h>
+
 #include <algorithm>
 
 std::string SpaceToNewLine(const std::string& s)
@@ -60,4 +62,47 @@ size_t Recipe::FindInIngredients(const std::string& s) const
     }
 
     return min_pos;
+}
+
+void Recipe::Render(const bool display_name, const bool display_items_icons) const
+{
+    if (display_items_icons)
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, ImGui::GetStyle().ItemSpacing.y));
+        for (const auto& in : ins)
+        {
+            ImGui::Image((void*)(intptr_t)in.item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+            {
+                ImGui::SetTooltip("%s", in.item->name.c_str());
+            }
+            ImGui::SameLine();
+        }
+
+        ImGui::TextUnformatted("-->");
+
+        for (const auto& out : outs)
+        {
+            ImGui::SameLine();
+            ImGui::Image((void*)(intptr_t)out.item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+            {
+                ImGui::SetTooltip("%s", out.item->name.c_str());
+            }
+        }
+        ImGui::PopStyleVar();
+        if (display_name)
+        {
+            ImGui::SameLine();
+        }
+    }
+
+    if (display_name)
+    {
+        ImGui::TextUnformatted(name.c_str());
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("%s", name.c_str());
+        }
+    }
 }

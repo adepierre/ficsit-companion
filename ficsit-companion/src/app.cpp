@@ -1060,36 +1060,7 @@ void App::RenderLeftPanel()
                 }
                 ImGui::SameLine();
 
-                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, ImGui::GetStyle().ItemSpacing.y));
-                for (const auto& in : recipe->ins)
-                {
-                    ImGui::Image((void*)(intptr_t)in.item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                    {
-                        ImGui::SetTooltip("%s", in.item->name.c_str());
-                    }
-                    ImGui::SameLine();
-                }
-
-                ImGui::TextUnformatted("-->");
-
-                for (const auto& out : recipe->outs)
-                {
-                    ImGui::SameLine();
-                    ImGui::Image((void*)(intptr_t)out.item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                    {
-                        ImGui::SetTooltip("%s", out.item->name.c_str());
-                    }
-                }
-                ImGui::PopStyleVar();
-
-                ImGui::SameLine();
-                ImGui::TextUnformatted(recipe->name.c_str());
-                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                {
-                    ImGui::SetTooltip(recipe->name.c_str());
-                }
+                recipe->Render();
             }
 
             ImGui::Unindent();
@@ -1634,27 +1605,7 @@ void App::AddNewNode()
             }
             ImGui::TableSetColumnIndex(1);
 
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, ImGui::GetStyle().ItemSpacing.y));
-            for (const auto& in : recipes[i].ins)
-            {
-                ImGui::Image((void*)(intptr_t)in.item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                {
-                    ImGui::SetTooltip("%s", in.item->name.c_str());
-                }
-                ImGui::SameLine();
-            }
-            ImGui::TextUnformatted("-->");
-            for (const auto& out : recipes[i].outs)
-            {
-                ImGui::SameLine();
-                ImGui::Image((void*)(intptr_t)out.item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                {
-                    ImGui::SetTooltip("%s", out.item->name.c_str());
-                }
-            }
-            ImGui::PopStyleVar();
+            recipes[i].Render(false);
         }
         ImGui::EndTable();
 
