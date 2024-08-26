@@ -762,7 +762,7 @@ void App::RenderLeftPanel()
     // If web version, add an option to load from disk and download
 #if defined(__EMSCRIPTEN__)
     ImGui::SameLine();
-    if (ImGui::Button("Download"))
+    if (ImGui::Button("Export"))
     {
         const std::string path = "production_chain.fcs";
         const std::string content = Serialize();
@@ -780,10 +780,10 @@ void App::RenderLeftPanel()
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     {
-        ImGui::SetTooltip("%s", "Save current production chain to disk");
+        ImGui::SetTooltip("%s", "Export current production chain to disk");
     }
     ImGui::SameLine();
-    if (ImGui::Button("Upload"))
+    if (ImGui::Button("Import"))
     {
         waitForFileInput();
         if (std::filesystem::exists("_internal_load_file"))
@@ -796,7 +796,7 @@ void App::RenderLeftPanel()
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     {
-        ImGui::SetTooltip("%s", "Load a production chain from disk");
+        ImGui::SetTooltip("%s", "Import a production chain from disk");
     }
 #endif
 
