@@ -24,14 +24,17 @@ public:
     void Render();
 
 public:
-    /// @brief Path used to save last session file upon closing
-    static constexpr std::string_view session_file = "last_session.fcs";
+    /// @brief Save current session
+    void SaveSession();
+
+private:
+    /// @brief Load saved session if present
+    void LoadSession();
 
     /// @brief Serialize the app state to a string
     /// @return Serialized state of this app
     std::string Serialize() const;
 
-private:
     /// @brief Restore app state from a string
     /// @param s Serialized app state to load
     void Deserialize(const std::string& s);
@@ -98,6 +101,8 @@ private:
     static constexpr std::string_view add_node_popup_id = "Add Node";
     /// @brief Folder to save/load the serialized graph
     static constexpr std::string_view save_folder = "saved";
+    /// @brief Path used to save current session file
+    static constexpr std::string_view session_file = "last_session.fcs";
 
 
     /// @brief Version of the game the items/recipes are from
@@ -117,6 +122,8 @@ private:
 
     /// @brief Next available id for a node/link in the graph view
     unsigned long long int next_id;
+
+    double last_time_saved_session;
 
     /* Values used during the rendering pass to save UI state between frames */
     std::string save_name;

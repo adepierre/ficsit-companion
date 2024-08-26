@@ -21,6 +21,8 @@
 App::App()
 {
     next_id = 1;
+    last_time_saved_session = 0.0;
+
     config.SettingsFile = nullptr;
     config.EnableSmoothZoom = true;
 
@@ -41,9 +43,7 @@ App::~App()
     // Save current state
     // Destructor is not called in emscripten, we're using emscripten_set_beforeunload_callback in main.cpp instead
 #if !defined(__EMSCRIPTEN__)
-    std::ofstream f(session_file.data(), std::ios::out);
-    f << Serialize();
-    f.close();
+    SaveSession();
 #endif
 }
 
@@ -51,6 +51,45 @@ App::~App()
 /******************************************************\
 *             Non render related functions             *
 \******************************************************/
+void App::SaveSession()
+{
+#if defined(__EMSCRIPTEN__)
+    const char* location = session_file.data();
+    const std::string content = Serialize();
+    EM_ASM({ localStorage.setItem(UTF8ToString($0), UTF8ToString($1)); }, location, content.c_str());
+#else
+    std::ofstream f(session_file.data(), std::ios::out);
+    f << Serialize();
+    f.close();
+#endif
+}
+
+void App::LoadSession()
+{
+#if !defined(__EMSCRIPTEN__)
+    // Load session file if it exists
+    if (std::filesystem::exists(session_file))
+    {
+        std::ifstream f(session_file.data(), std::ios::in);
+        const std::string content = std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+        f.close();
+
+        Deserialize(content);
+    }
+#else
+    // Read from localStorage
+    char* content = static_cast<char*>(EM_ASM_PTR({
+        var str = localStorage.getItem(UTF8ToString($0)) || "{}";
+        var length = lengthBytesUTF8(str) + 1;
+        var str_wasm = _malloc(length);
+        stringToUTF8(str, str_wasm, length);
+        return str_wasm;
+    }, session_file.data()));
+    Deserialize(content);
+    free(static_cast<void*>(content));
+#endif
+}
+
 std::string App::Serialize() const
 {
     Json::Value output;
@@ -75,7 +114,7 @@ std::string App::Serialize() const
             }
         }
         return -1;
-    };
+        };
 
     auto get_pin_index = [&](const Node* n, const Pin* p, const bool out) -> int {
         const std::vector<std::unique_ptr<Pin>>& pins = out ? n->outs : n->ins;
@@ -87,7 +126,7 @@ std::string App::Serialize() const
             }
         }
         return -1;
-    };
+        };
 
     Json::Array saved_links;
     saved_links.reserve(links.size());
@@ -660,31 +699,20 @@ void App::Render()
 
     ax::NodeEditor::Begin("Graph", ImGui::GetContentRegionAvail());
 
-    // First frame, try to load session file
+    // First frame
     if (ImGui::IsWindowAppearing())
     {
-#if !defined(__EMSCRIPTEN__)
-        // Load session file if it exists
-        if (std::filesystem::exists(session_file))
-        {
-            std::ifstream f(session_file.data(), std::ios::in);
-            const std::string content = std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
-            f.close();
+        // Try to load session
+        LoadSession();
+        last_time_saved_session = ImGui::GetTime();
+    }
 
-            Deserialize(content);
-        }
-#else
-        // Read from localStorage
-        char* content = static_cast<char*>(EM_ASM_PTR({
-            var str = localStorage.getItem(UTF8ToString($0)) || "{}";
-            var length = lengthBytesUTF8(str) + 1;
-            var str_wasm = _malloc(length);
-            stringToUTF8(str, str_wasm, length);
-            return str_wasm;
-        }, session_file.data()));
-        Deserialize(content);
-        free(static_cast<void*>(content));
-#endif
+    if (ImGui::GetTime() - last_time_saved_session > 30.0)
+    {
+        // We need to update last_time_saved_session here because SaveSession needs
+        // to be callable even without a valid ImGui context
+        last_time_saved_session = ImGui::GetTime();
+        SaveSession();
     }
 
     DeleteNodesLinks();
