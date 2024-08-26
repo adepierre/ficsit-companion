@@ -36,11 +36,16 @@ jobs:
           sudo apt update
           sudo apt install -y xorg-dev
 
+      - name: Cache SDL/ImGui deps
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/build/_deps
+          key: ${{ runner.os }}-deps
+
       - name: Set universal build for macOS (as an env variable because of the ;)
         if: runner.os == 'macOS'
         run: echo "CMAKE_OSX_ARCHITECTURES=arm64;x86_64" >> $GITHUB_ENV
 
-        # TODO: caching built SDL could be a good idea to save time/compute
       - name: Configure cmake
         run: >
           cmake
