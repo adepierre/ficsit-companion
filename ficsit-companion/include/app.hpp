@@ -24,7 +24,7 @@ public:
     void Render();
 
 public:
-    /// @brief Save current session
+    /// @brief Save current session (should NOT require an active ImGui context)
     void SaveSession();
 
 private:

@@ -187,8 +187,9 @@ void App::Deserialize(const std::string& s)
     };
 
     // Load nodes
-    // TODO: need to remap the indices of the nodes before loading the links
-    // in case some nodes are not loaded properly and thus not added
+    std::vector<int> node_indices;
+    node_indices.reserve(content["nodes"].size());
+    size_t num_nodes = 0;
     for (const auto& n : content["nodes"].get_array())
     {
         const Node::Kind kind = static_cast<Node::Kind>(n["kind"].get<int>());
@@ -199,12 +200,19 @@ void App::Deserialize(const std::string& s)
             const Recipe* recipe = get_recipe(n["recipe"].get_string());
             if (recipe == nullptr)
             {
+                node_indices.push_back(-1);
                 break;
             }
             nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipe, std::bind(&App::GetNextId, this)));
             if (!nodes.back()->Deserialize(n))
             {
                 nodes.pop_back();
+                node_indices.push_back(-1);
+            }
+            else
+            {
+                node_indices.push_back(num_nodes);
+                num_nodes += 1;
             }
             break;
         }
@@ -213,6 +221,12 @@ void App::Deserialize(const std::string& s)
         {
             auto item_it = items.find(n["item"].get_string());
             const Item* item = item_it == items.end() ? nullptr : item_it->second.get();
+
+            if (item == nullptr)
+            {
+                node_indices.push_back(-1);
+                break;
+            }
 
             if (kind == Node::Kind::Merger)
             {
@@ -226,6 +240,12 @@ void App::Deserialize(const std::string& s)
             if (!nodes.back()->Deserialize(n))
             {
                 nodes.pop_back();
+                node_indices.push_back(-1);
+            }
+            else
+            {
+                node_indices.push_back(num_nodes);
+                num_nodes += 1;
             }
 
             break;
@@ -243,13 +263,15 @@ void App::Deserialize(const std::string& s)
     {
         const int start_node_index = l["start"]["node"].get<int>();
         const int end_node_index = l["end"]["node"].get<int>();
-        if (start_node_index >= nodes.size() || end_node_index >= nodes.size())
+        // At least one of the linked node wasn't properly loaded
+        if (start_node_index >= node_indices.size() || end_node_index >= node_indices.size() ||
+            node_indices[start_node_index] == -1 || node_indices[end_node_index] == -1)
         {
             continue;
         }
 
-        const Node* start_node = nodes[start_node_index].get();
-        const Node* end_node = nodes[end_node_index].get();
+        const Node* start_node = nodes[node_indices[start_node_index]].get();
+        const Node* end_node = nodes[node_indices[end_node_index]].get();
 
         const int start_pin_index = l["start"]["pin"].get<int>();
         const int end_pin_index = l["end"]["pin"].get<int>();
@@ -711,8 +733,8 @@ void App::Render()
     {
         // We need to update last_time_saved_session here because SaveSession needs
         // to be callable even without a valid ImGui context
-        last_time_saved_session = ImGui::GetTime();
         SaveSession();
+        last_time_saved_session = ImGui::GetTime();
     }
 
     DeleteNodesLinks();
