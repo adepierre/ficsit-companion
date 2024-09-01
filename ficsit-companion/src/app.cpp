@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
+#include <iostream>
 
 App::App()
 {
@@ -204,7 +205,7 @@ void App::Deserialize(const std::string& s)
                 break;
             }
             nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipe, std::bind(&App::GetNextId, this)));
-            if (!nodes.back()->Deserialize(n))
+            if (!nodes.back()->Deserialize(n, std::bind( & App::GetNextId, this)))
             {
                 nodes.pop_back();
                 node_indices.push_back(-1);
@@ -237,7 +238,7 @@ void App::Deserialize(const std::string& s)
                 nodes.emplace_back(std::make_unique<SplitterNode>(GetNextId(), std::bind(&App::GetNextId, this), item));
             }
 
-            if (!nodes.back()->Deserialize(n))
+            if (!nodes.back()->Deserialize(n, std::bind( & App::GetNextId, this)))
             {
                 nodes.pop_back();
                 node_indices.push_back(-1);
@@ -438,19 +439,337 @@ void App::DeleteNode(const ax::NodeEditor::NodeId id)
     }
 }
 
+
 void App::UpdateNodesRate()
 {
     if (updating_pins.size() == 0)
     {
         return;
     }
+    std::cout << "Starting UpdateNodesRate()\n";
     std::unordered_map<const Pin*, Constraint> updated_pins;
     std::unordered_map<const Pin*, size_t> updated_count;
+
+    std::cout << "Precalculating start and end nodes\n";
+	/*
+	Traverse the graph and build an identical set of MetaNodes with MetaPins.
+	* Craft nodes get their pin's meta_rates set to their base_rates
+	* Merger/Splitter nodes get their pin's meta_rates set to 0
+	* Every MetaPin gets a reference to its Pin
+	* Save the starting Pin and corresponding MetaPin in first_pin and first_meta_pin
+	Keep in mind that MetaLinks will NOT be balanced throughout the process, and will only get balanced at the end.
+	Traverse the MetaGraph:
+	* For each MetaNode mn1
+		* If all outs link directly to the same MetaNode mn2
+			* If one of mn2's pins has base_rate == 0, skip
+			* If one of mn1's outs is Locked or one of mn1's outs links to a pin that is Locked
+				* mn1's ins gets meta_rate = mn1->in->meta_rate * (mn1->out[i]->link->meta_rate/mn1->out[i]->meta_rate + ...)
+				* mn1's outs gets meta_rate = mn1->out->link->meta_rate
+			* Else replace mn1 and mn2 with MetaNode m3
+				* mn3 gets mn2's outs with meta_rate intact
+				* mn3 gets mn2's remaining ins with meta_rate intact
+				* mn3 gets mn1's ins with meta_rate = mn1->in->meta_rate * (mn1->out[i]->link->meta_rate/mn1->out[i]->meta_rate + ...)
+	* For each MetaNode mn1
+		* If all ins link directly to the same MetaNode mn2
+			* If one of mn2's pins has base_rate == 0, skip
+			* If one of mn1's ins is Locked or one of mn1's ins links to a pin that is Locked
+				* mn1's outs gets meta_rate = mn1->out->meta_rate * (mn1->in[i]->link->meta_rate/mn1->in[i]->meta_rate + ...)
+				* mn1's ins gets meta_rate = mn1->in->link->meta_rate
+			* Else replace mn1 and mn2 with MetaNode m3
+				* mn3 gets mn2's ins with meta_rate intact
+				* mn3 gets mn2's remaining outs with meta_rate intact
+				* mn3 gets mn1's outs with meta_rate = mn1->out->meta_rate * (mn1->in[i]->link->meta_rate/mn1->in[i]->meta_rate + ...)
+	Keep doing this until no changes are being made any longer.
+	Multiply all the meta_rates by first_pin->current_rate/first_meta_pin->meta_rate and set those as the corresponding Pin's current_rate. Set all of the referenced Pins to Strong in updated_pins and add them to updating_pins.
+	*/
+	auto OutFactor = [&](const MetaNode* mn)
+		{
+			FractionalNumber sum = 0;
+			for (auto& p : mn->outs)
+			{
+				sum += p->link->end->meta_rate / p->meta_rate;
+			}
+			return sum;
+		};
+	auto InFactor = [&](const MetaNode* mn)
+		{
+			FractionalNumber sum = 0;
+			for (auto& p : mn->ins)
+			{
+				sum += p->link->start->meta_rate / p->meta_rate;
+			}
+			return sum;
+		};
+	std::list<const MetaNode*> meta_nodes;
+	std::unordered_map<const Pin*, MetaPin*> pins_formerly_traversed;
+	std::list<const Pin*> pins_to_be_traversed;
+	pins_to_be_traversed.push_back(updating_pins.front().first);
+	while (!pins_to_be_traversed.empty())
+	{
+		const auto pin = pins_to_be_traversed.front();
+		Node* node = pin->node;
+		auto meta_node = std::make_unique<MetaNode>(node->id);
+		switch (const Node::Kind kind = node->GetKind())
+		{
+		case Node::Kind::Craft:
+			for (auto& p : node->ins)
+			{
+				auto meta_pin = std::make_unique<MetaPin>(p->id, p->direction, meta_node.get(), p.get());
+				meta_pin->meta_rate = p->base_rate;
+				meta_node->ins.push_back(meta_pin);
+				if (p->link != nullptr)
+				{
+					pins_to_be_traversed.push_back(p->link->start);
+					if (pins_formerly_traversed.find(p->link->start) != pins_formerly_traversed.end())
+					{
+						meta_pin->link = std::make_unique<MetaLink>(p->link->id, pins_formerly_traversed[p->link->start], meta_pin.get()).get();
+					}
+				}
+				pins_formerly_traversed[p.get()] = meta_pin.get();
+			}
+			for (auto& p : node->outs)
+			{
+				auto meta_pin = std::make_unique<MetaPin>(p->id, p->direction, meta_node.get(), p.get());
+				meta_pin->meta_rate = p->base_rate;
+				meta_node->outs.push_back(meta_pin);
+				if (p->link != nullptr)
+				{
+					pins_to_be_traversed.push_back(p->link->end);
+					if (pins_formerly_traversed.find(p->link->end) != pins_formerly_traversed.end())
+					{
+						meta_pin->link = std::make_unique<MetaLink>(p->link->id, meta_pin.get(), pins_formerly_traversed[p->link->end]).get();
+					}
+				}
+				pins_formerly_traversed[p.get()] = meta_node->outs.back().get();
+			}
+			break;
+		case Node::Kind::Splitter:
+		case Node::Kind::Merger:
+			for (auto& p : node->ins)
+			{
+				auto meta_pin = std::make_unique<MetaPin>(p->id, p->direction, meta_node.get(), p.get());
+				meta_pin->meta_rate = 0;
+				meta_node->ins.push_back(meta_pin);
+				if (p->link != nullptr)
+				{
+					pins_to_be_traversed.push_back(p->link->start);
+					if (pins_formerly_traversed.find(p->link->start) != pins_formerly_traversed.end())
+					{
+						meta_pin->link = std::make_unique<MetaLink>(p->link->id, pins_formerly_traversed[p->link->start], meta_pin.get()).get();
+					}
+				}
+				pins_formerly_traversed[p.get()] = meta_pin.get();
+			}
+			for (auto& p : node->outs)
+			{
+				auto meta_pin = std::make_unique<MetaPin>(p->id, p->direction, meta_node.get(), p.get());
+				meta_pin->meta_rate = 0;
+				meta_node->outs.push_back(meta_pin);
+				if (p->link != nullptr)
+				{
+					pins_to_be_traversed.push_back(p->link->end);
+					if (pins_formerly_traversed.find(p->link->end) != pins_formerly_traversed.end())
+					{
+						meta_pin->link = std::make_unique<MetaLink>(p->link->id, meta_pin.get(), pins_formerly_traversed[p->link->end]).get();
+					}
+				}
+				pins_formerly_traversed[p.get()] = meta_node->outs.back().get();
+			}
+			break;
+		}
+	}
+	bool changes_made = true;
+	while (changes_made)
+	{
+		changes_made = false;
+		for (auto& mn1 : meta_nodes)
+		{
+			MetaNode* mn2_out = mn1->outs[0]->node;
+			bool should_merge_out = true;
+			bool any_m1_out_locked = false;
+			for (auto& p : mn1->outs)
+			{
+				if (mn2_out != p->node)
+				{
+					should_merge_out = false;
+					break;
+				}
+				if (p->locked)
+				{
+					any_m1_out_locked = true;
+				}
+				if (p->link != nullptr && p->link->end->locked)
+				{
+					any_m1_out_locked = true;
+				}
+			}
+			if (should_merge_out)
+			{
+				for (auto& p : mn2_out->ins)
+				{
+					if (p->meta_rate == 0)
+					{
+						should_merge_out = false;
+						break;
+					}
+				}
+				for (auto& p : mn2_out->ins)
+				{
+					if (p->meta_rate == 0)
+					{
+						should_merge_out = false;
+						break;
+					}
+				}
+			}
+			if (should_merge_out)
+			{
+				if (any_m1_out_locked)
+				{
+					for (auto& p : mn1->ins)
+					{
+						p->meta_rate *= OutFactor(mn1);
+					}
+					for (auto& p : mn1->outs)
+					{
+						p->meta_rate = p->link->end->meta_rate;
+					}
+					changes_made = true;
+				}
+				else
+				{
+					auto mn3 = std::make_unique<MetaNode>(mn1->id);
+					for (auto& p : mn2_out->outs)
+					{
+						mn3->outs.push_back(p);
+					}
+					for (auto& p : mn2_out->ins)
+					{
+						if (p->link->start->node != mn1)
+						{
+							mn3->ins.push_back(p);
+						}
+					}
+					for (auto& p : mn1->ins)
+					{
+						p->meta_rate *= OutFactor(mn1);
+						mn3->ins.push_back(p);
+					}
+					meta_nodes.remove(mn1);
+					meta_nodes.remove(mn2_out);
+					meta_nodes.push_back(mn3.get());
+					changes_made = true;
+					continue;
+				}
+			}
+			MetaNode* mn2_in = mn1->ins[0]->node;
+			bool should_merge_in = true;
+			bool any_m1_in = false;
+			for (auto& p : mn1->ins)
+			{
+				if (mn2_in != p->node)
+				{
+					should_merge_in = false;
+					break;
+				}
+				if (p->locked)
+				{
+					any_m1_in = true;
+				}
+				if (p->link != nullptr && p->link->start->locked)
+				{
+					any_m1_in = true;
+				}
+			}
+			if (should_merge_in)
+			{
+				for (auto& p : mn2_in->outs)
+				{
+					if (p->meta_rate == 0)
+					{
+						should_merge_in = false;
+						break;
+					}
+				}
+				for (auto& p : mn2_in->outs)
+				{
+					if (p->meta_rate == 0)
+					{
+						should_merge_in = false;
+						break;
+					}
+				}
+			}
+			if (should_merge_in)
+			{
+				if (any_m1_in)
+				{
+					for (auto& p : mn1->outs)
+					{
+						p->meta_rate *= InFactor(mn1);
+					}
+					for (auto& p : mn1->ins)
+					{
+						p->meta_rate = p->link->start->meta_rate;
+					}
+					changes_made = true;
+				}
+				else
+				{
+					auto mn3 = std::make_unique<MetaNode>(mn1->id);
+					for (auto& p : mn2_in->ins)
+					{
+						mn3->ins.push_back(p);
+					}
+					for (auto& p : mn2_in->outs)
+					{
+						if (p->link->end->node != mn1)
+						{
+							mn3->outs.push_back(p);
+						}
+					}
+					for (auto& p : mn1->outs)
+					{
+						p->meta_rate *= InFactor(mn1);
+						mn3->outs.push_back(p);
+					}
+					meta_nodes.remove(mn1);
+					meta_nodes.remove(mn2_in);
+					meta_nodes.push_back(mn3.get());
+					changes_made = true;
+					continue;
+				}
+			}
+		}
+	}
+	for (auto& mn : meta_nodes)
+	{
+		for (auto& mp : mn->ins)
+		{
+			auto p = mp->pin;
+			p->current_rate *= updating_pins.front().first->current_rate / pins_formerly_traversed[updating_pins.front().first]->meta_rate;
+			updated_pins.find(p)->second = Constraint::Strong;
+		}
+	}
+    std::cout << "Done precalculating start and end nodes";
 
     auto GetConstraint = [&](const Pin* p)
         {
             auto it = updated_pins.find(p);
             return it == updated_pins.end() ? Constraint::None : it->second;
+        };
+
+    auto UpdatePin = [&](Pin* p, Constraint c, FractionalNumber rate)
+        {
+            p->current_rate = rate;
+            updated_pins[p] = c;
+            if (p->link != nullptr)
+            {
+                Pin* link_pin = p->direction == ax::NodeEditor::PinKind::Input ? p->link->start : p->link->end;
+                link_pin->current_rate = rate;
+                updated_pins[link_pin] = c;
+                updating_pins.push({ link_pin, c });
+            }
         };
 
     while (!updating_pins.empty())
@@ -466,41 +785,64 @@ void App::UpdateNodesRate()
         case Node::Kind::Craft:
         {
             CraftNode* node = static_cast<CraftNode*>(updating_pin->node);
-            node->current_rate = updating_pin->current_rate / updating_pin->base_rate;
-            for (auto& p : node->ins)
+            bool is_any_pin_strong = false;
+            for (auto& p : node->ins) 
             {
-                const Constraint constraint = GetConstraint(p.get());
-                if (constraint == Constraint::Strong)
+                if (p.get() == updating_pin)
                 {
                     continue;
                 }
-
-                const FractionalNumber new_rate = node->current_rate * p->base_rate;
-                if (new_rate == p->current_rate)
+                if (GetConstraint(p.get()) == Constraint::Strong)
                 {
-                    continue;
-                }
-                p->current_rate = new_rate;
-                updated_pins[p.get()] = updating_constraint;
-
-                // Don't need to push it if it's not linked to anything
-                if (p->link != nullptr)
-                {
-                    updating_pins.push({ p.get(), updating_constraint });
+                    is_any_pin_strong = true;
                 }
             }
-            for (auto& p : node->outs)
+            for (auto& p : node->outs) 
             {
-                const FractionalNumber new_rate = node->current_rate * p->base_rate;
-                if (new_rate == p->current_rate)
+                if (p.get() == updating_pin)
                 {
                     continue;
                 }
-                p->current_rate = new_rate;
-                if (p->link != nullptr)
+                if (GetConstraint(p.get()) == Constraint::Strong)
                 {
-                    updating_pins.push({ p.get(), Constraint::Strong });
+                    is_any_pin_strong = true;
                 }
+            }
+
+            // If at least one other pin in the Craft node is Strong, then don't update the Craft node at all.
+            // Otherwise update the Craft node itself and its pins.
+            if (!is_any_pin_strong)
+            {
+                std::cout << "Updating Craft node with recipe " << node->recipe->name << 
+                    " and updating_constraint " << (updating_constraint==Constraint::Strong?"Strong":(updating_constraint==Constraint::Weak?"Weak":"None")) << 
+                    "\n";
+				node->current_rate = updating_pin->current_rate / updating_pin->base_rate;
+				for (auto& p : node->ins)
+				{
+                    if (p.get() == updating_pin)
+                    {
+                        continue;
+                    }
+					const FractionalNumber new_rate = node->current_rate * p->base_rate;
+					if (new_rate == p->current_rate)
+					{
+						continue;
+					}
+                    UpdatePin(p.get(), updating_constraint, new_rate);
+				}
+				for (auto& p : node->outs)
+				{
+                    if (p.get() == updating_pin)
+                    {
+                        continue;
+                    }
+					const FractionalNumber new_rate = node->current_rate * p->base_rate;
+					if (new_rate == p->current_rate)
+					{
+						continue;
+					}
+                    UpdatePin(p.get(), updating_constraint, new_rate);
+				}
             }
             break;
         }
@@ -510,115 +852,153 @@ void App::UpdateNodesRate()
             Node* node = updating_pin->node;
             std::vector<std::unique_ptr<Pin>>& one_pin = kind == Node::Kind::Splitter ? node->ins : node->outs;
             std::vector<std::unique_ptr<Pin>>& multi_pin = kind == Node::Kind::Splitter ? node->outs : node->ins;
-            // One of the "multi pin" side has been updated
-            if ((kind == Node::Kind::Splitter && updating_pin->direction == ax::NodeEditor::PinKind::Output) ||
-                (kind == Node::Kind::Merger && updating_pin->direction == ax::NodeEditor::PinKind::Input))
-            {
-                const Constraint constraint = GetConstraint(one_pin[0].get());
-                // Easy case, just sum all "multi pin" and update "single pin" side with the new value
-                if (constraint != Constraint::Strong)
+
+            // If updating_pin is one_pin
+            if (one_pin[0].get() == updating_pin) {
+                std::cout << "Updating a one_pin\n";
+                FractionalNumber strong_side_difference = one_pin[0]->current_rate;
+                Constraint weakest_multi_pin_constraint = Constraint::None;
+                size_t number_of_non_strong_multi_pins = 0;
+                for (const auto& p : multi_pin)
                 {
-                    FractionalNumber new_rate = FractionalNumber(0, 1);
-                    const Pin* other_output_pin = nullptr;
-                    for (const auto& p : multi_pin)
+                    if (GetConstraint(p.get()) == Constraint::Strong)
                     {
-                        new_rate += p->current_rate;
-                        if (p.get() != updating_pin)
-                        {
-                            other_output_pin = p.get();
-                        }
+                        strong_side_difference -= p->current_rate;
                     }
-                    if (one_pin[0]->current_rate != new_rate)
+                    else
                     {
-                        one_pin[0]->current_rate = new_rate;
-                        const Constraint other_constraint = GetConstraint(other_output_pin);
-                        updating_pins.push({
-                            one_pin[0].get(),
-                            (updating_constraint == Constraint::Strong && other_constraint == Constraint::Strong) ? Constraint::Strong : Constraint::Weak
-                            });
+                        number_of_non_strong_multi_pins++;
+                    }
+                    if (weakest_multi_pin_constraint > GetConstraint(p.get()))
+                    {
+                        weakest_multi_pin_constraint = GetConstraint(p.get());
                     }
                 }
-                // We can't update "single pin", try to balance the node if there is a weaker constrained pin on the "multi pin" side
-                else
+                // Check that the sum of Strong multi_pins is not > one_pin
+                if (strong_side_difference < 0)
                 {
-                    Pin* other_pin = multi_pin[0].get() == updating_pin ? multi_pin[1].get() : multi_pin[0].get();
-                    Constraint other_constraint = GetConstraint(other_pin);
-                    if (other_constraint < Constraint::Strong && other_pin->link == nullptr)
+                    break;
+                }
+                // If all multi_pins are Strong and updating_constraint is Strong, check that the sum of multi_pins is not != one_pin
+                if (weakest_multi_pin_constraint == Constraint::Strong && updating_constraint == Constraint::Strong && strong_side_difference != 0)
+                {
+                    break;
+                }
+                // Set all non-Strong multi_pins to equal shares of the remainder of (one_pin - Strong multi_pins) with Weak, unless only 1 non-Strong multi_pin remains, in which case set it with updating_constraint
+                for (const auto& p : multi_pin) {
+                    if (GetConstraint(p.get()) != Constraint::Strong)
                     {
-                        other_constraint = Constraint::None;
-                    }
-                    // Can't balance
-                    if (other_constraint >= updating_constraint || one_pin[0]->current_rate < updating_pin->current_rate)
-                    {
-                        break;
-                    }
-
-                    const FractionalNumber new_rate = one_pin[0]->current_rate - updating_pin->current_rate;
-                    if (other_pin->current_rate != new_rate)
-                    {
-                        other_pin->current_rate = one_pin[0]->current_rate - updating_pin->current_rate;
-                        // If it's linked, propagate the update
-                        if (other_pin->link != nullptr)
-                        {
-                            updating_pins.push({
-                                other_pin,
-                                updating_constraint == Constraint::Strong ? Constraint::Strong : Constraint::Weak
-                                });
-                        }
+						UpdatePin(
+                            p.get(), 
+                            (number_of_non_strong_multi_pins == 1 ? updating_constraint : Constraint::Weak), 
+                            strong_side_difference / number_of_non_strong_multi_pins);
                     }
                 }
             }
-            // More complicated case, "one pin" side is updated, how do we split the items with all the other pins ?
+            // If updating_pin is multi_pin
             else
             {
-                Constraint constraint_0 = GetConstraint(multi_pin[0].get());
-                if (constraint_0 != Constraint::Strong && multi_pin[0]->link == nullptr)
+                std::cout << "Updating a multi_pin\n";
+                // If one_pin is Strong
+                if (GetConstraint(one_pin[0].get()) == Constraint::Strong)
                 {
-                    constraint_0 = Constraint::None;
-                }
-                Constraint constraint_1 = GetConstraint(multi_pin[1].get());
-                if (constraint_1 != Constraint::Strong && multi_pin[0]->link == nullptr)
-                {
-                    constraint_1 = Constraint::None;
-                }
-                // If one of the "multi pins" has a stronger constraint, use the other one to adjust if possible
-                if (constraint_0 > constraint_1 || constraint_1 > constraint_0)
-                {
-                    const int constrained_idx = constraint_0 > constraint_1 ? 0 : 1;
-                    const int other_idx = 1 - constrained_idx;
-                    if (updating_pin->current_rate > multi_pin[constrained_idx]->current_rate)
+                    std::cout << "One_pin is strong\n";
+					FractionalNumber strong_side_difference = one_pin[0]->current_rate;
+					Constraint weakest_multi_pin_constraint = Constraint::None;
+					size_t number_of_non_strong_multi_pins = 0;
+					for (const auto& p : multi_pin)
+					{
+						if (GetConstraint(p.get()) == Constraint::Strong || p.get() == updating_pin)
+						{
+							strong_side_difference -= p->current_rate;
+						}
+						else
+						{
+							number_of_non_strong_multi_pins++;
+						}
+						if (weakest_multi_pin_constraint > GetConstraint(p.get()))
+						{
+							weakest_multi_pin_constraint = GetConstraint(p.get());
+						}
+					}
+                    std::cout <<
+                        "strong_side_difference = " << strong_side_difference.GetValue() <<
+                        " weakest_multi_pin_constraint = " << (weakest_multi_pin_constraint==Constraint::Strong?"Strong":(weakest_multi_pin_constraint==Constraint::Weak?"Weak":"None")) <<
+                        " number_of_non_strong_multi_pins = " << number_of_non_strong_multi_pins <<
+                        "\n";
+					// Check that the sum of Strong multi_pins + updating_pin is not > one_pin
+                    if (strong_side_difference < 0)
                     {
-                        multi_pin[other_idx]->current_rate = updating_pin->current_rate - multi_pin[constrained_idx]->current_rate;
-                        if (multi_pin[other_idx]->link != nullptr)
+						// If updating_constraint == Strong: mark this node as imbalanced
+                        if (updating_constraint == Constraint::Strong)
                         {
-                            const Constraint stronger_constraint = constraint_0 > constraint_1 ? constraint_0 : constraint_1;
-                            updating_pins.push({
-                                multi_pin[other_idx].get(),
-                                updating_constraint == Constraint::Strong && stronger_constraint == Constraint::Strong ? Constraint::Strong : Constraint::Weak
-                                });
+                            break;
                         }
+						// If updating_constraint != Strong: set all non-strong multi_pins to 0 and set updating_pin to the remainder of (one_pin - Strong multi_pins) with updating_constraint
+                        else
+                        {
+                            for (const auto& p : multi_pin)
+                            {
+                                if (p.get() == updating_pin)
+                                {
+									UpdatePin(
+										p.get(), 
+										updating_constraint, 
+										strong_side_difference);
+                                } 
+                                else if (GetConstraint(p.get()) != Constraint::Strong)
+                                {
+									UpdatePin(
+										p.get(), 
+										updating_constraint, 
+										0);
+                                }
+                            }
+                        }
+                        break;
                     }
+					// If all multi_pins except for updating_pin are Strong, check that the sum of multi_pins is not != one_pin
+					if (weakest_multi_pin_constraint == Constraint::Strong && updating_constraint == Constraint::Strong && strong_side_difference != 0)
+					{
+						break;
+					}
+					// Set all non-Strong multi_pins to equal shares of the remainder of (one_pin - Strong multi_pins) with Weak, unless only 1 non-Strong multi_pin remains, in which case set it with updating_constraint
+					for (const auto& p : multi_pin) {
+                        if (GetConstraint(p.get()) != Constraint::Strong && p.get() != updating_pin)
+                        {
+							UpdatePin(
+								p.get(), 
+								(number_of_non_strong_multi_pins == 1 ? updating_constraint : Constraint::Weak), 
+								strong_side_difference / number_of_non_strong_multi_pins);
+                        }
+					}
                 }
-                // Else if pins have both no or weak constraints then try to split the new rate keeping the same split ratio
-                else if (constraint_0 == constraint_1 && constraint_0 < Constraint::Strong)
+                // If one_pin is not Strong, set one_pin to the sum of multi_pins, where GetConstraint(multi_pin.get()) >= GetConstraint(one_pin.get()) with weakest of GetConstraint(multi_pin.get())
+                else
                 {
-                    const FractionalNumber sum = multi_pin[0]->current_rate + multi_pin[1]->current_rate;
-                    for (int i = 0; i < multi_pin.size(); ++i)
-                    {
-                        const FractionalNumber new_rate = sum.GetNumerator() == 0 ? (updating_pin->current_rate / FractionalNumber(2, 1)) : ((multi_pin[i]->current_rate / sum) * updating_pin->current_rate);
-                        if (multi_pin[i]->current_rate != new_rate)
+                    FractionalNumber relevant_multi_pin_sum = 0;
+					Constraint weakest_multi_pin_constraint = Constraint::None;
+                    for (const auto& p : multi_pin) {
+                        if (GetConstraint(p.get()) >= GetConstraint(one_pin[0].get()))
                         {
-                            multi_pin[i]->current_rate = new_rate;
-                            updating_pins.push({ multi_pin[i].get(), Constraint::Weak });
+                            relevant_multi_pin_sum += p->current_rate;
                         }
+						if (weakest_multi_pin_constraint > GetConstraint(p.get()))
+						{
+							weakest_multi_pin_constraint = GetConstraint(p.get());
+						}
                     }
+					UpdatePin(
+						one_pin[0].get(),
+						weakest_multi_pin_constraint, 
+						relevant_multi_pin_sum);
                 }
-                // Else, we can't know how the split should be so do nothing and let the user adjust
             }
             break;
         }
         }
 
+        /*
         // If no link connected to this pin
         if (updating_pin->link == nullptr)
         {
@@ -643,6 +1023,7 @@ void App::UpdateNodesRate()
         updating_pin->link->flow = updating_pin->direction == ax::NodeEditor::PinKind::Input ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
         updated_pin->current_rate = updating_pin->current_rate;
         updating_pins.push({ updated_pin, updating_constraint });
+        */
     }
 
     // Just in case we exited the loop prematurely
@@ -1247,12 +1628,34 @@ void App::RenderNodes()
                                 ImGui::TextUnformatted(p->item->new_line_name.c_str());
                                 ImGui::Spring(0.0f);
                             }
+
+                            if (node->IsMerger() && node->ins.size() > 2)
+                            {
+                                ImGui::Spring(0.0f);
+                                ImGui::TextUnformatted("X");
+                                if (ImGui::IsItemClicked())
+                                {
+                                    node->ins.erase(std::next(node->ins.begin(), idx));
+                                    updating_pins.push({ node->outs[0].get(), Constraint::Weak });
+                                }
+                                ImGui::Spring(0.0f);
+                            }
                         }
                         ImGui::EndHorizontal();
                         ax::NodeEditor::EndPin();
 
                         ImGui::Spring(0.0f);
                     }
+
+                    if (node->IsMerger())
+                    {
+                        ImGui::TextUnformatted("+");
+                        if (ImGui::IsItemClicked())
+                        {
+                            node->ins.push_back(std::make_unique<Pin>(GetNextId(), ax::NodeEditor::PinKind::Input, node.get(), nullptr));
+                        }
+                    }
+
                     ax::NodeEditor::PopStyleVar();
                     ax::NodeEditor::PopStyleVar();
                     ImGui::Spring(1.0f, 0.0f);
@@ -1273,6 +1676,18 @@ void App::RenderNodes()
                         ax::NodeEditor::BeginPin(p->id, p->direction);
                         ImGui::BeginHorizontal(p->id.AsPointer());
                         {
+                            if (node->IsSplitter() && node->outs.size() > 2)
+                            {
+                                ImGui::Spring(0.0f);
+                                ImGui::TextUnformatted("X");
+                                if (ImGui::IsItemClicked())
+                                {
+                                    node->outs.erase(std::next(node->outs.begin(), idx));
+                                    updating_pins.push({ node->ins[0].get(), Constraint::Weak });
+                                }
+                                ImGui::Spring(0.0f);
+                            }
+
                             if (node->IsCraft())
                             {
                                 ImGui::Spring(0.0f);
@@ -1326,6 +1741,15 @@ void App::RenderNodes()
                         ax::NodeEditor::EndPin();
 
                         ImGui::Spring(0.0f);
+                    }
+
+                    if (node->IsSplitter())
+                    {
+                        ImGui::TextUnformatted("+");
+                        if (ImGui::IsItemClicked())
+                        {
+                            node->outs.push_back(std::make_unique<Pin>(GetNextId(), ax::NodeEditor::PinKind::Output, node.get(), nullptr));
+                        }
                     }
                     ax::NodeEditor::PopStyleVar();
                     ax::NodeEditor::PopStyleVar();
@@ -1698,7 +2122,10 @@ void App::AddNewNode()
                         CreateLink(new_node_pin, pins[pin_index].get());
                     }
                 }
-                updating_pins.push({ new_node_pin, Constraint::Strong });
+                //updating_pins.push({ new_node_pin, Constraint::Strong });
+                pins[pin_index]->current_rate = new_node_pin->current_rate;
+                updating_pins.push({ pins[pin_index].get(), Constraint::Strong});
+
             }
             on_popup_close();
         }
