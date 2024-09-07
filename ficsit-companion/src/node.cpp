@@ -46,7 +46,7 @@ Json::Value Node::Serialize() const
     return node;
 }
 
-bool Node::Deserialize(const Json::Value& v)
+bool Node::Deserialize(const Json::Value& v, const std::function<unsigned long long int()>& id_generator)
 {
     pos.x = v["pos"]["x"].get<float>();
     pos.y = v["pos"]["y"].get<float>();
@@ -89,9 +89,9 @@ Json::Value CraftNode::Serialize() const
     return node;
 }
 
-bool CraftNode::Deserialize(const Json::Value& v)
+bool CraftNode::Deserialize(const Json::Value& v, const std::function<unsigned long long int()>& id_generator)
 {
-    Node::Deserialize(v);
+    Node::Deserialize(v, id_generator);
 
     if (recipe->name != v["recipe"].get_string())
     {
@@ -162,29 +162,25 @@ Json::Value OrganizerNode::Serialize() const
     return serialized;
 }
 
-bool OrganizerNode::Deserialize(const Json::Value& v)
+bool OrganizerNode::Deserialize(const Json::Value& v, const std::function<unsigned long long int()>& id_generator)
 {
-    Node::Deserialize(v);
+    Node::Deserialize(v, id_generator);
 
-    if (item->name != v["item"].get_string())
+    if (item != NULL && item->name != v["item"].get_string())
     {
         return false;
     }
 
+    ins.clear();
     for (int i = 0; i < v["ins"].size(); ++i)
     {
-        if (i >= ins.size())
-        {
-            break;
-        }
+		ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
         ins[i]->current_rate = FractionalNumber(v["ins"][i]["num"].get<long long int>(), v["ins"][i]["den"].get<long long int>());
     }
+    outs.clear();
     for (int i = 0; i < v["outs"].size(); ++i)
     {
-        if (i >= outs.size())
-        {
-            break;
-        }
+		outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
         outs[i]->current_rate = FractionalNumber(v["outs"][i]["num"].get<long long int>(), v["outs"][i]["den"].get<long long int>());
     }
 
@@ -287,4 +283,19 @@ bool MergerNode::IsMerger() const
 Node::Kind MergerNode::GetKind() const
 {
     return Node::Kind::Merger;
+}
+
+MetaNode::MetaNode(const ax::NodeEditor::NodeId id) : Node(id)
+{
+    
+}
+
+MetaNode::~MetaNode()
+{
+
+}
+
+Node::Kind MetaNode::GetKind() const
+{
+    return Node::Kind::Meta;
 }

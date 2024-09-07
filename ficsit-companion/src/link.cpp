@@ -25,3 +25,14 @@ Link::~Link()
 {
 
 }
+
+MetaLink::MetaLink(const ax::NodeEditor::LinkId id, MetaPin* start, MetaPin* end) :
+    Link(id, start, end), start(start), end(end)
+{
+
+}
+
+MetaLink::~MetaLink()
+{
+
+}

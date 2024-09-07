@@ -28,6 +28,51 @@ public:
     void SaveSession();
 
 private:
+    /// @brief Used in saved files to track when format change. Used to update files saved with previous versions
+    static constexpr int SAVE_VERSION = 2;
+
+    /// @brief Window id used for the Add Node popup
+    static constexpr std::string_view add_node_popup_id = "Add Node";
+    /// @brief Folder to save/load the serialized graph
+    static constexpr std::string_view save_folder = "saved";
+    /// @brief Path used to save current session file
+    static constexpr std::string_view session_file = "last_session.fcs";
+
+
+    /// @brief Version of the game the items/recipes are from
+    std::string recipes_version;
+    /// @brief All known items
+    std::unordered_map<std::string, std::unique_ptr<Item>> items;
+    /// @brief All known recipes
+    std::vector<Recipe> recipes;
+
+    /// @brief All nodes currently in the graph view
+    std::vector<std::unique_ptr<Node>> nodes;
+    /// @brief All links currently in the graph view
+    std::vector<std::unique_ptr<Link>> links;
+
+    ax::NodeEditor::Config config;
+    ax::NodeEditor::EditorContext* context;
+
+    /// @brief Next available id for a node/link in the graph view
+    unsigned long long int next_id;
+
+    double last_time_saved_session;
+
+    /* Values used during the rendering pass to save UI state between frames */
+    std::string save_name;
+    std::vector<std::pair<std::string, size_t>> file_suggestions;
+    bool popup_opened;
+    ImVec2 new_node_position;
+    Pin* new_node_pin;
+    std::string recipe_filter;
+    std::vector<std::string> frame_tooltips;
+
+    enum class Constraint { None, Weak, Strong };
+    /// @brief All pins which had their value changed and need to propagate updates
+    std::queue<std::pair<const Pin*, Constraint>> updating_pins;
+
+private:
     /// @brief Load saved session if present
     void LoadSession();
 
@@ -92,50 +137,5 @@ private:
     void RenderControlsPopup();
     /// @brief React to app-specific key pressed
     void CustomKeyControl();
-
-private:
-    /// @brief Used in saved files to track when format change. Used to update files saved with previous versions
-    static constexpr int SAVE_VERSION = 2;
-
-    /// @brief Window id used for the Add Node popup
-    static constexpr std::string_view add_node_popup_id = "Add Node";
-    /// @brief Folder to save/load the serialized graph
-    static constexpr std::string_view save_folder = "saved";
-    /// @brief Path used to save current session file
-    static constexpr std::string_view session_file = "last_session.fcs";
-
-
-    /// @brief Version of the game the items/recipes are from
-    std::string recipes_version;
-    /// @brief All known items
-    std::unordered_map<std::string, std::unique_ptr<Item>> items;
-    /// @brief All known recipes
-    std::vector<Recipe> recipes;
-
-    /// @brief All nodes currently in the graph view
-    std::vector<std::unique_ptr<Node>> nodes;
-    /// @brief All links currently in the graph view
-    std::vector<std::unique_ptr<Link>> links;
-
-    ax::NodeEditor::Config config;
-    ax::NodeEditor::EditorContext* context;
-
-    /// @brief Next available id for a node/link in the graph view
-    unsigned long long int next_id;
-
-    double last_time_saved_session;
-
-    /* Values used during the rendering pass to save UI state between frames */
-    std::string save_name;
-    std::vector<std::pair<std::string, size_t>> file_suggestions;
-    bool popup_opened;
-    ImVec2 new_node_position;
-    Pin* new_node_pin;
-    std::string recipe_filter;
-    std::vector<std::string> frame_tooltips;
-
-    enum class Constraint { None, Weak, Strong };
-    /// @brief All pins which had their value changed and need to propagate updates
-    std::queue<std::pair<const Pin*, Constraint>> updating_pins;
 
 };

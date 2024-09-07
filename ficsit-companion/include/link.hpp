@@ -5,6 +5,7 @@
 #include <imgui_node_editor.h>
 
 struct Pin;
+struct MetaPin;
 
 struct Link
 {
@@ -24,4 +25,14 @@ struct Link
     const ax::NodeEditor::PinId end_id;
 
     std::optional<ax::NodeEditor::FlowDirection> flow;
+};
+
+struct MetaLink : public Link
+{
+    MetaLink(const ax::NodeEditor::LinkId id, MetaPin* start, MetaPin* end);
+    ~MetaLink();
+
+    MetaPin* start;
+    MetaPin* end;
+
 };

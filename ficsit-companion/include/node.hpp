@@ -13,6 +13,7 @@
 struct Item;
 struct Pin;
 struct Recipe;
+struct MetaPin;
 
 struct Node
 {
@@ -20,7 +21,8 @@ struct Node
     {
         Craft,
         Splitter,
-        Merger
+        Merger,
+        Meta
     };
 
     Node(const ax::NodeEditor::NodeId id);
@@ -32,7 +34,7 @@ struct Node
     virtual bool IsMerger() const;
     virtual bool IsSplitter() const;
     virtual Json::Value Serialize() const;
-    virtual bool Deserialize(const Json::Value& v);
+    virtual bool Deserialize(const Json::Value& v, const std::function<unsigned long long int()>& id_generator);
 
     const ax::NodeEditor::NodeId id;
 
@@ -49,7 +51,7 @@ struct CraftNode : public Node
     virtual Kind GetKind() const override;
     virtual bool IsCraft() const override;
     virtual Json::Value Serialize() const override;
-    virtual bool Deserialize(const Json::Value& v) override;
+    virtual bool Deserialize(const Json::Value& v, const std::function<unsigned long long int()>& id_generator) override;
 
     const Recipe* recipe;
     FractionalNumber current_rate;
@@ -61,7 +63,7 @@ struct OrganizerNode : public Node
     virtual ~OrganizerNode();
     virtual bool IsOrganizer() const override;
     virtual Json::Value Serialize() const override;
-    virtual bool Deserialize(const Json::Value& v) override;
+    virtual bool Deserialize(const Json::Value& v, const std::function<unsigned long long int()>& id_generator) override;
 
     void ChangeItem(const Item* item);
     void RemoveItemIfNotForced();
@@ -86,4 +88,13 @@ struct MergerNode : public OrganizerNode
     virtual bool IsMerger() const override;
 
     virtual Kind GetKind() const override;
+};
+
+struct MetaNode : public Node
+{
+    MetaNode(const ax::NodeEditor::NodeId id);
+    virtual ~MetaNode();
+    virtual Kind GetKind() const override;
+    std::vector<std::unique_ptr<MetaPin>> ins;
+    std::vector<std::unique_ptr<MetaPin>> outs;
 };
