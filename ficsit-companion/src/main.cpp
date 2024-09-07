@@ -113,8 +113,9 @@ bool Render(SDL_Window* window, App* app)
 
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
-
+    
     ImGui::Begin("Ficsit Companion", NULL,
+        ImGuiWindowFlags_NoNavInputs |
         ImGuiWindowFlags_NoResize |
         ImGuiWindowFlags_NoMove |
         ImGuiWindowFlags_NoCollapse |
@@ -238,7 +239,8 @@ int main(int argc, char* argv[])
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::GetIO().IniFilename = nullptr; // Don't save window layout in ini file
-
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;//Enable Keyboard Navigation
+    
     // Style
     ImGui::StyleColorsDark();
 
