@@ -113,7 +113,7 @@ bool Render(SDL_Window* window, App* app)
 
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
-    
+
     ImGui::Begin("Ficsit Companion", NULL,
         ImGuiWindowFlags_NoNavInputs |
         ImGuiWindowFlags_NoResize |
