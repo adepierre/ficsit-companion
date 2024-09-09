@@ -127,6 +127,7 @@ void App::LoadSettings()
     }
 
     // Load all settings values from json
+    settings.hide_spoilers = json.contains("hide_spoilers") && json["hide_spoilers"].get<bool>();
 }
 
 void App::SaveSettings() const
@@ -134,6 +135,7 @@ void App::SaveSettings() const
     Json::Value serialized;
 
     // Save all settings values in the json
+    serialized["hide_spoilers"] = settings.hide_spoilers;
 
     SaveFile(settings_file.data(), serialized.Dump(4));
 }
@@ -377,7 +379,14 @@ void App::LoadRecipes()
         {
             outputs.emplace_back(CountedItem(items.at(o["name"].get_string()).get(), FractionalNumber(std::to_string(o["amount"].get<double>() * 60.0) + "/" + std::to_string(time))));
         }
-        recipes.emplace_back(Recipe(inputs, outputs, building, r["alternate"].get<bool>(), name));
+        recipes.emplace_back(Recipe(
+            inputs,
+            outputs,
+            building,
+            r["alternate"].get<bool>(),
+            name,
+            r.contains("spoiler") && r["spoiler"].get<bool>()
+        ));
     }
 }
 
@@ -1033,6 +1042,10 @@ void App::RenderLeftPanel()
 
     ImGui::SeparatorText("Settings");
     // Display all settings here
+    if (ImGui::Checkbox("Hide tier 9 spoiler recipes", &settings.hide_spoilers))
+    {
+        SaveSettings();
+    }
 
 
     ImGui::SeparatorText("Inputs");
@@ -1677,6 +1690,10 @@ void App::AddNewNode()
 
         for (const auto [i, score_ignored] : recipe_indices)
         {
+            if (settings.hide_spoilers && recipes[i].is_spoiler)
+            {
+                continue;
+            }
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             if (ImGui::MenuItem(((recipes[i].alternate ? "*" : "") + recipes[i].name).c_str()))

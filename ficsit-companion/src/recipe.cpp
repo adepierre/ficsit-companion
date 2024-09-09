@@ -20,8 +20,19 @@ Item::Item(const std::string& name, const std::string& icon_path) :
 
 }
 
-Recipe::Recipe(const std::vector<CountedItem>& ins, const std::vector<CountedItem>& outs, const std::string& machine, const bool alternate, const std::string& name) :
-    ins(ins), outs(outs), machine(machine), alternate(alternate), name(name)
+Recipe::Recipe(
+    const std::vector<CountedItem>& ins,
+    const std::vector<CountedItem>& outs,
+    const std::string& machine,
+    const bool alternate,
+    const std::string& name,
+    const bool is_spoiler) :
+    ins(ins),
+    outs(outs),
+    machine(machine),
+    alternate(alternate),
+    name(name),
+    is_spoiler(is_spoiler)
 {
     lower_name = name;
     std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(), [](unsigned char c) { return std::tolower(c); });

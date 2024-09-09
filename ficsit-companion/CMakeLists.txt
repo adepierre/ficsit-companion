@@ -45,13 +45,13 @@ if (NOT DEFINED EMSCRIPTEN)
       TARGET ${PROJECT_NAME} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../assets $<TARGET_FILE_DIR:${PROJECT_NAME}>
     )
-    
+
     install(TARGETS ${PROJECT_NAME} DESTINATION .)
     install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../assets/" DESTINATION .)
 else()
     # Make emscripten outputs html file instead of default js and redirect all emscripten generated files to a dedicated web folder
     set_target_properties(${PROJECT_NAME} PROPERTIES
-        SUFFIX ".html" 
+        SUFFIX ".html"
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/../web"
     )
     target_compile_options(${PROJECT_NAME} PRIVATE

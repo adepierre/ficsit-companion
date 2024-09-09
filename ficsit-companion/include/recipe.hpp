@@ -22,7 +22,14 @@ struct CountedItem
 
 struct Recipe
 {
-    Recipe(const std::vector<CountedItem>& ins, const std::vector<CountedItem>& outs, const std::string& machine, const bool alternate, const std::string& name = "");
+    Recipe(
+        const std::vector<CountedItem>& ins,
+        const std::vector<CountedItem>& outs,
+        const std::string& machine,
+        const bool alternate,
+        const std::string& name = "",
+        const bool is_spoiler = false
+    );
 
     /// @brief Search for a string in this recipe name, case insensitive
     /// @param s String to search
@@ -41,6 +48,7 @@ struct Recipe
     const std::vector<CountedItem> outs;
     const std::string machine;
     const bool alternate;
+    const bool is_spoiler;
 
 private:
     std::string lower_name;

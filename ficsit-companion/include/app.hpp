@@ -109,7 +109,9 @@ private:
     /// @brief Path used to save app settings
     static constexpr std::string_view settings_file = "settings.json";
 
+    /// @brief All settings to customize app behaviour
     struct Settings {
+        bool hide_spoilers = true;
     } settings;
 
     /// @brief Version of the game the items/recipes are from
