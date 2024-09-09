@@ -76,6 +76,7 @@ App::App()
 
     recipe_filter = "";
 
+    LoadSettings();
     LoadRecipes();
 }
 
@@ -103,10 +104,38 @@ void App::LoadSession()
 {
     // Load session file if it exists
     const std::optional<std::string> content = LoadFile(session_file.data());
-    if (content.has_value())
+    if (!content.has_value())
     {
-        Deserialize(content.value());
+        return;
     }
+    Deserialize(content.value());
+}
+
+void App::LoadSettings()
+{
+    const std::optional<std::string> content = LoadFile(settings_file.data());
+
+    if (!content.has_value())
+    {
+        return;
+    }
+
+    Json::Value json = Json::Parse(content.value());
+    if (json.is_null() || json.size() == 0)
+    {
+        return;
+    }
+
+    // Load all settings values from json
+}
+
+void App::SaveSettings() const
+{
+    Json::Value serialized;
+
+    // Save all settings values in the json
+
+    SaveFile(settings_file.data(), serialized.Dump(4));
 }
 
 std::string App::Serialize() const
@@ -554,7 +583,7 @@ void App::UpdateNodesRate()
                         updating_pins.push({
                             one_pin[0].get(),
                             (updating_constraint == Constraint::Strong && other_constraint == Constraint::Strong) ? Constraint::Strong : Constraint::Weak
-                            });
+                        });
                     }
                 }
                 // We can't update "single pin", try to balance the node if there is a weaker constrained pin on the "multi pin" side
@@ -1002,6 +1031,12 @@ void App::RenderLeftPanel()
         ImGui::SetTooltip("%s", "Load current production chain");
     }
 
+    ImGui::SeparatorText("Settings");
+    // Display all settings here
+
+
+    ImGui::SeparatorText("Inputs");
+
     std::map<const Item*, FractionalNumber> inputs;
     std::map<const Item*, FractionalNumber> outputs;
     std::map<std::string, FractionalNumber> total_machines;
@@ -1034,7 +1069,6 @@ void App::RenderLeftPanel()
     }
 
     const float rate_width = ImGui::CalcTextSize("0000.000").x;
-    ImGui::SeparatorText("Inputs");
     for (auto& [item, n] : inputs)
     {
         ImGui::SetNextItemWidth(rate_width);

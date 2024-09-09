@@ -31,6 +31,9 @@ private:
     /// @brief Load saved session if present
     void LoadSession();
 
+    void LoadSettings();
+    void SaveSettings() const;
+
     /// @brief Serialize the app state to a string
     /// @return Serialized state of this app
     std::string Serialize() const;
@@ -103,7 +106,11 @@ private:
     static constexpr std::string_view save_folder = "saved";
     /// @brief Path used to save current session file
     static constexpr std::string_view session_file = "last_session.fcs";
+    /// @brief Path used to save app settings
+    static constexpr std::string_view settings_file = "settings.json";
 
+    struct Settings {
+    } settings;
 
     /// @brief Version of the game the items/recipes are from
     std::string recipes_version;
