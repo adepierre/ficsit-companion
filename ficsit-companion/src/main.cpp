@@ -238,9 +238,11 @@ int main(int argc, char* argv[])
     // ---------------------------------------
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGui::GetIO().IniFilename = nullptr; // Don't save window layout in ini file
-    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;//Enable Keyboard Navigation
-    
+    // Don't save window layout in ini file
+    ImGui::GetIO().IniFilename = nullptr;
+    // Enable Keyboard Navigation
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
     // Style
     ImGui::StyleColorsDark();
 

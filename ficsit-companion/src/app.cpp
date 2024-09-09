@@ -674,6 +674,12 @@ void App::UpdateNodesRate()
 
 void App::NudgeNodes()
 {
+    // Don't nudge item if the add node popup is open (arrow keys are used for navigation in the dropdown menu)
+    if (ImGui::IsPopupOpen(add_node_popup_id.data()))
+    {
+        return;
+    }
+
     ImVec2 nudge{
         -1.0f * ImGui::IsKeyPressed(ImGuiKey_LeftArrow, false) + 1.0f * ImGui::IsKeyPressed(ImGuiKey_RightArrow, false),
         -1.0f * ImGui::IsKeyPressed(ImGuiKey_UpArrow, false) + 1.0f * ImGui::IsKeyPressed(ImGuiKey_DownArrow, false)
