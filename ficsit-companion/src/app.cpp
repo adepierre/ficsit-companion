@@ -16,7 +16,50 @@
 #include <array>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <stdexcept>
+
+/// @brief Save text file (either on disk for desktop version or in localStorage for web version)
+/// @param path
+/// @param content
+static void SaveFile(const std::string& path, const std::string& content)
+{
+#if defined(__EMSCRIPTEN__)
+    EM_ASM({ localStorage.setItem(UTF8ToString($0), UTF8ToString($1)); }, path.c_str(), content.c_str());
+#else
+    std::ofstream f(path, std::ios::out);
+    f << content;
+    f.close();
+#endif
+}
+
+/// @brief Load text file (either from disk for desktop version or in localStorage for web version)
+/// @param path
+/// @return std::nullopt if file does not exist, file content otherwise
+static std::optional<std::string> LoadFile(const std::string& path)
+{
+#if !defined(__EMSCRIPTEN__)
+    // Load file if it exists
+    if (std::filesystem::exists(path))
+    {
+        std::ifstream f(path, std::ios::in);
+        return std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+    }
+    return std::nullopt;
+#else
+    // Read from localStorage
+    char* content_raw = static_cast<char*>(EM_ASM_PTR({
+        var str = localStorage.getItem(UTF8ToString($0)) || "";
+        var length = lengthBytesUTF8(str) + 1;
+        var str_wasm = _malloc(length);
+        stringToUTF8(str, str_wasm, length);
+        return str_wasm;
+    }, path.c_str()));
+    const std::string content(content_raw);
+    free(static_cast<void*>(content_raw));
+    return content.empty() ? std::nullopt : std::optional<std::string>(content);
+#endif
+}
 
 App::App()
 {
@@ -53,41 +96,17 @@ App::~App()
 \******************************************************/
 void App::SaveSession()
 {
-#if defined(__EMSCRIPTEN__)
-    const char* location = session_file.data();
-    const std::string content = Serialize();
-    EM_ASM({ localStorage.setItem(UTF8ToString($0), UTF8ToString($1)); }, location, content.c_str());
-#else
-    std::ofstream f(session_file.data(), std::ios::out);
-    f << Serialize();
-    f.close();
-#endif
+    SaveFile(session_file.data(), Serialize());
 }
 
 void App::LoadSession()
 {
-#if !defined(__EMSCRIPTEN__)
     // Load session file if it exists
-    if (std::filesystem::exists(session_file))
+    const std::optional<std::string> content = LoadFile(session_file.data());
+    if (content.has_value())
     {
-        std::ifstream f(session_file.data(), std::ios::in);
-        const std::string content = std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
-        f.close();
-
-        Deserialize(content);
+        Deserialize(content.value());
     }
-#else
-    // Read from localStorage
-    char* content = static_cast<char*>(EM_ASM_PTR({
-        var str = localStorage.getItem(UTF8ToString($0)) || "{}";
-        var length = lengthBytesUTF8(str) + 1;
-        var str_wasm = _malloc(length);
-        stringToUTF8(str, str_wasm, length);
-        return str_wasm;
-    }, session_file.data()));
-    Deserialize(content);
-    free(static_cast<void*>(content));
-#endif
 }
 
 std::string App::Serialize() const
@@ -832,7 +851,7 @@ void App::RenderLeftPanel()
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            }, path.c_str(), content.c_str());
+        }, path.c_str(), content.c_str());
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     {
@@ -955,18 +974,8 @@ void App::RenderLeftPanel()
     ImGui::BeginDisabled(save_name.empty());
     if (ImGui::Button("Save"))
     {
-        const std::string path = std::string(save_folder) + "/" + save_name;
-        const std::string content = Serialize();
-
         // Save current state using provided name
-#if defined(__EMSCRIPTEN__)
-        EM_ASM({ localStorage.setItem(UTF8ToString($0), UTF8ToString($1)); }, (path + ".fcs").c_str(), content.c_str());
-#else
-        std::filesystem::create_directories(std::filesystem::path(path).parent_path());
-        std::ofstream f(path + ".fcs", std::ios::out);
-        f << content;
-        f.close();
-#endif
+        SaveFile(std::string(save_folder) + "/" + save_name + ".fcs", Serialize());
         save_name = "";
     }
     ImGui::EndDisabled();
@@ -979,29 +988,11 @@ void App::RenderLeftPanel()
     ImGui::BeginDisabled(file_suggestions.end() == std::find_if(file_suggestions.begin(), file_suggestions.end(), [&](const std::pair<std::string, size_t>& p) { return p.first == save_name; }));
     if (ImGui::Button("Load"))
     {
-        const std::string path = std::string(save_folder) + "/" + save_name + ".fcs";
-
-        std::string content = "{}";
-#if !defined(__EMSCRIPTEN__)
-        if (std::filesystem::exists(path))
+        const std::optional<std::string> content = LoadFile(std::string(save_folder) + "/" + save_name + ".fcs");
+        if (content.has_value())
         {
-            std::ifstream f(path, std::ios::in);
-            content = std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
-            f.close();
+            Deserialize(content.value());
         }
-#else
-        // Read from localStorage
-        char* content_raw = static_cast<char*>(EM_ASM_PTR({
-            var str = localStorage.getItem(UTF8ToString($0)) || "{}";
-            var length = lengthBytesUTF8(str) + 1;
-            var str_wasm = _malloc(length);
-            stringToUTF8(str, str_wasm, length);
-            return str_wasm;
-            }, path.c_str()));
-        content = std::string(content_raw);
-        free(static_cast<void*>(content_raw));
-#endif
-        Deserialize(content);
         save_name = "";
     }
     ImGui::EndDisabled();
