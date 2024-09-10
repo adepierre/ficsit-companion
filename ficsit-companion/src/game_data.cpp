@@ -11,6 +11,7 @@ namespace Data
     {
         std::string version;
         std::unordered_map<std::string, std::unique_ptr<Item>> items;
+        std::unordered_map<std::string, std::unique_ptr<Building>> buildings;
         std::vector<Recipe> recipes;
     }
 
@@ -32,6 +33,12 @@ namespace Data
 
         version = data["version"].get_string();
 
+        for (const auto& b : data["buildings"].get_array())
+        {
+            const std::string& name = b["name"].get_string();
+            buildings[name] = std::make_unique<Building>(name);
+        }
+
         for (const auto& i : data["items"].get_array())
         {
             const std::string& name = i["name"].get_string();
@@ -47,7 +54,6 @@ namespace Data
 
         for (const auto& [name, r] : ordered_recipes.get_object())
         {
-            const std::string& building = r["building"].get_string();
             const int time = static_cast<int>(r["time"].get<double>());
             std::vector<CountedItem> inputs;
             for (const auto& i : r["inputs"].get_array())
@@ -62,7 +68,7 @@ namespace Data
             recipes.emplace_back(Recipe(
                 inputs,
                 outputs,
-                building,
+                buildings.at(r["building"].get_string()).get(),
                 r["alternate"].get<bool>(),
                 name,
                 r.contains("spoiler") && r["spoiler"].get<bool>()
@@ -78,6 +84,11 @@ namespace Data
     const std::unordered_map<std::string, std::unique_ptr<Item>>& Items()
     {
         return items;
+    }
+
+    const std::unordered_map<std::string, std::unique_ptr<Building>>& Buildings()
+    {
+        return buildings;
     }
 
     const std::vector<Recipe>& Recipes()

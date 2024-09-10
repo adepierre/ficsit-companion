@@ -23,13 +23,13 @@ Item::Item(const std::string& name, const std::string& icon_path) :
 Recipe::Recipe(
     const std::vector<CountedItem>& ins,
     const std::vector<CountedItem>& outs,
-    const std::string& machine,
+    const Building* building,
     const bool alternate,
     const std::string& name,
     const bool is_spoiler) :
     ins(ins),
     outs(outs),
-    machine(machine),
+    building(building),
     alternate(alternate),
     name(name),
     is_spoiler(is_spoiler)

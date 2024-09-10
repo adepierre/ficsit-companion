@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+struct Building;
+
 struct Item
 {
     Item(const std::string& name, const std::string& icon_path);
@@ -25,7 +27,7 @@ struct Recipe
     Recipe(
         const std::vector<CountedItem>& ins,
         const std::vector<CountedItem>& outs,
-        const std::string& machine,
+        const Building* building,
         const bool alternate,
         const std::string& name = "",
         const bool is_spoiler = false
@@ -46,7 +48,7 @@ struct Recipe
     const std::string name;
     const std::vector<CountedItem> ins;
     const std::vector<CountedItem> outs;
-    const std::string machine;
+    const Building* building;
     const bool alternate;
     const bool is_spoiler;
 

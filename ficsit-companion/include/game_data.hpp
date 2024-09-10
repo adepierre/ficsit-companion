@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "building.hpp"
 #include "recipe.hpp"
 
 namespace Data
@@ -18,6 +19,9 @@ namespace Data
 
     /// @brief Get all known items
     const std::unordered_map<std::string, std::unique_ptr<Item>>& Items();
+
+    /// @brief Get all known buildings
+    const std::unordered_map<std::string, std::unique_ptr<Building>>& Buildings();
 
     /// @brief Get all known recipes
     const std::vector<Recipe>& Recipes();

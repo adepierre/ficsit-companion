@@ -1,4 +1,5 @@
 #include "app.hpp"
+#include "building.hpp"
 #include "game_data.hpp"
 #include "json.hpp"
 #include "link.hpp"
@@ -1027,8 +1028,8 @@ void App::RenderLeftPanel()
         if (n->IsCraft())
         {
             const CraftNode* node = static_cast<const CraftNode*>(n.get());
-            total_machines[node->recipe->machine] += node->current_rate;
-            detailed_machines[node->recipe->machine][node->recipe] += node->current_rate;
+            total_machines[node->recipe->building->name] += node->current_rate;
+            detailed_machines[node->recipe->building->name][node->recipe] += node->current_rate;
         }
     }
 
@@ -1364,7 +1365,7 @@ void App::RenderNodes()
                         frame_tooltips.push_back(craft_node->current_rate.GetStringFraction());
                     }
                     ImGui::Spring(0.0f);
-                    ImGui::TextUnformatted(craft_node->recipe->machine.c_str());
+                    ImGui::TextUnformatted(craft_node->recipe->building->name.c_str());
                 }
                 else
                 {
