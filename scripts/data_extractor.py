@@ -19,6 +19,8 @@ ITEMS = [
     "/Script/CoreUObject.Class'/Script/FactoryGame.FGAmmoTypeProjectile'",
     "/Script/CoreUObject.Class'/Script/FactoryGame.FGAmmoTypeInstantHit'",
     "/Script/CoreUObject.Class'/Script/FactoryGame.FGAmmoTypeSpreadshot'",
+    "/Script/CoreUObject.Class'/Script/FactoryGame.FGPowerShardDescriptor'",
+    "/Script/CoreUObject.Class'/Script/FactoryGame.FGItemDescriptorPowerBoosterFuel'",
 ]
 
 def get_classes(doc, keys: List[str]):
@@ -42,7 +44,7 @@ def get_building(recipe: Dict, buildings: Dict):
     return buildings[match_buildings[0]]
 
 def parse_counted_item_list(s: str, items: Dict):
-    item_regex = re.compile(r"\(ItemClass=.*?\".*?\.(.*?)\"',Amount=([0-9.]+)\)")
+    item_regex = re.compile(r"\(ItemClass=.*?\.([^.]*)'\",Amount=([0-9.]+)\)")
     parsed = []
     for m in re.finditer(item_regex, s):
         item_classname = m.group(1)
