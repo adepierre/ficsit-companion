@@ -1,3 +1,4 @@
+#include "building.hpp"
 #include "node.hpp"
 #include "pin.hpp"
 #include "recipe.hpp"
@@ -107,8 +108,7 @@ bool CraftNode::Deserialize(const Json::Value& v)
     }
     for (auto& p : outs)
     {
-        // TODO: use machine-specific somersloop boost factor
-        p->current_rate = p->base_rate * current_rate * (num_somersloop + 1);
+        p->current_rate = p->base_rate * current_rate * (1 + num_somersloop * recipe->building->somersloop_mult);
     }
 
 

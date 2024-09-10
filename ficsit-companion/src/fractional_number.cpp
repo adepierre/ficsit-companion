@@ -113,14 +113,6 @@ FractionalNumber& FractionalNumber::operator*=(const FractionalNumber& rhs)
     return *this;
 }
 
-FractionalNumber& FractionalNumber::operator/=(const FractionalNumber& rhs)
-{
-    numerator *= rhs.denominator;
-    denominator *= rhs.numerator;
-    Simplify();
-    return *this;
-}
-
 FractionalNumber& FractionalNumber::operator+=(const FractionalNumber& rhs)
 {
     numerator = numerator * rhs.denominator + rhs.numerator * denominator;

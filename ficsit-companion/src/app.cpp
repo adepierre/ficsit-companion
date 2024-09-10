@@ -1,5 +1,6 @@
 #include "app.hpp"
 #include "building.hpp"
+#include "fractional_number.hpp"
 #include "game_data.hpp"
 #include "json.hpp"
 #include "link.hpp"
@@ -479,11 +480,13 @@ void App::UpdateNodesRate()
         case Node::Kind::Craft:
         {
             CraftNode* node = static_cast<CraftNode*>(updating_pin->node);
-            node->current_rate = updating_pin->current_rate / updating_pin->base_rate;
-            if (updating_pin->direction == ax::NodeEditor::PinKind::Output && node->num_somersloop.GetNumerator() > 0)
+            if (updating_pin->direction == ax::NodeEditor::PinKind::Output)
             {
-                // TODO: use machine-specific somersloop boost factor
-                node->current_rate /= node->num_somersloop + 1;
+                node->current_rate = updating_pin->current_rate / (updating_pin->base_rate * (1 + node->num_somersloop * node->recipe->building->somersloop_mult));
+            }
+            else
+            {
+                node->current_rate = updating_pin->current_rate / updating_pin->base_rate;
             }
             for (auto& p : node->ins)
             {
@@ -509,8 +512,7 @@ void App::UpdateNodesRate()
             }
             for (auto& p : node->outs)
             {
-                // TODO: use machine-specific somersloop boost factor
-                const FractionalNumber new_rate = node->current_rate * p->base_rate * (node->num_somersloop + 1);
+                const FractionalNumber new_rate = node->current_rate * p->base_rate * (1 + (node->num_somersloop * node->recipe->building->somersloop_mult));
                 if (new_rate == p->current_rate)
                 {
                     continue;
@@ -686,8 +688,7 @@ void App::UpdateNodesRate()
         }
         for (auto& p : n->outs)
         {
-            // TODO: use machine-specific somersloop boost factor
-            p->current_rate = p->base_rate * node->current_rate * (node->num_somersloop + 1);
+            p->current_rate = p->base_rate * node->current_rate * (1 + (node->num_somersloop * node->recipe->building->somersloop_mult));
         }
     }
 }
@@ -1367,8 +1368,7 @@ void App::RenderNodes()
                             }
                             for (auto& p : craft_node->outs)
                             {
-                                // TODO: use machine-specific somersloop boost factor
-                                p->current_rate = p->base_rate * craft_node->current_rate * (craft_node->num_somersloop + 1);
+                                p->current_rate = p->base_rate * craft_node->current_rate * (1 + (craft_node->num_somersloop * craft_node->recipe->building->somersloop_mult));
                                 updating_pins.push({ p.get(), Constraint::Strong });
                             }
                         }
@@ -1383,8 +1383,12 @@ void App::RenderNodes()
                     }
                     ImGui::Spring(0.0f);
                     ImGui::TextUnformatted(craft_node->recipe->building->name.c_str());
-                    // Don't hide somersloop if it's not 0 (for example if the production chain is imported)
-                    if (settings.hide_somersloop && craft_node->num_somersloop.GetNumerator() == 0)
+                    if (
+                        // Override settings if it's not 0 (for example if the production chain is imported)
+                        (settings.hide_somersloop && craft_node->num_somersloop.GetNumerator() == 0) ||
+                        // Don't display somersloop if this building can't have one
+                        craft_node->recipe->building->somersloop_mult.GetNumerator() == 0
+                    )
                     {
                         ImGui::Spring(1.0f);
                     }
@@ -1405,8 +1409,7 @@ void App::RenderNodes()
                                 craft_node->num_somersloop = new_num_somersloop;
                                 for (auto& p : craft_node->outs)
                                 {
-                                    // TODO: use machine-specific somersloop boost factor
-                                    p->current_rate = p->base_rate * craft_node->current_rate * (craft_node->num_somersloop + 1);
+                                    p->current_rate = p->base_rate * craft_node->current_rate * (1 + (craft_node->num_somersloop * craft_node->recipe->building->somersloop_mult));
                                     updating_pins.push({ p.get(), Constraint::Strong });
                                 }
                             }

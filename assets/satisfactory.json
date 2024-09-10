@@ -2,31 +2,40 @@
     "version": "0.8.3.3",
     "buildings": [
         {
-            "name": "Refinery"
+            "name": "Refinery",
+            "somersloop_mult": 0.1
         },
         {
-            "name": "Foundry"
+            "name": "Foundry",
+            "somersloop_mult": 1.0
         },
         {
-            "name": "Packager"
+            "name": "Packager",
+            "somersloop_mult": 0.0
         },
         {
-            "name": "Blender"
+            "name": "Blender",
+            "somersloop_mult": 1.0
         },
         {
-            "name": "Manufacturer"
+            "name": "Manufacturer",
+            "somersloop_mult": 1.0
         },
         {
-            "name": "Assembler"
+            "name": "Assembler",
+            "somersloop_mult": 1.0
         },
         {
-            "name": "Smelter"
+            "name": "Smelter",
+            "somersloop_mult": 1.0
         },
         {
-            "name": "Constructor"
+            "name": "Constructor",
+            "somersloop_mult": 1.0
         },
         {
-            "name": "Particle Accelerator"
+            "name": "Particle Accelerator",
+            "somersloop_mult": 1.0
         }
     ],
     "items": [

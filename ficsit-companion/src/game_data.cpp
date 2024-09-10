@@ -36,7 +36,7 @@ namespace Data
         for (const auto& b : data["buildings"].get_array())
         {
             const std::string& name = b["name"].get_string();
-            buildings[name] = std::make_unique<Building>(name);
+            buildings[name] = std::make_unique<Building>(name, FractionalNumber(std::to_string(b["somersloop_mult"].get<double>())));
         }
 
         for (const auto& i : data["items"].get_array())
