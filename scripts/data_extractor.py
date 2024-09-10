@@ -63,8 +63,7 @@ buildings = {
     b["ClassName"]: {
         "name": b["mDisplayName"],
         # TODO: add power data, need special cases for Particle Accelerator and potentially 1.0 quantum buildings (variable power + recipe dependant)
-        # TODO: extract value from 1.0 Docs.json file
-        "somersloop_mult": 1.0
+        "somersloop_mult": float(b["mProductionShardBoostMultiplier"]),
     } for b in get_classes(data, BUILDINGS)
 }
 

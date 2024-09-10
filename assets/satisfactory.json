@@ -2,40 +2,48 @@
     "version": "1.0",
     "buildings": [
         {
-            "name": "Quantum Encoder"
+            "name": "Quantum Encoder",
+            "somersloop_mult": 0.25
         },
         {
-            "name": "Converter"
+            "name": "Converter",
+            "somersloop_mult": 0.5
         },
         {
-            "name": "Particle Accelerator"
+            "name": "Particle Accelerator",
+            "somersloop_mult": 0.25
         },
         {
-            "name": "Refinery"
+            "name": "Refinery",
+            "somersloop_mult": 0.5
         },
         {
             "name": "Foundry",
-            "somersloop_mult": 1.0
+            "somersloop_mult": 0.5
         },
         {
             "name": "Packager",
             "somersloop_mult": 0.0
         },
         {
-            "name": "Manufacturer"
+            "name": "Manufacturer",
+            "somersloop_mult": 0.25
         },
         {
             "name": "Assembler",
+            "somersloop_mult": 0.5
+        },
+        {
+            "name": "Blender",
+            "somersloop_mult": 0.25
+        },
+        {
+            "name": "Smelter",
             "somersloop_mult": 1.0
         },
         {
-            "name": "Blender"
-        },
-        {
-            "name": "Smelter"
-        },
-        {
-            "name": "Constructor"
+            "name": "Constructor",
+            "somersloop_mult": 1.0
         }
     ],
     "items": [

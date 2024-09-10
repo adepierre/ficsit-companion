@@ -1010,7 +1010,7 @@ void App::RenderLeftPanel()
     {
         SaveSettings();
     }
-    if (ImGui::Checkbox("Hide 1.0 tier 9 recipes", &settings.hide_spoilers))
+    if (ImGui::Checkbox("Hide 1.0 new advanced recipes", &settings.hide_spoilers))
     {
         SaveSettings();
     }
@@ -1401,10 +1401,17 @@ void App::RenderNodes()
                         {
                             try
                             {
-                                const FractionalNumber new_num_somersloop = FractionalNumber(craft_node->num_somersloop.GetStringFraction());
+                                FractionalNumber new_num_somersloop = FractionalNumber(craft_node->num_somersloop.GetStringFraction());
+                                // Only integer somersloop allowed
                                 if (new_num_somersloop.GetDenominator() != 1)
                                 {
                                     throw std::domain_error("somersloop num can only be whole integers");
+                                }
+                                // Check we don't try to boost more than 2x
+                                // We know numerator is > 0 as otherwise somersloop input is not displayed, so it's ok to invert the fraction
+                                if (new_num_somersloop > 1 / craft_node->recipe->building->somersloop_mult)
+                                {
+                                    new_num_somersloop = 1 / craft_node->recipe->building->somersloop_mult;
                                 }
                                 craft_node->num_somersloop = new_num_somersloop;
                                 for (auto& p : craft_node->outs)
