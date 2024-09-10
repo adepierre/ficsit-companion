@@ -76,6 +76,8 @@ App::App()
 
     recipe_filter = "";
 
+    somersloop_texture_id = LoadTextureFromFile("icons/Wat_1_64.png");
+
     LoadSettings();
     LoadRecipes();
 }
@@ -128,6 +130,7 @@ void App::LoadSettings()
 
     // Load all settings values from json
     settings.hide_spoilers = json.contains("hide_spoilers") && json["hide_spoilers"].get<bool>();
+    settings.hide_somersloop = json.contains("hide_somersloop") && json["hide_somersloop"].get<bool>();
 }
 
 void App::SaveSettings() const
@@ -136,6 +139,7 @@ void App::SaveSettings() const
 
     // Save all settings values in the json
     serialized["hide_spoilers"] = settings.hide_spoilers;
+    serialized["hide_somersloop"] = settings.hide_somersloop;
 
     SaveFile(settings_file.data(), serialized.Dump(4));
 }
@@ -524,6 +528,11 @@ void App::UpdateNodesRate()
         {
             CraftNode* node = static_cast<CraftNode*>(updating_pin->node);
             node->current_rate = updating_pin->current_rate / updating_pin->base_rate;
+            if (updating_pin->direction == ax::NodeEditor::PinKind::Output && node->num_somersloop.GetNumerator() > 0)
+            {
+                // TODO: use machine-specific somersloop boost factor
+                node->current_rate /= node->num_somersloop + 1;
+            }
             for (auto& p : node->ins)
             {
                 const Constraint constraint = GetConstraint(p.get());
@@ -548,7 +557,8 @@ void App::UpdateNodesRate()
             }
             for (auto& p : node->outs)
             {
-                const FractionalNumber new_rate = node->current_rate * p->base_rate;
+                // TODO: use machine-specific somersloop boost factor
+                const FractionalNumber new_rate = node->current_rate * p->base_rate * (node->num_somersloop + 1);
                 if (new_rate == p->current_rate)
                 {
                     continue;
@@ -724,7 +734,8 @@ void App::UpdateNodesRate()
         }
         for (auto& p : n->outs)
         {
-            p->current_rate = p->base_rate * node->current_rate;
+            // TODO: use machine-specific somersloop boost factor
+            p->current_rate = p->base_rate * node->current_rate * (node->num_somersloop + 1);
         }
     }
 }
@@ -1042,7 +1053,11 @@ void App::RenderLeftPanel()
 
     ImGui::SeparatorText("Settings");
     // Display all settings here
-    if (ImGui::Checkbox("Hide tier 9 spoiler recipes", &settings.hide_spoilers))
+    if (ImGui::Checkbox("Hide 1.0 tier 5 spoiler", &settings.hide_somersloop))
+    {
+        SaveSettings();
+    }
+    if (ImGui::Checkbox("Hide 1.0 tier 9 recipes", &settings.hide_spoilers))
     {
         SaveSettings();
     }
@@ -1167,6 +1182,7 @@ void App::RenderLeftPanel()
 void App::RenderNodes()
 {
     const float rate_width = ImGui::CalcTextSize("0000.000").x;
+    const float somersloop_width = ImGui::CalcTextSize("000").x;
     // Vector that will be reused to sort pins for all nodes (instead of creating two per nodes)
     std::vector<size_t> sorted_pin_indices(4);
     auto sort_pin_indices = [&](const std::vector<std::unique_ptr<Pin>>& pins) {
@@ -1399,7 +1415,8 @@ void App::RenderNodes()
                             }
                             for (auto& p : craft_node->outs)
                             {
-                                p->current_rate = p->base_rate * craft_node->current_rate;
+                                // TODO: use machine-specific somersloop boost factor
+                                p->current_rate = p->base_rate * craft_node->current_rate * (craft_node->num_somersloop + 1);
                                 updating_pins.push({ p.get(), Constraint::Strong });
                             }
                         }
@@ -1414,6 +1431,46 @@ void App::RenderNodes()
                     }
                     ImGui::Spring(0.0f);
                     ImGui::TextUnformatted(craft_node->recipe->machine.c_str());
+                    // Don't hide somersloop if it's not 0 (for example if the production chain is imported)
+                    if (settings.hide_somersloop && craft_node->num_somersloop.GetNumerator() == 0)
+                    {
+                        ImGui::Spring(1.0f);
+                    }
+                    else
+                    {
+                        ImGui::Spring(1.0f);
+                        ImGui::SetNextItemWidth(somersloop_width);
+                        ImGui::InputText("##somersloop", &craft_node->num_somersloop.GetStringFraction(), ImGuiInputTextFlags_CharsDecimal);
+                        if (ImGui::IsItemDeactivatedAfterEdit())
+                        {
+                            try
+                            {
+                                const FractionalNumber new_num_somersloop = FractionalNumber(craft_node->num_somersloop.GetStringFraction());
+                                if (new_num_somersloop.GetDenominator() != 1)
+                                {
+                                    throw std::domain_error("somersloop num can only be whole integers");
+                                }
+                                craft_node->num_somersloop = new_num_somersloop;
+                                for (auto& p : craft_node->outs)
+                                {
+                                    // TODO: use machine-specific somersloop boost factor
+                                    p->current_rate = p->base_rate * craft_node->current_rate * (craft_node->num_somersloop + 1);
+                                    updating_pins.push({ p.get(), Constraint::Strong });
+                                }
+                            }
+                            catch (const std::domain_error&)
+                            {
+                                craft_node->num_somersloop = FractionalNumber(craft_node->num_somersloop.GetNumerator(), 1);
+                            }
+                        }
+                        ImGui::Spring(0.0f);
+                        ImGui::Image((void*)(intptr_t)somersloop_texture_id, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+                        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                        {
+                            frame_tooltips.push_back("Alien Production Amplification");
+                        }
+                        ImGui::Spring(0.0f);
+                    }
                 }
                 else
                 {
@@ -1426,9 +1483,8 @@ void App::RenderNodes()
                         ImGui::Image((void*)(intptr_t)org_node->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
                         ImGui::Spring(0.0f);
                     }
-
+                    ImGui::Spring(1.0f);
                 }
-                ImGui::Spring(1.0f);
             }
             ImGui::EndHorizontal();
         }

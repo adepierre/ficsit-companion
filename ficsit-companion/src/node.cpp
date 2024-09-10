@@ -55,7 +55,7 @@ bool Node::Deserialize(const Json::Value& v)
 }
 
 CraftNode::CraftNode(const ax::NodeEditor::NodeId id, const Recipe* recipe, const std::function<unsigned long long int()>& id_generator) :
-    Node(id), recipe(recipe), current_rate(1, 1)
+    Node(id), recipe(recipe), current_rate(1, 1), num_somersloop(0)
 {
     for (const auto& input : recipe->ins)
     {
@@ -85,6 +85,7 @@ Json::Value CraftNode::Serialize() const
         { "den", current_rate.GetDenominator()}
     };
     node["recipe"] = recipe->name;
+    node["num_somersloop"] = num_somersloop.GetNumerator();
 
     return node;
 }
@@ -99,14 +100,17 @@ bool CraftNode::Deserialize(const Json::Value& v)
     }
 
     current_rate = FractionalNumber(v["rate"]["num"].get<long long int>(), v["rate"]["den"].get<long long int>());
+    num_somersloop = FractionalNumber(v["num_somersloop"].get<long long int>());
     for (auto& p : ins)
     {
         p->current_rate = p->base_rate * current_rate;
     }
     for (auto& p : outs)
     {
-        p->current_rate = p->base_rate * current_rate;
+        // TODO: use machine-specific somersloop boost factor
+        p->current_rate = p->base_rate * current_rate * (num_somersloop + 1);
     }
+
 
     return true;
 }

@@ -135,5 +135,21 @@ bool UpdateSave(Json::Value& save, const int to)
         return true;
     }
 
+    // From 2 to 3, add num_somersloop to nodes
+    if (save["save_version"].get<int>() == 2)
+    {
+        for (auto& n : save["nodes"].get_array())
+        {
+            n["num_somersloop"] = 0;
+        }
+
+        save["save_version"] = 3;
+    }
+
+    if (save["save_version"].get<int>() == to)
+    {
+        return true;
+    }
+
     return false;
 }

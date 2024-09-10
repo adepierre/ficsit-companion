@@ -17,6 +17,7 @@ public:
     std::string& GetStringFloat();
 
     FractionalNumber& operator*=(const FractionalNumber& rhs);
+    FractionalNumber& operator/=(const FractionalNumber& rhs);
     FractionalNumber& operator+=(const FractionalNumber& rhs);
     FractionalNumber& operator-=(const FractionalNumber& rhs);
     bool operator!=(const FractionalNumber& other) const;

@@ -98,7 +98,7 @@ private:
 
 private:
     /// @brief Used in saved files to track when format change. Used to update files saved with previous versions
-    static constexpr int SAVE_VERSION = 2;
+    static constexpr int SAVE_VERSION = 3;
 
     /// @brief Window id used for the Add Node popup
     static constexpr std::string_view add_node_popup_id = "Add Node";
@@ -112,6 +112,7 @@ private:
     /// @brief All settings to customize app behaviour
     struct Settings {
         bool hide_spoilers = true;
+        bool hide_somersloop = true;
     } settings;
 
     /// @brief Version of the game the items/recipes are from
@@ -146,5 +147,7 @@ private:
     enum class Constraint { None, Weak, Strong };
     /// @brief All pins which had their value changed and need to propagate updates
     std::queue<std::pair<const Pin*, Constraint>> updating_pins;
+
+    unsigned int somersloop_texture_id;
 
 };

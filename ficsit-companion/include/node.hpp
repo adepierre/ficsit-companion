@@ -53,6 +53,8 @@ struct CraftNode : public Node
 
     const Recipe* recipe;
     FractionalNumber current_rate;
+    /// @brief Technically it could be just an int, but FractionalNumber already has all string operations
+    FractionalNumber num_somersloop;
 };
 
 struct OrganizerNode : public Node
