@@ -3,6 +3,7 @@ project(ficsit-companion)
 set(HEADER_FILES
 	include/app.hpp
 	include/fractional_number.hpp
+	include/game_data.hpp
 	include/json.hpp
 	include/link.hpp
 	include/node.hpp
@@ -16,6 +17,7 @@ set(SOURCE_FILES
 
     src/app.cpp
     src/fractional_number.cpp
+    src/game_data.cpp
     src/json.cpp
     src/link.cpp
     src/node.cpp

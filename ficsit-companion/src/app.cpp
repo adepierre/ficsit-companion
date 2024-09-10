@@ -1,4 +1,5 @@
 #include "app.hpp"
+#include "game_data.hpp"
 #include "json.hpp"
 #include "link.hpp"
 #include "node.hpp"
@@ -77,7 +78,7 @@ App::App()
     recipe_filter = "";
 
     LoadSettings();
-    LoadRecipes();
+    Data::LoadData("satisfactory");
 }
 
 App::~App()
@@ -144,7 +145,7 @@ std::string App::Serialize() const
 {
     Json::Value output;
     output["save_version"] = SAVE_VERSION;
-    output["game_version"] = recipes_version;
+    output["game_version"] = Data::Version();
 
     Json::Array saved_nodes;
     saved_nodes.reserve(nodes.size());
@@ -226,7 +227,7 @@ void App::Deserialize(const std::string& s)
     links.clear();
 
     auto get_recipe = [&](const std::string& name) -> const Recipe* {
-        for (const auto& r : recipes)
+        for (const auto& r : Data::Recipes())
         {
             if (r.name == name)
             {
@@ -269,8 +270,8 @@ void App::Deserialize(const std::string& s)
         case Node::Kind::Merger:
         case Node::Kind::Splitter:
         {
-            auto item_it = items.find(n["item"].get_string());
-            const Item* item = item_it == items.end() ? nullptr : item_it->second.get();
+            auto item_it = Data::Items().find(n["item"].get_string());
+            const Item* item = item_it == Data::Items().end() ? nullptr : item_it->second.get();
 
             if (item == nullptr)
             {
@@ -338,56 +339,6 @@ void App::Deserialize(const std::string& s)
 unsigned long long int App::GetNextId()
 {
     return next_id++;
-}
-
-void App::LoadRecipes()
-{
-    items.clear();
-    recipes.clear();
-
-    std::ifstream f("recipes.json");
-    Json::Value data;
-    f >> data;
-    f.close();
-
-    recipes_version = data["version"].get_string();
-
-    for (const auto& i : data["items"].get_array())
-    {
-        const std::string& name = i["name"].get_string();
-        items[name] = std::make_unique<Item>(name, i["icon"].get_string());
-    }
-
-    // Trick to sort the recipes alphabetically
-    Json::Value ordered_recipes;
-    for (const auto& r : data["recipes"].get_array())
-    {
-        ordered_recipes[r["name"].get_string()] = r;
-    }
-
-    for (const auto& [name, r] : ordered_recipes.get_object())
-    {
-        const std::string& building = r["building"].get_string();
-        const int time = static_cast<int>(r["time"].get<double>());
-        std::vector<CountedItem> inputs;
-        for (const auto& i : r["inputs"].get_array())
-        {
-            inputs.emplace_back(CountedItem(items.at(i["name"].get_string()).get(), FractionalNumber(std::to_string(i["amount"].get<double>() * 60.0) + "/" + std::to_string(time))));
-        }
-        std::vector<CountedItem> outputs;
-        for (const auto& o : r["outputs"].get_array())
-        {
-            outputs.emplace_back(CountedItem(items.at(o["name"].get_string()).get(), FractionalNumber(std::to_string(o["amount"].get<double>() * 60.0) + "/" + std::to_string(time))));
-        }
-        recipes.emplace_back(Recipe(
-            inputs,
-            outputs,
-            building,
-            r["alternate"].get<bool>(),
-            name,
-            r.contains("spoiler") && r["spoiler"].get<bool>()
-        ));
-    }
 }
 
 Pin* App::FindPin(ax::NodeEditor::PinId id) const
@@ -1587,6 +1538,7 @@ void App::AddNewNode()
         ImGui::Separator();
         // Stores the recipe index and a "match score" to sort them in the display
         std::vector<std::pair<int, size_t>> recipe_indices;
+        const std::vector<Recipe>& recipes = Data::Recipes();
         recipe_indices.reserve(recipes.size());
         // If this is already linked to another node
         // only display matching recipes
