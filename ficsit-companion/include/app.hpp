@@ -4,16 +4,12 @@
 #include <queue>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 
 #include <imgui_node_editor.h>
 
-#include "recipe.hpp"
-
 struct Link;
 struct Node;
-struct CraftNode;
 struct Pin;
 
 class App
@@ -45,9 +41,6 @@ private:
     /// @brief Get the next available id for node-editor
     /// @return The next id to use
     unsigned long long int GetNextId();
-
-    /// @brief Load recipes from "recipes.json"
-    void LoadRecipes();
 
     /// @brief Search for a Pin given its id
     /// @param id The pin id
@@ -114,13 +107,6 @@ private:
         bool hide_spoilers = true;
         bool hide_somersloop = true;
     } settings;
-
-    /// @brief Version of the game the items/recipes are from
-    std::string recipes_version;
-    /// @brief All known items
-    std::unordered_map<std::string, std::unique_ptr<Item>> items;
-    /// @brief All known recipes
-    std::vector<Recipe> recipes;
 
     /// @brief All nodes currently in the graph view
     std::vector<std::unique_ptr<Node>> nodes;

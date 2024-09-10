@@ -130,6 +130,15 @@ cmake --build . --config Release
 
 The recipes are currently up to date with version 0.8.3.3 of the game. To update to a different version, one can use the [provided script](scripts/data_extractor.py). It requires having the Docs.json file provided in the game files as well as item icons extracted from the game. For more informations about the Docs.json file you can check the official [wiki page](https://satisfactory.wiki.gg/wiki/Community_resources) and for icons extraction you can refer to [this tutorial](https://docs.ficsit.app/satisfactory-modding/latest/Development/ExtractGameFiles.html).
 
+Using FModel, you'll have to extract at least these folders for icons:
+- FactoryGame/Content/FactoryGame/Prototype/WAT (for somersloop icon)
+- FactoryGame/Content/FactoryGame/Equipment
+- FactoryGame/Content/FactoryGame/Resource/Parts
+- FactoryGame/Content/FactoryGame/Resource/RawResources
+- FactoryGame/Content/FactoryGame/Resource/Environment/Crystal
+- FactoryGame/Content/FactoryGame/Resource/Environment/AnimalParts
+- FactoryGame/Content/FactoryGame/Resource/Environment/Equipment
+
 ## Credits
 
 Thanks to the amazing ocornut and thedmd for their libraries ([Dear ImGui](https://github.com/ocornut/imgui/) and [ImGui Node Editor](https://github.com/thedmd/imgui-node-editor) respectively).

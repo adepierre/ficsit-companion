@@ -2,7 +2,9 @@ project(ficsit-companion)
 
 set(HEADER_FILES
 	include/app.hpp
+	include/building.hpp
 	include/fractional_number.hpp
+	include/game_data.hpp
 	include/json.hpp
 	include/link.hpp
 	include/node.hpp
@@ -15,7 +17,9 @@ set(SOURCE_FILES
     ${imgui_SOURCE}
 
     src/app.cpp
+    src/building.cpp
     src/fractional_number.cpp
+    src/game_data.cpp
     src/json.cpp
     src/link.cpp
     src/node.cpp

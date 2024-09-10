@@ -1,4 +1,4 @@
-import os, json, re, math, shutil
+import os, json, re, shutil
 
 from typing import List, Dict
 
@@ -59,7 +59,8 @@ with open(DOCS_PATH, "r", encoding="utf-16") as f:
 
 buildings = {
     b["ClassName"]: {
-        "name": b["mDisplayName"]
+        "name": b["mDisplayName"],
+        # TODO: add power data, need special cases for Particle Accelerator and potentially 1.0 quantum buildings (variable power + recipe dependant)
     } for b in get_classes(data, BUILDINGS)
 }
 
@@ -89,11 +90,6 @@ for recipe in get_classes(data, RECIPES):
         "inputs": parse_counted_item_list(recipe["mIngredients"], items),
         "outputs": parse_counted_item_list(recipe["mProduct"], items)
     }
-
-output = {
-    "items": list(items.values()),
-    "recipes": list(recipes.values())
-}
 
 # Copy icons for each used item
 if os.path.exists("icons"):
@@ -131,10 +127,13 @@ for v in items.values():
     shutil.copy(os.path.join(folder_path, min_res_file), os.path.join("icons", min_res_file))
     v["icon"] = "icons/" + min_res_file
 
+# Manually copy somersloop icon
+shutil.copy("FactoryGame/Prototype/WAT/UI/Wat_1_64.png", "icons/Wat_1_64.png")
 
-with open("recipes.json", "w") as out_file:
+with open("satisfactory.json", "w") as out_file:
     json.dump({
         "version": "",
+        "buildings": list(buildings.values()),
         "items": [ { "name": v["name"], "icon": v["icon"] } for v in items.values() if not v in removed],
         "recipes": list(recipes.values())
     }, out_file, indent=4, ensure_ascii=False)
