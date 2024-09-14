@@ -984,6 +984,10 @@ void App::RenderLeftPanel()
                     removed.push_back(s.first);
                 }
                 ImGui::PopID();
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "Delete this file");
+                }
                 ImGui::SameLine();
                 if (ImGui::Selectable(s.first.c_str()))
                 {
