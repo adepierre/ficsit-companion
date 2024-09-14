@@ -955,7 +955,7 @@ void App::RenderLeftPanel()
                     }
                     setValue($1, length, "i32");
                     return buffer;
-                    }, save_folder.data(), &names_size));
+                }, save_folder.data(), &names_size));
 
                 for (int i = 0; i < names_size; ++i)
                 {
@@ -966,6 +966,11 @@ void App::RenderLeftPanel()
                 }
                 free(static_cast<void*>(names));
 #endif
+            }
+
+            if (file_suggestions.size() == 0)
+            {
+                ImGui::CloseCurrentPopup();
             }
 
             std::stable_sort(file_suggestions.begin(), file_suggestions.end(), [](const std::pair<std::string, size_t>& a, const std::pair<std::string, size_t>& b) { return a.second < b.second; });
