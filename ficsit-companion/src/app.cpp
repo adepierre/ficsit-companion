@@ -955,7 +955,7 @@ void App::RenderLeftPanel()
                     }
                     setValue($1, length, "i32");
                     return buffer;
-                }, save_folder.data(), &names_size));
+                    }, save_folder.data(), &names_size));
 
                 for (int i = 0; i < names_size; ++i)
                 {
@@ -984,6 +984,11 @@ void App::RenderLeftPanel()
                 {
                     save_name = s.first;
                     ImGui::CloseCurrentPopup();
+                }
+                // Add tooltip for long names
+                if (ImGui::IsItemHovered() && ImGui::CalcTextSize(s.first.c_str()).x > ImGui::GetWindowWidth())
+                {
+                    ImGui::SetTooltip("%s", s.first.c_str());
                 }
             }
 
