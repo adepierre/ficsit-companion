@@ -64,6 +64,22 @@ static std::optional<std::string> LoadFile(const std::string& path)
 #endif
 }
 
+/// @brief Remove a file (either on disk for desktop version or in localStorage for web version)
+/// @param path
+static void RemoveFile(const std::string& path)
+{
+#if !defined(__EMSCRIPTEN__)
+    if (std::filesystem::exists(path))
+    {
+        std::filesystem::remove(path);
+    }
+#else
+    EM_ASM({
+        localStorage.removeItem(UTF8ToString($0));
+    }, path.c_str());
+#endif
+}
+
 App::App()
 {
     next_id = 1;
@@ -898,7 +914,7 @@ void App::RenderLeftPanel()
     }
     {
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
-        ImGui::SetNextWindowSizeConstraints({ ImGui::GetItemRectSize().x , 0.0f }, { ImGui::GetItemRectSize().x, ImGui::GetTextLineHeightWithSpacing() * 5.0f });
+        ImGui::SetNextWindowSizeConstraints({ ImGui::GetItemRectSize().x , 0.0f }, { ImGui::GetItemRectSize().x, ImGui::GetTextLineHeightWithSpacing() * 10.0f });
         if (ImGui::BeginPopup("##AutocompletePopup", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
         {
             if (ImGui::IsWindowAppearing())
@@ -954,13 +970,31 @@ void App::RenderLeftPanel()
 
             std::stable_sort(file_suggestions.begin(), file_suggestions.end(), [](const std::pair<std::string, size_t>& a, const std::pair<std::string, size_t>& b) { return a.second < b.second; });
 
+            std::vector<std::string> removed;
             for (const auto& s : file_suggestions)
             {
+                ImGui::PushID(s.first.c_str());
+                if (ImGui::Button("X"))
+                {
+                    removed.push_back(s.first);
+                }
+                ImGui::PopID();
+                ImGui::SameLine();
                 if (ImGui::Selectable(s.first.c_str()))
                 {
                     save_name = s.first;
                     ImGui::CloseCurrentPopup();
                 }
+            }
+
+            // Delete files that have been flagged by clicking on the button
+            for (const auto& s : removed)
+            {
+                file_suggestions.erase(std::remove_if(file_suggestions.begin(), file_suggestions.end(),
+                    [&](const std::pair<std::string, size_t>& p) {
+                        return p.first == s;
+                    }), file_suggestions.end());
+                RemoveFile(std::string(save_folder) + "/" + s + ".fcs");
             }
 
             if (!save_name_active && !ImGui::IsWindowFocused())
