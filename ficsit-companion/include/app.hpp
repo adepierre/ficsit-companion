@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <queue>
 #include <string>
@@ -11,6 +12,7 @@
 struct Link;
 struct Node;
 struct Pin;
+struct Recipe;
 
 class App
 {
@@ -104,8 +106,12 @@ private:
 
     /// @brief All settings to customize app behaviour
     struct Settings {
+        /// @brief If true, recipes marked as spoiler will not be proposed in the list
         bool hide_spoilers = true;
+        /// @brief If true, somersloop override will not be displayed in the nodes
         bool hide_somersloop = true;
+        /// @brief For each alt recipes, stores wether or not it's been unlocked yet
+        std::map<const Recipe*, bool> unlocked_alts = {};
     } settings;
 
     /// @brief All nodes currently in the graph view

@@ -21,6 +21,7 @@
 #endif
 
 #include "app.hpp"
+#include "game_data.hpp"
 
 bool Render(SDL_Window* window, App* app)
 {
@@ -249,6 +250,8 @@ int main(int argc, char* argv[])
     // Setup platform/renderer
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version);
+
+    Data::LoadData("satisfactory");
 
     App app;
 #if !defined(__EMSCRIPTEN__)

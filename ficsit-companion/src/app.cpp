@@ -98,7 +98,6 @@ App::App()
     somersloop_texture_id = LoadTextureFromFile("icons/Wat_1_64.png");
 
     LoadSettings();
-    Data::LoadData("satisfactory");
 }
 
 App::~App()
@@ -136,20 +135,25 @@ void App::LoadSettings()
 {
     const std::optional<std::string> content = LoadFile(settings_file.data());
 
-    if (!content.has_value())
-    {
-        return;
-    }
-
-    Json::Value json = Json::Parse(content.value());
-    if (json.is_null() || json.size() == 0)
-    {
-        return;
-    }
+    Json::Value json = content.has_value() ? Json::Parse(content.value()) : Json::Object();
 
     // Load all settings values from json
-    settings.hide_spoilers = json.contains("hide_spoilers") && json["hide_spoilers"].get<bool>();
-    settings.hide_somersloop = json.contains("hide_somersloop") && json["hide_somersloop"].get<bool>();
+    settings.hide_spoilers = !json.contains("hide_spoilers") || json["hide_spoilers"].get<bool>();
+    settings.hide_somersloop = !json.contains("hide_somersloop") || json["hide_somersloop"].get<bool>();
+    settings.unlocked_alts = {};
+
+    for (const auto& r : Data::Recipes())
+    {
+        if (r.alternate)
+        {
+            settings.unlocked_alts[&r] = json.contains("unlocked_alts") && json["unlocked_alts"].contains(r.name.substr(1)) && json["unlocked_alts"][r.name.substr(1)].get<bool>();
+        }
+    }
+
+    if (!content.has_value())
+    {
+        SaveSettings();
+    }
 }
 
 void App::SaveSettings() const
@@ -160,7 +164,15 @@ void App::SaveSettings() const
     serialized["hide_spoilers"] = settings.hide_spoilers;
     serialized["hide_somersloop"] = settings.hide_somersloop;
 
-    SaveFile(settings_file.data(), serialized.Dump(4));
+    Json::Object unlocked;
+    for (const auto& [r, b] : settings.unlocked_alts)
+    {
+        // Remove the leading "*" from the alt recipe name
+        unlocked[r->name.substr(1)] = b;
+    }
+    serialized["unlocked_alts"] = unlocked;
+
+    SaveFile(settings_file.data(), serialized.Dump());
 }
 
 std::string App::Serialize() const
@@ -1062,6 +1074,34 @@ void App::RenderLeftPanel()
     {
         SaveSettings();
     }
+    if (ImGui::Button("Unlock all alt recipes"))
+    {
+        settings.unlocked_alts = {};
+        for (const auto& r : Data::Recipes())
+        {
+            if (r.alternate)
+            {
+                settings.unlocked_alts[&r] = true;
+            }
+        }
+        SaveSettings();
+    }
+    if (ImGui::GetContentRegionAvail().x - ImGui::GetItemRectSize().x > ImGui::CalcTextSize("Reset alt recipes").x + ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x)
+    {
+        ImGui::SameLine();
+    }
+    if (ImGui::Button("Reset alt recipes"))
+    {
+        settings.unlocked_alts = {};
+        for (const auto& r : Data::Recipes())
+        {
+            if (r.alternate)
+            {
+                settings.unlocked_alts[&r] = false;
+            }
+        }
+        SaveSettings();
+    }
 
 
     ImGui::SeparatorText("Inputs");
@@ -1732,28 +1772,21 @@ void App::AddNewNode()
             }
         }
 
-        ImGui::BeginTable("##recipe_selector", 2,
+        ImGui::BeginTable("##recipe_selector", 3,
             ImGuiTableFlags_NoSavedSettings |
             ImGuiTableFlags_NoBordersInBody |
             ImGuiTableFlags_SizingStretchProp);
-        ImGui::TableSetupColumn("##recipe_names",
+        const int col_flags =
             ImGuiTableColumnFlags_WidthStretch |
             ImGuiTableColumnFlags_NoResize |
             ImGuiTableColumnFlags_NoReorder |
             ImGuiTableColumnFlags_NoHide |
             ImGuiTableColumnFlags_NoClip |
             ImGuiTableColumnFlags_NoSort |
-            ImGuiTableColumnFlags_NoHeaderWidth
-        );
-        ImGui::TableSetupColumn("##items",
-            ImGuiTableColumnFlags_WidthStretch |
-            ImGuiTableColumnFlags_NoResize |
-            ImGuiTableColumnFlags_NoReorder |
-            ImGuiTableColumnFlags_NoHide |
-            ImGuiTableColumnFlags_NoClip |
-            ImGuiTableColumnFlags_NoSort |
-            ImGuiTableColumnFlags_NoHeaderWidth
-        );
+            ImGuiTableColumnFlags_NoHeaderWidth;
+        ImGui::TableSetupColumn("##recipe_checkbox", col_flags);
+        ImGui::TableSetupColumn("##recipe_names", col_flags);
+        ImGui::TableSetupColumn("##items", col_flags);
 
         for (const auto [i, score_ignored] : recipe_indices)
         {
@@ -1763,12 +1796,23 @@ void App::AddNewNode()
             }
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
+            if (recipes[i].alternate && ImGui::Checkbox(("##checkbox" + recipes[i].name).c_str(), &settings.unlocked_alts.at(&recipes[i])))
+            {
+                SaveSettings();
+            }
+            ImGui::PopStyleVar();
+            ImGui::TableSetColumnIndex(1);
+            ImGui::BeginDisabled(recipes[i].alternate && !settings.unlocked_alts.at(&recipes[i]));
             if (ImGui::MenuItem(recipes[i].name.c_str()))
             {
                 recipe_index = i + 2;
+                // Need to duplicate the EndDisabled because of the break
+                ImGui::EndDisabled();
                 break;
             }
-            ImGui::TableSetColumnIndex(1);
+            ImGui::EndDisabled();
+            ImGui::TableSetColumnIndex(2);
 
             recipes[i].Render(false);
         }
