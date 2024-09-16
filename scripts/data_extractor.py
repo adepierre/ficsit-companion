@@ -118,7 +118,7 @@ for v in items.values():
     # Find the smallest image for this item
     min_res_file = os.path.basename(relative_path).split(".")[0] + ".png"
     for file in os.listdir(folder_path):
-        if file.startswith(icon_start_name):
+        if "_".join(file.split("_")[:-1]) == icon_start_name:
             current_res = [int(s) for s in file.split(".")[0].split("_") if s.isdecimal()][0]
             if current_res < min_resolution:
                 min_resolution = current_res

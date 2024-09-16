@@ -113,7 +113,7 @@
         },
         {
             "name": "Packaged Oil",
-            "icon": "icons/OilResidue_64.png"
+            "icon": "icons/Oil_64.png"
         },
         {
             "name": "Iron Rod",
@@ -425,7 +425,7 @@
         },
         {
             "name": "Black Powder",
-            "icon": "icons/IconDesc_GunpowderMk2_64.png"
+            "icon": "icons/IconDesc_Gunpowder_64.png"
         },
         {
             "name": "Ficsonium",
