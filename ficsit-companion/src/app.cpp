@@ -1873,7 +1873,9 @@ void App::RenderControlsPopup()
 
 void App::CustomKeyControl()
 {
-    if (ImGui::IsKeyPressed(ImGuiKey_A, false) && ImGui::GetIO().KeyCtrl)
+    if (!ImGui::GetIO().WantCaptureKeyboard &&
+        ImGui::IsKeyPressed(ImGuiKey_A, false) &&
+        ImGui::GetIO().KeyCtrl)
     {
         for (const auto& n : nodes)
         {
