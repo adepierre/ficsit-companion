@@ -31,7 +31,7 @@ Recipe::Recipe(
     outs(outs),
     building(building),
     alternate(alternate),
-    name(name),
+    name(alternate ? ("*" + name) : name),
     is_spoiler(is_spoiler)
 {
     lower_name = name;

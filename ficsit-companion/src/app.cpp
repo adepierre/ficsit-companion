@@ -1763,7 +1763,7 @@ void App::AddNewNode()
             }
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
-            if (ImGui::MenuItem(((recipes[i].alternate ? "*" : "") + recipes[i].name).c_str()))
+            if (ImGui::MenuItem(recipes[i].name.c_str()))
             {
                 recipe_index = i + 2;
                 break;
