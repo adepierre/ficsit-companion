@@ -255,6 +255,8 @@ SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
+    // We need to call ChangeItem again to update newly created pins
+    ChangeItem(item);
 }
 
 SplitterNode::~SplitterNode()
@@ -276,6 +278,8 @@ MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsi
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
+    // We need to call ChangeItem again to update newly created pins
+    ChangeItem(item);
 }
 
 MergerNode::~MergerNode()
