@@ -1268,7 +1268,7 @@ void App::RenderNodes()
                 switch (node->GetKind())
                 {
                 case Node::Kind::Craft:
-                    ImGui::TextUnformatted(static_cast<CraftNode*>(node.get())->recipe->name.c_str());
+                    ImGui::TextUnformatted(static_cast<CraftNode*>(node.get())->recipe->display_name.c_str());
                     break;
                 case Node::Kind::Merger:
                     ImGui::TextUnformatted("Merger");
@@ -1804,7 +1804,7 @@ void App::AddNewNode()
             ImGui::PopStyleVar();
             ImGui::TableSetColumnIndex(1);
             ImGui::BeginDisabled(recipes[i].alternate && !settings.unlocked_alts.at(&recipes[i]));
-            if (ImGui::MenuItem(recipes[i].name.c_str()))
+            if (ImGui::MenuItem(recipes[i].display_name.c_str()))
             {
                 recipe_index = i + 2;
                 // Need to duplicate the EndDisabled because of the break

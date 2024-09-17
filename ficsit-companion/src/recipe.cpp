@@ -31,7 +31,8 @@ Recipe::Recipe(
     outs(outs),
     building(building),
     alternate(alternate),
-    name(alternate ? ("*" + name) : name),
+    name(name),
+    display_name(alternate ? ("*" + name) : name),
     is_spoiler(is_spoiler)
 {
     lower_name = name;
@@ -75,7 +76,7 @@ size_t Recipe::FindInIngredients(const std::string& s) const
     return min_pos;
 }
 
-void Recipe::Render(const bool display_name, const bool display_items_icons) const
+void Recipe::Render(const bool render_name, const bool display_items_icons) const
 {
     if (display_items_icons)
     {
@@ -102,18 +103,18 @@ void Recipe::Render(const bool display_name, const bool display_items_icons) con
             }
         }
         ImGui::PopStyleVar();
-        if (display_name)
+        if (render_name)
         {
             ImGui::SameLine();
         }
     }
 
-    if (display_name)
+    if (render_name)
     {
-        ImGui::TextUnformatted(name.c_str());
+        ImGui::TextUnformatted(display_name.c_str());
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
         {
-            ImGui::SetTooltip("%s", name.c_str());
+            ImGui::SetTooltip("%s", display_name.c_str());
         }
     }
 }
