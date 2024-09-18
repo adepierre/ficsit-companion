@@ -1103,9 +1103,6 @@ void App::RenderLeftPanel()
         SaveSettings();
     }
 
-
-    ImGui::SeparatorText("Inputs");
-
     std::map<const Item*, FractionalNumber> inputs;
     std::map<const Item*, FractionalNumber> outputs;
     std::map<std::string, FractionalNumber> total_machines;
@@ -1137,6 +1134,16 @@ void App::RenderLeftPanel()
         }
     }
 
+    std::map<std::string, int> min_number_machines;
+    for (const auto& [machine, map] : detailed_machines)
+    {
+        for (const auto& [r, n] : map)
+        {
+            min_number_machines[machine] += static_cast<int>(std::ceil(n.GetValue()));
+        }
+    }
+
+    ImGui::SeparatorText("Inputs");
     const float rate_width = ImGui::CalcTextSize("0000.000").x;
     for (auto& [item, n] : inputs)
     {
@@ -1192,6 +1199,12 @@ void App::RenderLeftPanel()
             ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
         }
         ImGui::SameLine();
+        ImGui::Text("(%i)", min_number_machines[machine]);
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("%s", "Minimum number of machines at 100%");
+        }
+        ImGui::SameLine();
         ImGui::TextUnformatted(machine.c_str());
 
         // Detailed list of recipes if the tree node is open
@@ -1207,6 +1220,12 @@ void App::RenderLeftPanel()
                 if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                 {
                     ImGui::SetTooltip("%s", n2.GetStringFraction().c_str());
+                }
+                ImGui::SameLine();
+                ImGui::Text("(%i)", static_cast<int>(std::ceil(n2.GetValue())));
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "Minimum number of machines at 100%");
                 }
                 ImGui::SameLine();
 
