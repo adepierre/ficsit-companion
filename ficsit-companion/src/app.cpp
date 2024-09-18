@@ -1105,6 +1105,7 @@ void App::RenderLeftPanel()
 
     std::map<const Item*, FractionalNumber> inputs;
     std::map<const Item*, FractionalNumber> outputs;
+    std::map<const Item*, FractionalNumber> intermediates;
     std::map<std::string, FractionalNumber> total_machines;
     std::map<std::string, std::map<const Recipe*, FractionalNumber>> detailed_machines;
 
@@ -1123,6 +1124,10 @@ void App::RenderLeftPanel()
             if (p->link == nullptr && p->item != nullptr)
             {
                 outputs[p->item] += p->current_rate;
+            }
+            else if (p->link != nullptr && p->item != nullptr && p->link->end->node->IsCraft())
+            {
+                intermediates[p->item] += p->current_rate;
             }
         }
 
@@ -1224,6 +1229,27 @@ void App::RenderLeftPanel()
 
     ImGui::SeparatorText("Outputs");
     for (auto& [item, n] : outputs)
+    {
+        ImGui::SetNextItemWidth(rate_width);
+        ImGui::BeginDisabled();
+        ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
+        }
+        ImGui::SameLine();
+        ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+        ImGui::SameLine();
+        ImGui::TextUnformatted(item->name.c_str());
+    }
+
+    ImGui::SeparatorText("Intermediates");
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("%s", "Items both produced and consumed in the production chain");
+    }
+    for (auto& [item, n] : intermediates)
     {
         ImGui::SetNextItemWidth(rate_width);
         ImGui::BeginDisabled();
