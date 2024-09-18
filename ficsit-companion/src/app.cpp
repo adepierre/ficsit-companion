@@ -1143,40 +1143,7 @@ void App::RenderLeftPanel()
         }
     }
 
-    ImGui::SeparatorText("Inputs");
     const float rate_width = ImGui::CalcTextSize("0000.000").x;
-    for (auto& [item, n] : inputs)
-    {
-        ImGui::SetNextItemWidth(rate_width);
-        ImGui::BeginDisabled();
-        ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
-        ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-        {
-            ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
-        }
-        ImGui::SameLine();
-        ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-        ImGui::SameLine();
-        ImGui::TextUnformatted(item->name.c_str());
-    }
-
-    ImGui::SeparatorText("Outputs");
-    for (auto& [item, n] : outputs)
-    {
-        ImGui::SetNextItemWidth(rate_width);
-        ImGui::BeginDisabled();
-        ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
-        ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-        {
-            ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
-        }
-        ImGui::SameLine();
-        ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-        ImGui::SameLine();
-        ImGui::TextUnformatted(item->name.c_str());
-    }
 
     ImGui::SeparatorText("Machines");
     for (auto& [machine, n] : total_machines)
@@ -1236,6 +1203,40 @@ void App::RenderLeftPanel()
 
             ImGui::TreePop();
         }
+    }
+
+    ImGui::SeparatorText("Inputs");
+    for (auto& [item, n] : inputs)
+    {
+        ImGui::SetNextItemWidth(rate_width);
+        ImGui::BeginDisabled();
+        ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
+        }
+        ImGui::SameLine();
+        ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+        ImGui::SameLine();
+        ImGui::TextUnformatted(item->name.c_str());
+    }
+
+    ImGui::SeparatorText("Outputs");
+    for (auto& [item, n] : outputs)
+    {
+        ImGui::SetNextItemWidth(rate_width);
+        ImGui::BeginDisabled();
+        ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
+        }
+        ImGui::SameLine();
+        ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+        ImGui::SameLine();
+        ImGui::TextUnformatted(item->name.c_str());
     }
 }
 
