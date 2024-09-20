@@ -139,8 +139,9 @@ void App::LoadSettings()
     Json::Value json = content.has_value() ? Json::Parse(content.value()) : Json::Object();
 
     // Load all settings values from json
-    settings.hide_spoilers = !json.contains("hide_spoilers") || json["hide_spoilers"].get<bool>();
-    settings.hide_somersloop = !json.contains("hide_somersloop") || json["hide_somersloop"].get<bool>();
+    settings.hide_spoilers = !json.contains("hide_spoilers") || json["hide_spoilers"].get<bool>(); // default true
+    settings.hide_somersloop = !json.contains("hide_somersloop") || json["hide_somersloop"].get<bool>(); // default true
+    settings.diff_in_out = json.contains("diff_in_out") && json["diff_in_out"].get<bool>(); // default false
     settings.unlocked_alts = {};
 
     for (const auto& r : Data::Recipes())
@@ -164,6 +165,7 @@ void App::SaveSettings() const
     // Save all settings values in the json
     serialized["hide_spoilers"] = settings.hide_spoilers;
     serialized["hide_somersloop"] = settings.hide_somersloop;
+    serialized["diff_in_out"] = settings.diff_in_out;
 
     Json::Object unlocked;
     for (const auto& [r, b] : settings.unlocked_alts)
@@ -1075,6 +1077,15 @@ void App::RenderLeftPanel()
     {
         SaveSettings();
     }
+    if (ImGui::Checkbox("Compute Inputs/Outputs diff", &settings.diff_in_out))
+    {
+        SaveSettings();
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("%s", "If enabled, common part of items in both inputs and outputs will be moved to intermediates (even if they are not linked)");
+    }
+
     if (ImGui::Button("Unlock all alt recipes"))
     {
         settings.unlocked_alts = {};
@@ -1214,6 +1225,31 @@ void App::RenderLeftPanel()
     ImGui::SeparatorText("Inputs");
     for (auto& [item, n] : inputs)
     {
+        if (settings.diff_in_out)
+        {
+            if (const auto out_it = outputs.find(item); out_it != outputs.end())
+            {
+                // More output than input, skip this
+                if (out_it->second > n)
+                {
+                    continue;
+                }
+                // Equal, just add it to intermediate
+                else if (out_it->second == n)
+                {
+                    outputs.erase(out_it);
+                    intermediates[item] += n;
+                    continue;
+                }
+                // More input than output, display the diff and add the common part to intermediate
+                else
+                {
+                    n = n - out_it->second;
+                    intermediates[item] += out_it->second;
+                    outputs.erase(out_it);
+                }
+            }
+        }
         ImGui::SetNextItemWidth(rate_width);
         ImGui::BeginDisabled();
         ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
@@ -1231,6 +1267,25 @@ void App::RenderLeftPanel()
     ImGui::SeparatorText("Outputs");
     for (auto& [item, n] : outputs)
     {
+        if (settings.diff_in_out)
+        {
+            if (const auto in_it = inputs.find(item); in_it != inputs.end())
+            {
+                // More input than output, skip this
+                if (in_it->second > n)
+                {
+                    continue;
+                }
+                // Equal should not happen as it's removed from output in input loop
+                // More output than input, display the diff and add the common part to intermediate
+                else
+                {
+                    n = n - in_it->second;
+                    intermediates[item] += in_it->second;
+                    inputs.erase(in_it);
+                }
+            }
+        }
         ImGui::SetNextItemWidth(rate_width);
         ImGui::BeginDisabled();
         ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);

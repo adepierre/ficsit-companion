@@ -110,6 +110,8 @@ private:
         bool hide_spoilers = true;
         /// @brief If true, somersloop override will not be displayed in the nodes
         bool hide_somersloop = true;
+        /// @brief If true, items in both inputs and outputs on the left panel will be subtracted and displayed only once
+        bool diff_in_out = false;
         /// @brief For each alt recipes, stores wether or not it's been unlocked yet
         std::map<const Recipe*, bool> unlocked_alts = {};
     } settings;
