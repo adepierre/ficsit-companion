@@ -1115,11 +1115,19 @@ void App::RenderLeftPanel()
         SaveSettings();
     }
 
-    std::map<const Item*, FractionalNumber> inputs;
-    std::map<const Item*, FractionalNumber> outputs;
-    std::map<const Item*, FractionalNumber> intermediates;
+    struct ItemPtrCompare {
+        bool operator()(const Item* a, const Item* b) const { return a != nullptr && (b != nullptr && a->name < b->name); }
+    };
+
+    struct RecipePtrCompare {
+        bool operator()(const Recipe* a, const Recipe* b) const { return a != nullptr && (b != nullptr && a->name < b->name);}
+    };
+
+    std::map<const Item*, FractionalNumber, ItemPtrCompare> inputs;
+    std::map<const Item*, FractionalNumber, ItemPtrCompare> outputs;
+    std::map<const Item*, FractionalNumber, ItemPtrCompare> intermediates;
     std::map<std::string, FractionalNumber> total_machines;
-    std::map<std::string, std::map<const Recipe*, FractionalNumber>> detailed_machines;
+    std::map<std::string, std::map<const Recipe*, FractionalNumber, RecipePtrCompare>> detailed_machines;
 
     // Gather all inputs/outputs/machines
     for (const auto& n : nodes)
