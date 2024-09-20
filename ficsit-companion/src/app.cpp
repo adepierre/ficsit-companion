@@ -1173,6 +1173,10 @@ void App::RenderLeftPanel()
     ImGui::SeparatorText("Machines");
     for (auto& [machine, n] : total_machines)
     {
+        if (n.GetNumerator() == 0)
+        {
+            continue;
+        }
         // No visible color change when hovered/click
         ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderActive, ImVec4(0, 0, 0, 0));
@@ -1233,6 +1237,10 @@ void App::RenderLeftPanel()
     ImGui::SeparatorText("Inputs");
     for (auto& [item, n] : inputs)
     {
+        if (n.GetNumerator() == 0)
+        {
+            continue;
+        }
         if (settings.diff_in_out)
         {
             if (const auto out_it = outputs.find(item); out_it != outputs.end())
@@ -1275,6 +1283,10 @@ void App::RenderLeftPanel()
     ImGui::SeparatorText("Outputs");
     for (auto& [item, n] : outputs)
     {
+        if (n.GetNumerator() == 0)
+        {
+            continue;
+        }
         if (settings.diff_in_out)
         {
             if (const auto in_it = inputs.find(item); in_it != inputs.end())
@@ -1315,6 +1327,10 @@ void App::RenderLeftPanel()
     }
     for (auto& [item, n] : intermediates)
     {
+        if (n.GetNumerator() == 0)
+        {
+            continue;
+        }
         ImGui::SetNextItemWidth(rate_width);
         ImGui::BeginDisabled();
         ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
