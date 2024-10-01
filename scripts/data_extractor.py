@@ -94,6 +94,15 @@ for recipe in get_classes(data, RECIPES):
         "outputs": parse_counted_item_list(recipe["mProduct"], items)
     }
 
+# Make sure all recipe names are unique
+recipes_names_counter = {}
+for r in recipes.values():
+    if r["name"] in recipes_names_counter:
+        recipes_names_counter[r["name"]] += 1
+        r["name"] = f"{r['name']} ({recipes_names_counter[r['name']] - 1})"
+    else:
+        recipes_names_counter[r["name"]] = 1
+
 # Copy icons for each used item
 if os.path.exists("icons"):
     shutil.rmtree("icons")

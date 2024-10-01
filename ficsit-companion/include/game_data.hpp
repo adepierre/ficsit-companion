@@ -5,8 +5,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "building.hpp"
-#include "recipe.hpp"
+struct Building;
+struct Item;
+struct Recipe;
 
 namespace Data
 {
@@ -24,5 +25,5 @@ namespace Data
     const std::unordered_map<std::string, std::unique_ptr<Building>>& Buildings();
 
     /// @brief Get all known recipes
-    const std::vector<Recipe>& Recipes();
+    const std::vector<std::unique_ptr<Recipe>>& Recipes();
 }

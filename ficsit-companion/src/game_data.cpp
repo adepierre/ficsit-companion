@@ -2,8 +2,10 @@
 #include <fstream>
 #include <stdexcept>
 
+#include "building.hpp"
 #include "game_data.hpp"
 #include "json.hpp"
+#include "recipe.hpp"
 
 namespace Data
 {
@@ -12,7 +14,7 @@ namespace Data
         std::string version;
         std::unordered_map<std::string, std::unique_ptr<Item>> items;
         std::unordered_map<std::string, std::unique_ptr<Building>> buildings;
-        std::vector<Recipe> recipes;
+        std::vector<std::unique_ptr<Recipe>> recipes;
     }
 
     void LoadData(const std::string& game)
@@ -45,14 +47,9 @@ namespace Data
             items[name] = std::make_unique<Item>(name, i["icon"].get_string());
         }
 
-        // Trick to sort the recipes alphabetically using std::map default sorting
-        Json::Value ordered_recipes;
-        for (const auto& r : data["recipes"].get_array())
-        {
-            ordered_recipes[r["name"].get_string()] = r;
-        }
+        const Json::Array& json_recipes = data["recipes"].get_array();
 
-        for (const auto& [name, r] : ordered_recipes.get_object())
+        for (const auto& r : json_recipes)
         {
             const int time = static_cast<int>(r["time"].get<double>());
             std::vector<CountedItem> inputs;
@@ -65,15 +62,19 @@ namespace Data
             {
                 outputs.emplace_back(CountedItem(items.at(o["name"].get_string()).get(), FractionalNumber(std::to_string(o["amount"].get<double>() * 60.0) + "/" + std::to_string(time))));
             }
-            recipes.emplace_back(Recipe(
+            recipes.emplace_back(std::make_unique<Recipe>(
                 inputs,
                 outputs,
                 buildings.at(r["building"].get_string()).get(),
                 r["alternate"].get<bool>(),
-                name,
+                r["name"].get_string(),
                 r.contains("spoiler") && r["spoiler"].get<bool>()
             ));
         }
+
+        std::stable_sort(recipes.begin(), recipes.end(), [](const std::unique_ptr<Recipe>& a, const std::unique_ptr<Recipe>& b) {
+            return a->name < b->name;
+        });
     }
 
     const std::string& Version()
@@ -91,7 +92,7 @@ namespace Data
         return buildings;
     }
 
-    const std::vector<Recipe>& Recipes()
+    const std::vector<std::unique_ptr<Recipe>>& Recipes()
     {
         return recipes;
     }

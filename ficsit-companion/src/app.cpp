@@ -6,6 +6,7 @@
 #include "link.hpp"
 #include "node.hpp"
 #include "pin.hpp"
+#include "recipe.hpp"
 #include "utils.hpp"
 
 // For InputText with std::string
@@ -146,9 +147,9 @@ void App::LoadSettings()
 
     for (const auto& r : Data::Recipes())
     {
-        if (r.alternate)
+        if (r->alternate)
         {
-            settings.unlocked_alts[&r] = json.contains("unlocked_alts") && json["unlocked_alts"].contains(r.name.substr(1)) && json["unlocked_alts"][r.name.substr(1)].get<bool>();
+            settings.unlocked_alts[r.get()] = json.contains("unlocked_alts") && json["unlocked_alts"].contains(r->name.substr(1)) && json["unlocked_alts"][r->name.substr(1)].get<bool>();
         }
     }
 
@@ -266,9 +267,9 @@ void App::Deserialize(const std::string& s)
     auto get_recipe = [&](const std::string& name) -> const Recipe* {
         for (const auto& r : Data::Recipes())
         {
-            if (r.name == name)
+            if (r->name == name)
             {
-                return &r;
+                return r.get();
             }
         }
         return nullptr;
@@ -1091,9 +1092,9 @@ void App::RenderLeftPanel()
         settings.unlocked_alts = {};
         for (const auto& r : Data::Recipes())
         {
-            if (r.alternate)
+            if (r->alternate)
             {
-                settings.unlocked_alts[&r] = true;
+                settings.unlocked_alts[r.get()] = true;
             }
         }
         SaveSettings();
@@ -1107,9 +1108,9 @@ void App::RenderLeftPanel()
         settings.unlocked_alts = {};
         for (const auto& r : Data::Recipes())
         {
-            if (r.alternate)
+            if (r->alternate)
             {
-                settings.unlocked_alts[&r] = false;
+                settings.unlocked_alts[r.get()] = false;
             }
         }
         SaveSettings();
@@ -1819,7 +1820,7 @@ void App::AddNewNode()
         ImGui::Separator();
         // Stores the recipe index and a "match score" to sort them in the display
         std::vector<std::pair<int, size_t>> recipe_indices;
-        const std::vector<Recipe>& recipes = Data::Recipes();
+        const std::vector<std::unique_ptr<Recipe>>& recipes = Data::Recipes();
         recipe_indices.reserve(recipes.size());
         // If this is already linked to another node
         // only display matching recipes
@@ -1832,7 +1833,7 @@ void App::AddNewNode()
                 {
                     break;
                 }
-                const std::vector<CountedItem>& matching_pins = new_node_pin->direction == ax::NodeEditor::PinKind::Input ? recipes[i].outs : recipes[i].ins;
+                const std::vector<CountedItem>& matching_pins = new_node_pin->direction == ax::NodeEditor::PinKind::Input ? recipes[i]->outs : recipes[i]->ins;
                 for (int j = 0; j < matching_pins.size(); ++j)
                 {
                     if (matching_pins[j].item->new_line_name == item_name)
@@ -1872,11 +1873,11 @@ void App::AddNewNode()
                 // A recipe goes on top if it matched the search string "before" another
                 // If they both matched at the same place, the alternate goes after
                 auto scored_recipe_sorting = [&](const std::pair<int, size_t>& a, const std::pair<int, size_t>& b) {
-                    return a.second < b.second || (a.second == b.second && !recipes[a.first].alternate && recipes[b.first].alternate);
+                    return a.second < b.second || (a.second == b.second && !recipes[a.first]->alternate && recipes[b.first]->alternate);
                 };
                 for (int i = 0; i < recipes.size(); ++i)
                 {
-                    if (const size_t pos = recipes[i].FindInName(recipe_filter); pos != std::string::npos)
+                    if (const size_t pos = recipes[i]->FindInName(recipe_filter); pos != std::string::npos)
                     {
                         recipe_indices.push_back({ i, pos });
                     }
@@ -1886,9 +1887,9 @@ void App::AddNewNode()
 
                 for (int i = 0; i < recipes.size(); ++i)
                 {
-                    if (recipes[i].FindInName(recipe_filter) == std::string::npos)
+                    if (recipes[i]->FindInName(recipe_filter) == std::string::npos)
                     {
-                        if (const size_t pos = recipes[i].FindInIngredients(recipe_filter); pos != std::string::npos)
+                        if (const size_t pos = recipes[i]->FindInIngredients(recipe_filter); pos != std::string::npos)
                         {
                             recipe_indices.push_back({ i, pos });
                         }
@@ -1916,21 +1917,21 @@ void App::AddNewNode()
 
         for (const auto [i, score_ignored] : recipe_indices)
         {
-            if (settings.hide_spoilers && recipes[i].is_spoiler)
+            if (settings.hide_spoilers && recipes[i]->is_spoiler)
             {
                 continue;
             }
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
-            if (recipes[i].alternate && ImGui::Checkbox(("##checkbox" + recipes[i].name).c_str(), &settings.unlocked_alts.at(&recipes[i])))
+            if (recipes[i]->alternate && ImGui::Checkbox(("##checkbox" + recipes[i]->name).c_str(), &settings.unlocked_alts.at(recipes[i].get())))
             {
                 SaveSettings();
             }
             ImGui::PopStyleVar();
             ImGui::TableSetColumnIndex(1);
-            ImGui::BeginDisabled(recipes[i].alternate && !settings.unlocked_alts.at(&recipes[i]));
-            if (ImGui::MenuItem(recipes[i].display_name.c_str()))
+            ImGui::BeginDisabled(recipes[i]->alternate && !settings.unlocked_alts.at(recipes[i].get()));
+            if (ImGui::MenuItem(recipes[i]->display_name.c_str()))
             {
                 recipe_index = i + 2;
                 // Need to duplicate the EndDisabled because of the break
@@ -1940,7 +1941,7 @@ void App::AddNewNode()
             ImGui::EndDisabled();
             ImGui::TableSetColumnIndex(2);
 
-            recipes[i].Render(false);
+            recipes[i]->Render(false);
         }
         ImGui::EndTable();
 
@@ -1956,7 +1957,7 @@ void App::AddNewNode()
             }
             else
             {
-                nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), &recipes[recipe_index - 2], std::bind(&App::GetNextId, this)));
+                nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipes[recipe_index - 2].get(), std::bind(&App::GetNextId, this)));
             }
             ax::NodeEditor::SetNodePosition(nodes.back()->id, new_node_position);
             if (new_node_pin != nullptr)
