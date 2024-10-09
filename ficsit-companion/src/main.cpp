@@ -113,7 +113,8 @@ bool Render(SDL_Window* window, App* app)
     }
 
     const std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    const std::chrono::steady_clock::time_point end = start + std::chrono::milliseconds(16);
+    // If no user interaction, go down to 5 FPS to save some CPU
+    const std::chrono::steady_clock::time_point end = start + std::chrono::milliseconds(app->HasRecentInteraction() ? 16 : 200);
 
     // Init imgui frame
     ImGui_ImplOpenGL3_NewFrame();

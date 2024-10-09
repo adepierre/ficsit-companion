@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <map>
 #include <memory>
 #include <queue>
@@ -24,6 +25,8 @@ public:
 public:
     /// @brief Save current session (should NOT require an active ImGui context)
     void SaveSession();
+
+    bool HasRecentInteraction() const;
 
 private:
     /// @brief Load saved session if present
@@ -143,5 +146,7 @@ private:
     std::queue<std::pair<const Pin*, Constraint>> updating_pins;
 
     unsigned int somersloop_texture_id;
+
+    std::chrono::steady_clock::time_point last_time_interacted;
 
 };
