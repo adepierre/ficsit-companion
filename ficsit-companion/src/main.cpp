@@ -1,3 +1,8 @@
+#include <chrono>
+#if !defined(__EMSCRIPTEN__)
+#include <thread>
+#endif
+
 #include <imgui.h>
 #include <backends/imgui_impl_sdl2.h>
 #include <backends/imgui_impl_opengl3.h>
@@ -107,6 +112,9 @@ bool Render(SDL_Window* window, App* app)
         }
     }
 
+    const std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    const std::chrono::steady_clock::time_point end = start + std::chrono::milliseconds(16);
+
     // Init imgui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame();
@@ -136,6 +144,15 @@ bool Render(SDL_Window* window, App* app)
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
+
+#if !defined(__EMSCRIPTEN__)
+    std::this_thread::sleep_until(end);
+#else
+    while (std::chrono::steady_clock::now() < end)
+    {
+        emscripten_sleep(1);
+    }
+#endif
 
     return true;
 }
