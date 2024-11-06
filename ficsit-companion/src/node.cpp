@@ -3,6 +3,8 @@
 #include "pin.hpp"
 #include "recipe.hpp"
 
+#include <cmath>
+
 #include <imgui_node_editor.h>
 
 Node::Node(const ax::NodeEditor::NodeId id) : id(id)
