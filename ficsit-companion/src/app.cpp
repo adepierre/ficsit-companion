@@ -147,7 +147,8 @@ void App::LoadSettings()
     Json::Value json = content.has_value() ? Json::Parse(content.value()) : Json::Object();
 
     // Load all settings values from json
-    settings.hide_spoilers = !json.contains("hide_spoilers") || json["hide_spoilers"].get<bool>(); // default true
+    // Spoilers are disabled since we are not just after a major release anymore
+    settings.hide_spoilers = false; // !json.contains("hide_spoilers") || json["hide_spoilers"].get<bool>(); // default true
     settings.hide_somersloop = !json.contains("hide_somersloop") || json["hide_somersloop"].get<bool>(); // default true
     settings.diff_in_out = json.contains("diff_in_out") && json["diff_in_out"].get<bool>(); // default false
     settings.unlocked_alts = {};
@@ -1077,14 +1078,16 @@ void App::RenderLeftPanel()
 
     ImGui::SeparatorText("Settings");
     // Display all settings here
-    if (ImGui::Checkbox("Hide 1.0 tier 5 spoiler", &settings.hide_somersloop))
+    if (ImGui::Checkbox("Hide somersloop amplifier", &settings.hide_somersloop))
     {
         SaveSettings();
     }
-    if (ImGui::Checkbox("Hide 1.0 new advanced recipes", &settings.hide_spoilers))
+    ImGui::SameLine();
+    ImGui::Image((void*)(intptr_t)somersloop_texture_id, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+    /*if (ImGui::Checkbox("Hide 1.0 new advanced recipes", &settings.hide_spoilers))
     {
         SaveSettings();
-    }
+    }*/
     if (ImGui::Checkbox("Compute Inputs/Outputs diff", &settings.diff_in_out))
     {
         SaveSettings();

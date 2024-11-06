@@ -743,8 +743,7 @@
                     "name": "Compacted Coal",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Rocket Fuel",
@@ -770,8 +769,7 @@
                     "name": "Compacted Coal",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Packaged Rocket Fuel",
@@ -793,8 +791,7 @@
                     "name": "Packaged Rocket Fuel",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Unpackage Rocket Fuel",
@@ -816,8 +813,7 @@
                     "name": "Empty Fluid Tank",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Dark-Ion Fuel",
@@ -843,8 +839,7 @@
                     "name": "Compacted Coal",
                     "amount": 2.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Dark Matter Residue",
@@ -862,8 +857,7 @@
                     "name": "Dark Matter Residue",
                     "amount": 10.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Excited Photonic Matter",
@@ -876,8 +870,7 @@
                     "name": "Excited Photonic Matter",
                     "amount": 10.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Dark Matter Crystal",
@@ -899,8 +892,7 @@
                     "name": "Dark Matter Crystal",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Superposition Oscillator",
@@ -934,8 +926,7 @@
                     "name": "Dark Matter Residue",
                     "amount": 25.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Neural-Quantum Processor",
@@ -969,8 +960,7 @@
                     "name": "Dark Matter Residue",
                     "amount": 25.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "AI Expansion Server",
@@ -1004,8 +994,7 @@
                     "name": "Dark Matter Residue",
                     "amount": 25.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Ionized Fuel",
@@ -1031,8 +1020,7 @@
                     "name": "Compacted Coal",
                     "amount": 2.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Packaged Ionized Fuel",
@@ -1054,8 +1042,7 @@
                     "name": "Packaged Ionized Fuel",
                     "amount": 2.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Unpackage Ionized Fuel",
@@ -1077,8 +1064,7 @@
                     "name": "Empty Fluid Tank",
                     "amount": 2.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Turbo Diamonds",
@@ -1100,8 +1086,7 @@
                     "name": "Diamonds",
                     "amount": 3.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "SAM Fluctuator",
@@ -1127,8 +1112,7 @@
                     "name": "SAM Fluctuator",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Ficsite Trigon",
@@ -1146,8 +1130,7 @@
                     "name": "Ficsite Trigon",
                     "amount": 3.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Ficsite Ingot (Iron)",
@@ -1169,8 +1152,7 @@
                     "name": "Ficsite Ingot",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Time Crystal",
@@ -1188,8 +1170,7 @@
                     "name": "Time Crystal",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Diamonds",
@@ -1207,8 +1188,7 @@
                     "name": "Diamonds",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Reanimated SAM",
@@ -1226,8 +1206,7 @@
                     "name": "Reanimated SAM",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Biochemical Sculptor",
@@ -1253,8 +1232,7 @@
                     "name": "Biochemical Sculptor",
                     "amount": 4.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Ficsite Ingot (Aluminum)",
@@ -1276,8 +1254,7 @@
                     "name": "Ficsite Ingot",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Ficsite Ingot (Caterium)",
@@ -1299,8 +1276,7 @@
                     "name": "Ficsite Ingot",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Bauxite (Caterium)",
@@ -1322,8 +1298,7 @@
                     "name": "Bauxite",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Bauxite (Copper)",
@@ -1345,8 +1320,7 @@
                     "name": "Bauxite",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Caterium Ore (Copper)",
@@ -1368,8 +1342,7 @@
                     "name": "Caterium Ore",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Caterium Ore (Quartz)",
@@ -1391,8 +1364,7 @@
                     "name": "Caterium Ore",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Coal (Iron)",
@@ -1414,8 +1386,7 @@
                     "name": "Coal",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Coal (Limestone)",
@@ -1437,8 +1408,7 @@
                     "name": "Coal",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Copper Ore (Quartz)",
@@ -1460,8 +1430,7 @@
                     "name": "Copper Ore",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Copper Ore (Sulfur)",
@@ -1483,8 +1452,7 @@
                     "name": "Copper Ore",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Iron Ore (Limestone)",
@@ -1506,8 +1474,7 @@
                     "name": "Iron Ore",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Limestone (Sulfur)",
@@ -1529,8 +1496,7 @@
                     "name": "Limestone",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Nitrogen Gas (Bauxite)",
@@ -1552,8 +1518,7 @@
                     "name": "Nitrogen Gas",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Nitrogen Gas (Caterium)",
@@ -1575,8 +1540,7 @@
                     "name": "Nitrogen Gas",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Raw Quartz (Bauxite)",
@@ -1598,8 +1562,7 @@
                     "name": "Raw Quartz",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Raw Quartz (Coal)",
@@ -1621,8 +1584,7 @@
                     "name": "Raw Quartz",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Sulfur (Coal)",
@@ -1644,8 +1606,7 @@
                     "name": "Sulfur",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Sulfur (Iron)",
@@ -1667,8 +1628,7 @@
                     "name": "Sulfur",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Uranium Ore (Bauxite)",
@@ -1690,8 +1650,7 @@
                     "name": "Uranium",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Turbofuel",
@@ -2005,8 +1964,7 @@
                     "name": "Diamonds",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Petroleum Diamonds",
@@ -2024,8 +1982,7 @@
                     "name": "Diamonds",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Oil-Based Diamonds",
@@ -2043,8 +2000,7 @@
                     "name": "Diamonds",
                     "amount": 2.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Cloudy Diamonds",
@@ -2066,8 +2022,7 @@
                     "name": "Diamonds",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Dark Matter Trap",
@@ -2089,8 +2044,7 @@
                     "name": "Dark Matter Crystal",
                     "amount": 2.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Dark Matter Crystallization",
@@ -2108,8 +2062,7 @@
                     "name": "Dark Matter Crystal",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Wet Concrete",
@@ -6017,8 +5970,7 @@
                     "name": "Ficsonium",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Ficsonium Fuel Rod",
@@ -6052,8 +6004,7 @@
                     "name": "Dark Matter Residue",
                     "amount": 20.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Singularity Cell",
@@ -6083,8 +6034,7 @@
                     "name": "Singularity Cell",
                     "amount": 10.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Ballistic Warp Drive",
@@ -6114,8 +6064,7 @@
                     "name": "Ballistic Warp Drive",
                     "amount": 1.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Iodine-Infused Filter",
@@ -6305,8 +6254,7 @@
                     "name": "Dark Matter Residue",
                     "amount": 24.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Stinger Protein",
@@ -6566,8 +6514,7 @@
                     "name": "Dark Matter Residue",
                     "amount": 12.0
                 }
-            ],
-            "spoiler": true
+            ]
         },
         {
             "name": "Power Shard (5)",
