@@ -27,7 +27,9 @@ def get_classes(doc, keys: List[str]):
     output = []
     for element in doc:
         if element["NativeClass"] in keys:
-            output += element["Classes"]
+            for c in element["Classes"]:
+                c["NativeClass"] = element["NativeClass"]
+                output.append(c)
     if len(output) == 0:
         raise RuntimeError(f"Can't find any item in doc matching {keys}")
     return output
@@ -64,6 +66,10 @@ buildings = {
         "name": b["mDisplayName"],
         # TODO: add power data, need special cases for Particle Accelerator and potentially 1.0 quantum buildings (variable power + recipe dependant)
         "somersloop_mult": float(b["mProductionShardBoostMultiplier"]),
+        "power": float(b["mPowerConsumption"]),
+        "power_exponent": float(b["mPowerConsumptionExponent"]),
+        "somersloop_power_exponent": float(b["mProductionBoostPowerConsumptionExponent"]),
+        "variable_power": "FGBuildableManufacturerVariablePower" in b["NativeClass"],
     } for b in get_classes(data, BUILDINGS)
 }
 
@@ -91,8 +97,11 @@ for recipe in get_classes(data, RECIPES):
         "time": float(recipe["mManufactoringDuration"]),
         "building": building["name"],
         "inputs": parse_counted_item_list(recipe["mIngredients"], items),
-        "outputs": parse_counted_item_list(recipe["mProduct"], items)
+        "outputs": parse_counted_item_list(recipe["mProduct"], items),
     }
+    if building["variable_power"]:
+        recipes[recipe["ClassName"]]["power_constant"] = float(recipe["mVariablePowerConsumptionConstant"])
+        recipes[recipe["ClassName"]]["power_range"] = float(recipe["mVariablePowerConsumptionFactor"])
 
 # Make sure all recipe names are unique
 recipes_names_counter = {}
