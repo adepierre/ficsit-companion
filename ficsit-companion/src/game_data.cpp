@@ -52,7 +52,7 @@ namespace Data
 
         for (const auto& r : json_recipes)
         {
-            const int time = static_cast<int>(r["time"].get<double>());
+            const double time = r["time"].get<double>();
             std::vector<CountedItem> inputs;
             for (const auto& i : r["inputs"].get_array())
             {
@@ -63,6 +63,7 @@ namespace Data
             {
                 outputs.emplace_back(CountedItem(items.at(o["name"].get_string()).get(), FractionalNumber(std::to_string(o["amount"].get<double>() * 60.0) + "/" + std::to_string(time))));
             }
+
             recipes.emplace_back(std::make_unique<Recipe>(
                 inputs,
                 outputs,
