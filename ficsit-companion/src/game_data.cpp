@@ -39,7 +39,14 @@ namespace Data
         for (const auto& b : data["buildings"].get_array())
         {
             const std::string& name = b["name"].get_string();
-            buildings[name] = std::make_unique<Building>(name, FractionalNumber(std::to_string(b["somersloop_mult"].get<double>())));
+            buildings[name] = std::make_unique<Building>(
+                name,
+                FractionalNumber(std::to_string(b["somersloop_mult"].get<double>())),
+                b["power"].get<double>(),
+                b["power_exponent"].get<double>(),
+                b["somersloop_power_exponent"].get<double>(),
+                b["variable_power"].get<bool>()
+            );
         }
 
         for (const auto& i : data["items"].get_array())
@@ -64,11 +71,13 @@ namespace Data
                 outputs.emplace_back(CountedItem(items.at(o["name"].get_string()).get(), FractionalNumber(std::to_string(o["amount"].get<double>() * 60.0) + "/" + std::to_string(time))));
             }
 
+            const Building* building = buildings.at(r["building"].get_string()).get();
             recipes.emplace_back(std::make_unique<Recipe>(
                 inputs,
                 outputs,
-                buildings.at(r["building"].get_string()).get(),
+                building,
                 r["alternate"].get<bool>(),
+                (r.contains("power_constant") && r.contains("power_range")) ? r["power_constant"].get<double>() + 0.5 * r["power_range"].get<double>() : building->power,
                 r["name"].get_string(),
                 r.contains("spoiler") && r["spoiler"].get<bool>()
             ));

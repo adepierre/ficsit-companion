@@ -51,10 +51,14 @@ struct CraftNode : public Node
     virtual Json::Value Serialize() const override;
     virtual bool Deserialize(const Json::Value& v) override;
 
+    void ComputePowerUsage();
+
     const Recipe* recipe;
     FractionalNumber current_rate;
     /// @brief Technically it could be just an int, but FractionalNumber already has all string operations
     FractionalNumber num_somersloop;
+    double same_clock_power;
+    double last_underclock_power;
 };
 
 struct OrganizerNode : public Node

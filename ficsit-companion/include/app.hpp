@@ -117,6 +117,9 @@ private:
         bool diff_in_out = false;
         /// @brief For each alt recipes, stores wether or not it's been unlocked yet
         std::map<const Recipe*, bool> unlocked_alts = {};
+        /// @brief If true, will display power info with equal clocks on all machines in a node
+        /// If false, it will compute the power for N machines at 100% + an underclocked machine
+        bool power_equal_clocks = true;
     } settings;
 
     /// @brief All nodes currently in the graph view

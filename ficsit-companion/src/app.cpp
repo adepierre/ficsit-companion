@@ -528,6 +528,7 @@ void App::UpdateNodesRate()
             {
                 node->current_rate = updating_pin->current_rate / updating_pin->base_rate;
             }
+            node->ComputePowerUsage();
             for (auto& p : node->ins)
             {
                 const Constraint constraint = GetConstraint(p.get());
@@ -1088,6 +1089,17 @@ void App::RenderLeftPanel()
     {
         SaveSettings();
     }*/
+    if (ImGui::Checkbox("Compute power with equal clocks", &settings.power_equal_clocks))
+    {
+        SaveSettings();
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("%s",
+            "If set, the power per node will be calculated assuming all machines are set at the same clock value\n"
+            "Otherwise, it will be calculated with machines at 100%% and one last machine underclocked");
+    }
+
     if (ImGui::Checkbox("Compute Inputs/Outputs diff", &settings.diff_in_out))
     {
         SaveSettings();
@@ -1139,6 +1151,9 @@ void App::RenderLeftPanel()
     std::map<const Item*, FractionalNumber, ItemPtrCompare> intermediates;
     std::map<std::string, FractionalNumber> total_machines;
     std::map<std::string, std::map<const Recipe*, FractionalNumber, RecipePtrCompare>> detailed_machines;
+    double total_power = 0.0;
+    std::map<const Recipe*, double> detailed_power;
+    bool has_variable_power = false;
 
     // Gather all inputs/outputs/machines
     for (const auto& n : nodes)
@@ -1167,6 +1182,9 @@ void App::RenderLeftPanel()
             const CraftNode* node = static_cast<const CraftNode*>(n.get());
             total_machines[node->recipe->building->name] += node->current_rate;
             detailed_machines[node->recipe->building->name][node->recipe] += node->current_rate;
+            total_power += settings.power_equal_clocks ? node->same_clock_power : node->last_underclock_power;
+            detailed_power[node->recipe] += settings.power_equal_clocks ? node->same_clock_power : node->last_underclock_power;
+            has_variable_power |= node->recipe->building->variable_power;
         }
     }
 
@@ -1180,6 +1198,39 @@ void App::RenderLeftPanel()
     }
 
     const float rate_width = ImGui::CalcTextSize("0000.000").x;
+
+    ImGui::SeparatorText(has_variable_power ? "Average Power" : "Power");
+    {
+        std::vector<std::pair<const Recipe*, double>> sorted_detailed_power(detailed_power.begin(), detailed_power.end());
+        std::stable_sort(sorted_detailed_power.begin(), sorted_detailed_power.end(), [](const auto& a, const auto& b) {
+            return a.second > b.second;
+        });
+
+        // No visible color change when hovered/click
+        ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderActive, ImVec4(0, 0, 0, 0));
+        const bool display_power_details = ImGui::TreeNodeEx("##power", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanAvailWidth);
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+
+        // Displayed over the TreeNodeEx element (same line)
+        ImGui::SameLine();
+        ImGui::Text("%s%.8g MW", has_variable_power ? "~" : "", total_power);
+        // Detailed list of recipes if the tree node is open
+        if (display_power_details)
+        {
+            ImGui::Indent();
+            for (auto& [recipe, p] : sorted_detailed_power)
+            {
+                ImGui::Text("%s%.8g MW", recipe->building->variable_power ? "~" : "", p);
+                ImGui::SameLine();
+                recipe->Render();
+            }
+
+            ImGui::Unindent();
+            ImGui::TreePop();
+        }
+    }
 
     ImGui::SeparatorText("Machines");
     for (auto& [machine, n] : total_machines)
@@ -1575,11 +1626,17 @@ void App::RenderNodes()
 
             ImGui::BeginHorizontal("bottom");
             {
-                ImGui::Spring(1.0f);
-                ImGui::SetNextItemWidth(rate_width);
                 if (node->IsCraft())
                 {
+                    ImGui::Spring(0.0f);
                     CraftNode* craft_node = static_cast<CraftNode*>(node.get());
+                    ImGui::Text("%s%.6g MW", craft_node->recipe->building->variable_power ? "~" : "", settings.power_equal_clocks ? craft_node->same_clock_power : craft_node->last_underclock_power);
+                    if (craft_node->recipe->building->variable_power && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                    {
+                        frame_tooltips.push_back("Average power");
+                    }
+                    ImGui::Spring(1.0f);
+                    ImGui::SetNextItemWidth(rate_width);
                     ImGui::InputText("##rate", &craft_node->current_rate.GetStringFloat(), ImGuiInputTextFlags_CharsDecimal);
                     if (ImGui::IsItemDeactivatedAfterEdit())
                     {
@@ -1596,6 +1653,7 @@ void App::RenderNodes()
                                 p->current_rate = p->base_rate * craft_node->current_rate * (1 + (craft_node->num_somersloop * craft_node->recipe->building->somersloop_mult));
                                 updating_pins.push({ p.get(), Constraint::Strong });
                             }
+                            craft_node->ComputePowerUsage();
                         }
                         catch (const std::domain_error&)
                         {
@@ -1639,6 +1697,7 @@ void App::RenderNodes()
                                     new_num_somersloop = 1 / craft_node->recipe->building->somersloop_mult;
                                 }
                                 craft_node->num_somersloop = new_num_somersloop;
+                                craft_node->ComputePowerUsage();
                                 for (auto& p : craft_node->outs)
                                 {
                                     p->current_rate = p->base_rate * craft_node->current_rate * (1 + (craft_node->num_somersloop * craft_node->recipe->building->somersloop_mult));
@@ -1661,6 +1720,7 @@ void App::RenderNodes()
                 }
                 else
                 {
+                    ImGui::Spring(1.0f);
                     OrganizerNode* org_node = static_cast<OrganizerNode*>(node.get());
                     if (org_node->item != nullptr)
                     {

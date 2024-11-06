@@ -25,12 +25,14 @@ Recipe::Recipe(
     const std::vector<CountedItem>& outs,
     const Building* building,
     const bool alternate,
+    const double power,
     const std::string& name,
     const bool is_spoiler) :
     ins(ins),
     outs(outs),
     building(building),
     alternate(alternate),
+    power(power),
     name(name),
     display_name(alternate ? ("*" + name) : name),
     is_spoiler(is_spoiler)

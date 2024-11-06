@@ -56,8 +56,9 @@ bool Node::Deserialize(const Json::Value& v)
 }
 
 CraftNode::CraftNode(const ax::NodeEditor::NodeId id, const Recipe* recipe, const std::function<unsigned long long int()>& id_generator) :
-    Node(id), recipe(recipe), current_rate(1, 1), num_somersloop(0)
+    Node(id), recipe(recipe), current_rate(1, 1), num_somersloop(0), same_clock_power(0.0), last_underclock_power(0.0)
 {
+    ComputePowerUsage();
     for (const auto& input : recipe->ins)
     {
         ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, input.item, input.quantity));
@@ -102,6 +103,7 @@ bool CraftNode::Deserialize(const Json::Value& v)
 
     current_rate = FractionalNumber(v["rate"]["num"].get<long long int>(), v["rate"]["den"].get<long long int>());
     num_somersloop = FractionalNumber(v["num_somersloop"].get<long long int>());
+    ComputePowerUsage();
     for (auto& p : ins)
     {
         p->current_rate = p->base_rate * current_rate;
@@ -113,6 +115,36 @@ bool CraftNode::Deserialize(const Json::Value& v)
 
 
     return true;
+}
+
+void CraftNode::ComputePowerUsage()
+{
+    same_clock_power = 0.0;
+    last_underclock_power = 0.0;
+
+    const Building* building = recipe->building;
+    // All machines are underclocked at current_rate/num_machines
+    const int num_machines = static_cast<int>(std::ceil(current_rate.GetValue()));
+    const double power = recipe->power;
+    same_clock_power =
+        num_machines *
+        power *
+        std::pow(1.0 + num_somersloop.GetValue() * building->somersloop_mult.GetValue(), building->somersloop_power_exponent) *
+        std::pow(current_rate.GetValue() / static_cast<double>(num_machines), building->power_exponent);
+    // num_full_machines have 100% rate + extra underclocked machine
+    const int num_full_machines = static_cast<int>(std::floor(current_rate.GetValue()));
+    last_underclock_power =
+        num_full_machines *
+        power *
+        std::pow(1.0 + num_somersloop.GetValue() * building->somersloop_mult.GetValue(), building->somersloop_power_exponent);
+    last_underclock_power +=
+        power *
+        std::pow(1.0 + num_somersloop.GetValue() * building->somersloop_mult.GetValue(), building->somersloop_power_exponent) *
+        std::pow(current_rate.GetValue() - num_full_machines, building->power_exponent);
+    // Truncate power to max 2 figures after the decimal point
+    same_clock_power = std::floor(same_clock_power * 100.0) / 100.0;
+    last_underclock_power = std::floor(last_underclock_power * 100.0) / 100.0;
+
 }
 
 Node::Kind CraftNode::GetKind() const

@@ -29,6 +29,7 @@ struct Recipe
         const std::vector<CountedItem>& outs,
         const Building* building,
         const bool alternate,
+        const double power,
         const std::string& name = "",
         const bool is_spoiler = false
     );
@@ -52,6 +53,7 @@ struct Recipe
     const Building* building;
     const bool alternate;
     const bool is_spoiler;
+    const double power;
 
 private:
     std::string lower_name;
