@@ -26,18 +26,6 @@ Usually, I tend to favor functionnality before look (please don't judge my shoeb
 </details>
 
 <details>
-<summary>Power information</summary>
-
-Adding power information to the left pannel is not as simple as that. The first issue is the Particle Accelerator (and potentially other new buildings coming in future updates), that has varying power requirements based on time and recipes used. The other thing to think about is overclocking: assuming you need 2.4 Constructors, you can either build
-- 1 Constructor overclocked to 240%, for a total of 12.73 MW
-- 3 Constructors, one of them being underclocked to 40%, for a total of 9.19 MW
-- 3 Constructors, all underclocked to 80%, for a total of 8.93 MW
-- 6 Constructors, all underclocked to 40% (for example if you plan to upgrade once you get higher tier belts), for a total of 7.15 MW
-
-In this case, it is not clear which option should be displayed in the production summary. I'd say both options 2 and 3 could be interesting to have, but would like to hear feedback about that.
-</details>
-
-<details>
 <summary>Pin reordering</summary>
 
 Inside a node, in/out pins order is irrelevant. However, being able to reorder them could be helpful to get cleaner layouts with less link crossing overall. Currently a partial solution is implemented: pins are automatically sorted based on the position of the linked node (if any).
