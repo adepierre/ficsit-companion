@@ -112,7 +112,7 @@ private:
         /// @brief If true, recipes marked as spoiler will not be proposed in the list
         bool hide_spoilers = true;
         /// @brief If true, somersloop override will not be displayed in the nodes
-        bool hide_somersloop = true;
+        bool hide_somersloop = false;
         /// @brief If true, items in both inputs and outputs on the left panel will be subtracted and displayed only once
         bool diff_in_out = false;
         /// @brief For each alt recipes, stores wether or not it's been unlocked yet

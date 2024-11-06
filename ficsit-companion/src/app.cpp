@@ -24,6 +24,8 @@
 #include <optional>
 #include <stdexcept>
 
+// #define WITH_SPOILERS
+
 /// @brief Save text file (either on disk for desktop version or in localStorage for web version)
 /// @param path
 /// @param content
@@ -148,8 +150,12 @@ void App::LoadSettings()
 
     // Load all settings values from json
     // Spoilers are disabled since we are not just after a major release anymore
-    settings.hide_spoilers = false; // !json.contains("hide_spoilers") || json["hide_spoilers"].get<bool>(); // default true
-    settings.hide_somersloop = !json.contains("hide_somersloop") || json["hide_somersloop"].get<bool>(); // default true
+#ifdef WITH_SPOILERS
+    settings.hide_spoilers = !json.contains("hide_spoilers") || json["hide_spoilers"].get<bool>(); // default true
+#else
+    settings.hide_spoilers = false;
+#endif
+    settings.hide_somersloop = json.contains("hide_somersloop") && json["hide_somersloop"].get<bool>(); // default true
     settings.diff_in_out = json.contains("diff_in_out") && json["diff_in_out"].get<bool>(); // default false
     settings.unlocked_alts = {};
 
@@ -1083,12 +1089,12 @@ void App::RenderLeftPanel()
     {
         SaveSettings();
     }
-    ImGui::SameLine();
-    ImGui::Image((void*)(intptr_t)somersloop_texture_id, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-    /*if (ImGui::Checkbox("Hide 1.0 new advanced recipes", &settings.hide_spoilers))
+#ifdef WITH_SPOILERS
+    if (ImGui::Checkbox("Hide 1.0 new advanced recipes", &settings.hide_spoilers))
     {
         SaveSettings();
-    }*/
+    }
+#endif
     if (ImGui::Checkbox("Compute power with equal clocks", &settings.power_equal_clocks))
     {
         SaveSettings();
@@ -1197,8 +1203,6 @@ void App::RenderLeftPanel()
         }
     }
 
-    const float rate_width = ImGui::CalcTextSize("0000.000").x;
-
     ImGui::SeparatorText(has_variable_power ? "Average Power" : "Power");
     {
         std::vector<std::pair<const Recipe*, double>> sorted_detailed_power(detailed_power.begin(), detailed_power.end());
@@ -1222,7 +1226,7 @@ void App::RenderLeftPanel()
             ImGui::Indent();
             for (auto& [recipe, p] : sorted_detailed_power)
             {
-                ImGui::Text("%s%.8g MW", recipe->building->variable_power ? "~" : "", p);
+                ImGui::Text("%s%.6g MW", recipe->building->variable_power ? "~" : "", p);
                 ImGui::SameLine();
                 recipe->Render();
             }
@@ -1232,6 +1236,7 @@ void App::RenderLeftPanel()
         }
     }
 
+    const float rate_width = ImGui::CalcTextSize("0000.000").x;
     ImGui::SeparatorText("Machines");
     for (auto& [machine, n] : total_machines)
     {
