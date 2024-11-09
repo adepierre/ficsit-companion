@@ -1,5 +1,9 @@
 #include "fractional_number.hpp"
 
+#include <imgui.h>
+// For InputText with std::string
+#include <misc/cpp/imgui_stdlib.h>
+
 #include <iomanip>
 #include <numeric>
 #include <regex>
@@ -103,6 +107,27 @@ std::string& FractionalNumber::GetStringFloat()
         str_float = sstream.str();
     }
     return str_float.value();
+}
+
+void FractionalNumber::RenderInputText(const char* label, const bool disabled, const bool fraction_tooltip, float width)
+{
+    std::string& float_value = GetStringFloat();
+    if (width == 0.0f)
+    {
+        width = ImGui::CalcTextSize(float_value.c_str()).x + ImGui::GetStyle().FramePadding.x * 2;
+    }
+
+    ImGui::BeginDisabled(disabled);
+    ImGui::SetNextItemWidth(width);
+    ImGui::InputText(label, &float_value, disabled ? ImGuiInputTextFlags_ReadOnly : ImGuiInputTextFlags_CharsDecimal);
+    ImGui::EndDisabled();
+    if (fraction_tooltip)
+    {
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("%s", GetStringFraction().c_str());
+        }
+    }
 }
 
 FractionalNumber& FractionalNumber::operator*=(const FractionalNumber& rhs)

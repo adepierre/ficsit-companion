@@ -1236,7 +1236,7 @@ void App::RenderLeftPanel()
         }
     }
 
-    const float rate_width = ImGui::CalcTextSize("0000.000").x;
+    const float rate_width = ImGui::CalcTextSize("0000.000").x + ImGui::GetStyle().FramePadding.x * 2.0f;
     ImGui::SeparatorText("Machines");
     for (auto& [machine, n] : total_machines)
     {
@@ -1253,14 +1253,7 @@ void App::RenderLeftPanel()
 
         // Displayed over the TreeNodeEx element (same line)
         ImGui::SameLine();
-        ImGui::SetNextItemWidth(rate_width);
-        ImGui::BeginDisabled();
-        ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
-        ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-        {
-            ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
-        }
+        n.RenderInputText("##rate", true, true, rate_width);
         ImGui::SameLine();
         ImGui::Text("(%i)", min_number_machines[machine]);
         if (ImGui::IsItemHovered())
@@ -1276,14 +1269,7 @@ void App::RenderLeftPanel()
             ImGui::Indent();
             for (auto& [recipe, n2] : detailed_machines[machine])
             {
-                ImGui::SetNextItemWidth(rate_width);
-                ImGui::BeginDisabled();
-                ImGui::InputText("##rate", &n2.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
-                ImGui::EndDisabled();
-                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                {
-                    ImGui::SetTooltip("%s", n2.GetStringFraction().c_str());
-                }
+                n2.RenderInputText("##rate", true, true, rate_width);
                 ImGui::SameLine();
                 ImGui::Text("(%i)", static_cast<int>(std::ceil(n2.GetValue())));
                 if (ImGui::IsItemHovered())
@@ -1333,14 +1319,7 @@ void App::RenderLeftPanel()
                 }
             }
         }
-        ImGui::SetNextItemWidth(rate_width);
-        ImGui::BeginDisabled();
-        ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
-        ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-        {
-            ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
-        }
+        n.RenderInputText("##rate", true, true, rate_width);
         ImGui::SameLine();
         ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
         ImGui::SameLine();
@@ -1373,14 +1352,7 @@ void App::RenderLeftPanel()
                 }
             }
         }
-        ImGui::SetNextItemWidth(rate_width);
-        ImGui::BeginDisabled();
-        ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
-        ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-        {
-            ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
-        }
+        n.RenderInputText("##rate", true, true, rate_width);
         ImGui::SameLine();
         ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
         ImGui::SameLine();
@@ -1398,14 +1370,7 @@ void App::RenderLeftPanel()
         {
             continue;
         }
-        ImGui::SetNextItemWidth(rate_width);
-        ImGui::BeginDisabled();
-        ImGui::InputText("##rate", &n.GetStringFloat(), ImGuiInputTextFlags_ReadOnly);
-        ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-        {
-            ImGui::SetTooltip("%s", n.GetStringFraction().c_str());
-        }
+        n.RenderInputText("##rate", true, true, rate_width);
         ImGui::SameLine();
         ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
         ImGui::SameLine();
@@ -1415,8 +1380,8 @@ void App::RenderLeftPanel()
 
 void App::RenderNodes()
 {
-    const float rate_width = ImGui::CalcTextSize("0000.000").x;
-    const float somersloop_width = ImGui::CalcTextSize("000").x;
+    const float rate_width = ImGui::CalcTextSize("000.000").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+    const float somersloop_width = ImGui::CalcTextSize("4").x + ImGui::GetStyle().FramePadding.x * 2.0f;
     // Vector that will be reused to sort pins for all nodes (instead of creating two per nodes)
     std::vector<size_t> sorted_pin_indices(4);
     auto sort_pin_indices = [&](const std::vector<std::unique_ptr<Pin>>& pins) {
@@ -1514,8 +1479,7 @@ void App::RenderNodes()
                             }
                             ImGui::Dummy(size);
                             ImGui::Spring(0.0f);
-                            ImGui::SetNextItemWidth(rate_width);
-                            ImGui::InputText("##rate", &p->current_rate.GetStringFloat(), ImGuiInputTextFlags_CharsDecimal);
+                            p->current_rate.RenderInputText("##rate", false, false, rate_width);
                             if (ImGui::IsItemDeactivatedAfterEdit())
                             {
                                 try
@@ -1575,8 +1539,7 @@ void App::RenderNodes()
                                 ImGui::Image((void*)(intptr_t)p->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
                             }
                             ImGui::Spring(0.0f);
-                            ImGui::SetNextItemWidth(rate_width);
-                            ImGui::InputText("##rate", &p->current_rate.GetStringFloat(), ImGuiInputTextFlags_CharsDecimal);
+                            p->current_rate.RenderInputText("##rate", false, false, rate_width);
                             if (ImGui::IsItemDeactivatedAfterEdit())
                             {
                                 try
@@ -1641,8 +1604,7 @@ void App::RenderNodes()
                         frame_tooltips.push_back("Average power");
                     }
                     ImGui::Spring(1.0f);
-                    ImGui::SetNextItemWidth(rate_width);
-                    ImGui::InputText("##rate", &craft_node->current_rate.GetStringFloat(), ImGuiInputTextFlags_CharsDecimal);
+                    craft_node->current_rate.RenderInputText("##rate", false, false, rate_width);
                     if (ImGui::IsItemDeactivatedAfterEdit())
                     {
                         try

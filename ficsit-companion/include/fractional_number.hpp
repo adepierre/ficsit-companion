@@ -16,6 +16,13 @@ public:
     std::string& GetStringFraction();
     std::string& GetStringFloat();
 
+    /// @brief Render the float value in an input text
+    /// @param label ImGui label of the InputText element
+    /// @param disabled If true, the element will not be interactable
+    /// @param fraction_tooltip If true, will add an ImGui tooltip with the fraction value
+    /// @param fixed_width If != 0.0f, will set the width to this value, if 0.0f, the width with adjust to the content
+    void RenderInputText(const char* label, const bool disabled, const bool fraction_tooltip, float fixed_width = 0.0f);
+
     FractionalNumber& operator*=(const FractionalNumber& rhs);
     FractionalNumber& operator+=(const FractionalNumber& rhs);
     FractionalNumber& operator-=(const FractionalNumber& rhs);
