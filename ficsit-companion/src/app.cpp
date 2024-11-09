@@ -1157,8 +1157,8 @@ void App::RenderLeftPanel()
     std::map<const Item*, FractionalNumber, ItemPtrCompare> intermediates;
     std::map<std::string, FractionalNumber> total_machines;
     std::map<std::string, std::map<const Recipe*, FractionalNumber, RecipePtrCompare>> detailed_machines;
-    double total_power = 0.0;
-    std::map<const Recipe*, double> detailed_power;
+    FractionalNumber total_power;
+    std::map<const Recipe*, FractionalNumber> detailed_power;
     bool has_variable_power = false;
 
     // Gather all inputs/outputs/machines
@@ -1203,11 +1203,13 @@ void App::RenderLeftPanel()
         }
     }
 
+    const float power_width = ImGui::CalcTextSize("000000.00").x + ImGui::GetStyle().FramePadding.x * 2.0f;
     ImGui::SeparatorText(has_variable_power ? "Average Power" : "Power");
+    if (total_power.GetNumerator() > 0)
     {
-        std::vector<std::pair<const Recipe*, double>> sorted_detailed_power(detailed_power.begin(), detailed_power.end());
+        std::vector<std::pair<const Recipe*, FractionalNumber>> sorted_detailed_power(detailed_power.begin(), detailed_power.end());
         std::stable_sort(sorted_detailed_power.begin(), sorted_detailed_power.end(), [](const auto& a, const auto& b) {
-            return a.second > b.second;
+            return a.second.GetValue() > b.second.GetValue();
         });
 
         // No visible color change when hovered/click
@@ -1219,14 +1221,18 @@ void App::RenderLeftPanel()
 
         // Displayed over the TreeNodeEx element (same line)
         ImGui::SameLine();
-        ImGui::Text("%s%.8g MW", has_variable_power ? "~" : "", total_power);
+        total_power.RenderInputText("##power", true, false, power_width);
+        ImGui::SameLine();
+        ImGui::Text("%sMW", has_variable_power ? "~" : "");
         // Detailed list of recipes if the tree node is open
         if (display_power_details)
         {
             ImGui::Indent();
             for (auto& [recipe, p] : sorted_detailed_power)
             {
-                ImGui::Text("%s%.6g MW", recipe->building->variable_power ? "~" : "", p);
+                p.RenderInputText("##power", true, false, power_width);
+                ImGui::SameLine();
+                ImGui::Text("%sMW", recipe->building->variable_power ? "~" : "");
                 ImGui::SameLine();
                 recipe->Render();
             }
@@ -1598,7 +1604,9 @@ void App::RenderNodes()
                 {
                     ImGui::Spring(0.0f);
                     CraftNode* craft_node = static_cast<CraftNode*>(node.get());
-                    ImGui::Text("%s%.6g MW", craft_node->recipe->building->variable_power ? "~" : "", settings.power_equal_clocks ? craft_node->same_clock_power : craft_node->last_underclock_power);
+                    (settings.power_equal_clocks ? craft_node->same_clock_power : craft_node->last_underclock_power).RenderInputText("##power", true, false);
+                    ImGui::Spring(0.0f);
+                    ImGui::Text("%sMW", craft_node->recipe->building->variable_power ? "~" : "");
                     if (craft_node->recipe->building->variable_power && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                     {
                         frame_tooltips.push_back("Average power");

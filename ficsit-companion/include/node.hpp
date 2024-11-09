@@ -57,8 +57,12 @@ struct CraftNode : public Node
     FractionalNumber current_rate;
     /// @brief Technically it could be just an int, but FractionalNumber already has all string operations
     FractionalNumber num_somersloop;
-    double same_clock_power;
-    double last_underclock_power;
+    /// @brief Power requirement if all machines are at the same clock.
+    /// It could be a double, but FractionalNumber already has all string operations
+    FractionalNumber same_clock_power;
+    /// @brief Power requirements if all machines are at 100% except the last one.
+    /// It could be a double, but FractionalNumber already has all string operations
+    FractionalNumber last_underclock_power;
 };
 
 struct OrganizerNode : public Node

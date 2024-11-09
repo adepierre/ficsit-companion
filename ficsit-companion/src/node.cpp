@@ -121,31 +121,28 @@ bool CraftNode::Deserialize(const Json::Value& v)
 
 void CraftNode::ComputePowerUsage()
 {
-    same_clock_power = 0.0;
-    last_underclock_power = 0.0;
-
     const Building* building = recipe->building;
     // All machines are underclocked at current_rate/num_machines
     const int num_machines = static_cast<int>(std::ceil(current_rate.GetValue()));
     const double power = recipe->power;
-    same_clock_power =
+    double same_clock_power_double =
         num_machines *
         power *
         std::pow(1.0 + num_somersloop.GetValue() * building->somersloop_mult.GetValue(), building->somersloop_power_exponent) *
-        std::pow(current_rate.GetValue() / static_cast<double>(num_machines), building->power_exponent);
-    // num_full_machines have 100% rate + extra underclocked machine
+        std::pow(current_rate.GetValue() / static_cast<double>(std::max(1, num_machines)), building->power_exponent);
+    // num_full_machines at 100% rate + one extra underclocked machine
     const int num_full_machines = static_cast<int>(std::floor(current_rate.GetValue()));
-    last_underclock_power =
+    double last_underclock_power_double =
         num_full_machines *
         power *
         std::pow(1.0 + num_somersloop.GetValue() * building->somersloop_mult.GetValue(), building->somersloop_power_exponent);
-    last_underclock_power +=
+    last_underclock_power_double +=
         power *
         std::pow(1.0 + num_somersloop.GetValue() * building->somersloop_mult.GetValue(), building->somersloop_power_exponent) *
         std::pow(current_rate.GetValue() - num_full_machines, building->power_exponent);
-    // Truncate power to max 2 figures after the decimal point
-    same_clock_power = std::floor(same_clock_power * 100.0) / 100.0;
-    last_underclock_power = std::floor(last_underclock_power * 100.0) / 100.0;
+    // Round values at 0.001 precision for the power, as we don't have exact fractional values with the exponents anyway
+    same_clock_power = FractionalNumber(static_cast<long long int>(std::round(same_clock_power_double * 1000.0)), 1000);
+    last_underclock_power = FractionalNumber(static_cast<long long int>(std::round(last_underclock_power_double * 1000.0)), 1000);
 
 }
 
