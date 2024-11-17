@@ -217,10 +217,10 @@ std::string App::Serialize() const
             }
         }
         return -1;
-        };
+    };
 
-    auto get_pin_index = [&](const Node* n, const Pin* p, const bool out) -> int {
-        const std::vector<std::unique_ptr<Pin>>& pins = out ? n->outs : n->ins;
+    auto get_pin_index = [&](const Pin* p) -> int {
+        const std::vector<std::unique_ptr<Pin>>& pins = p->direction == ax::NodeEditor::PinKind::Output ? p->node->outs : p->node->ins;
         for (int i = 0; i < pins.size(); ++i)
         {
             if (pins[i].get() == p)
@@ -229,7 +229,7 @@ std::string App::Serialize() const
             }
         }
         return -1;
-        };
+    };
 
     Json::Array saved_links;
     saved_links.reserve(links.size());
@@ -238,11 +238,11 @@ std::string App::Serialize() const
         saved_links.push_back({
             { "start", {
                 { "node", get_node_index(l->start->node) },
-                { "pin", get_pin_index(l->start->node, l->start, true) }
+                { "pin", get_pin_index(l->start) }
             }},
             { "end", {
                 { "node", get_node_index(l->end->node) },
-                { "pin", get_pin_index(l->end->node, l->end, false) }
+                { "pin", get_pin_index(l->end) }
             }}
         });
     }
