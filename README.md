@@ -44,12 +44,6 @@ Currently production cycles (such as recycled plastic/rubber) are still quite bu
 </details>
 
 <details>
-<summary>Node groups/blueprints</summary>
-
-Creating large production chains can pretty quickly lead to cluttered environment. It could be useful to have the ability to create "custom" nodes (for example by collapsing a set of existing nodes) with different inputs and outputs. Saving/reusing these nodes as "blueprints" could also be handy. Issues may arise to properly keep in sync inputs and outputs of such nodes though.
-</details>
-
-<details>
 <summary>Color modifiers</summary>
 
 Adding the ability to change colors for links/nodes would definitely help having better organized graphs.
