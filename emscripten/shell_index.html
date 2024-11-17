@@ -40,6 +40,12 @@
                 color: white;
             }
 
+            .tip {
+                color: white;
+                height: 3em;
+                max-width: 50%;
+            }
+
             svg {
                 padding: 0.5em 0.5em;
             }
@@ -73,7 +79,7 @@
                 <h6 class="app-name">(beta)</h6>
             </div>
             <div class="side">
-                <h3 class="app-name">Game version 1.0</h6>
+                <h5 class="app-name" id="tip"></h5>
             </div>
             <div class="side">
                 <a href="https://github.com/adepierre/ficsit-companion/releases" target="_blank" aria-label="Changelog" title="Changelog">
@@ -92,6 +98,24 @@
             </div>
         </div>
         <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+        <script>
+            const tips = [
+                "You can freely move nodes using Alt",
+                "You can nudge selected nodes using keyboard arrows",
+                "You can select multiple nodes using Ctrl+left click",
+                "You can group the currently selected nodes using Ctrl+G",
+                "You can unpack a selected node group using Ctrl+G",
+                "You can focus on the current graph using F",
+                "You can delete a node using delete",
+                "You can select all nodes using Ctrl+A",
+                "A link between two pins will be displayed in red if both ends are not equal",
+                "A splitter node will be displayed in red if its outputs sum don't match its input",
+                "A merger node will be displayed in red if its inputs sum don't match its output",
+                "A group node will be displayed in red if some of its internal nodes were not loaded properly from a file",
+            ];
+
+            document.getElementById("tip").textContent = "Tip: " + tips[Math.floor(Math.random() * tips.length)];
+        </script>
         <script type='text/javascript'>
             var Module = {
                 preRun: [],
