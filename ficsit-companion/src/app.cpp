@@ -429,14 +429,14 @@ void App::CreateLink(Pin* start, Pin* end)
         end->direction == ax::NodeEditor::PinKind::Input ? end : start));
     start->link = links.back().get();
     end->link = links.back().get();
-    if (start->node->GetKind() != Node::Kind::Craft)
+    if (start->node->IsOrganizer())
     {
         if (OrganizerNode* organizer_node = static_cast<OrganizerNode*>(start->node); organizer_node->item == nullptr)
         {
             organizer_node->ChangeItem(end->item);
         }
     }
-    if (end->node->GetKind() != Node::Kind::Craft)
+    if (end->node->IsOrganizer())
     {
         if (OrganizerNode* organizer_node = static_cast<OrganizerNode*>(end->node); organizer_node->item == nullptr)
         {
@@ -456,7 +456,7 @@ void App::DeleteLink(const ax::NodeEditor::LinkId id)
         {
             start->link = nullptr;
             // If either end was an organizer node, check the name is still valid
-            if (start->node->GetKind() != Node::Kind::Craft)
+            if (start->node->IsOrganizer())
             {
                 static_cast<OrganizerNode*>(start->node)->RemoveItemIfNotForced();
             }
@@ -465,7 +465,7 @@ void App::DeleteLink(const ax::NodeEditor::LinkId id)
         {
             end->link = nullptr;
             // If either end was an organizer node, check the name is still valid
-            if (end->node->GetKind() != Node::Kind::Craft)
+            if (end->node->IsOrganizer())
             {
                 static_cast<OrganizerNode*>(end->node)->RemoveItemIfNotForced();
             }
