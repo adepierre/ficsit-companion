@@ -16,23 +16,28 @@ struct Recipe;
 
 struct Node
 {
+    /// @brief Type of node, ALWAYS ADD NEW TYPES AT THE END (would break old save files otherwise)
     enum class Kind
     {
         Craft,
         Splitter,
-        Merger
+        Merger,
     };
 
     Node(const ax::NodeEditor::NodeId id);
+    Node(const ax::NodeEditor::NodeId id, const Json::Value& serialized);
     virtual ~Node();
 
     virtual Kind GetKind() const = 0;
+    virtual bool IsPowered() const;
     virtual bool IsCraft() const;
+    /// @brief Merger or Splitter
     virtual bool IsOrganizer() const;
     virtual bool IsMerger() const;
     virtual bool IsSplitter() const;
     virtual Json::Value Serialize() const;
-    virtual bool Deserialize(const Json::Value& v);
+
+    static std::unique_ptr<Node> Deserialize(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized);
 
     const ax::NodeEditor::NodeId id;
 
@@ -41,22 +46,19 @@ struct Node
     ImVec2 pos;
 };
 
-struct CraftNode : public Node
+struct PoweredNode : public Node
 {
-    CraftNode(const ax::NodeEditor::NodeId id, const Recipe* recipe,
-        const std::function<unsigned long long int()>& id_generator);
-    virtual ~CraftNode();
-    virtual Kind GetKind() const override;
-    virtual bool IsCraft() const override;
+    PoweredNode(const ax::NodeEditor::NodeId id);
+    PoweredNode(const ax::NodeEditor::NodeId id, const Json::Value& serialized);
+    virtual ~PoweredNode();
+
+    virtual bool IsPowered() const override;
     virtual Json::Value Serialize() const override;
-    virtual bool Deserialize(const Json::Value& v) override;
+    virtual void UpdateRate(const FractionalNumber& new_rate) = 0;
+    virtual void ComputePowerUsage() = 0;
+    virtual bool HasVariablePower() const = 0;
 
-    void ComputePowerUsage();
-
-    const Recipe* recipe;
     FractionalNumber current_rate;
-    /// @brief Technically it could be just an int, but FractionalNumber already has all string operations
-    FractionalNumber num_somersloop;
     /// @brief Power requirement if all machines are at the same clock.
     /// It could be a double, but FractionalNumber already has all string operations
     FractionalNumber same_clock_power;
@@ -65,13 +67,32 @@ struct CraftNode : public Node
     FractionalNumber last_underclock_power;
 };
 
+struct CraftNode : public PoweredNode
+{
+    CraftNode(const ax::NodeEditor::NodeId id, const Recipe* recipe,
+        const std::function<unsigned long long int()>& id_generator);
+    CraftNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized);
+    virtual ~CraftNode();
+    virtual Kind GetKind() const override;
+    virtual bool IsCraft() const override;
+    virtual Json::Value Serialize() const override;
+    virtual void UpdateRate(const FractionalNumber& new_rate) override;
+    virtual bool HasVariablePower() const override;
+    virtual void ComputePowerUsage() override;
+    void ChangeRecipe(const Recipe* recipe, const std::function<unsigned long long int()>& id_generator);
+
+    const Recipe* recipe;
+    /// @brief Technically it could be just an int, but FractionalNumber already has all string operations
+    FractionalNumber num_somersloop;
+};
+
 struct OrganizerNode : public Node
 {
-    OrganizerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item = nullptr);
+    OrganizerNode(const ax::NodeEditor::NodeId id, const Item* item = nullptr);
+    OrganizerNode(const ax::NodeEditor::NodeId id, const Json::Value& serialized);
     virtual ~OrganizerNode();
     virtual bool IsOrganizer() const override;
     virtual Json::Value Serialize() const override;
-    virtual bool Deserialize(const Json::Value& v) override;
 
     void ChangeItem(const Item* item);
     void RemoveItemIfNotForced();
@@ -83,6 +104,7 @@ struct OrganizerNode : public Node
 struct SplitterNode : public OrganizerNode
 {
     SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item = nullptr);
+    SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized);
     virtual ~SplitterNode();
     virtual bool IsSplitter() const override;
 
@@ -92,6 +114,7 @@ struct SplitterNode : public OrganizerNode
 struct MergerNode : public OrganizerNode
 {
     MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item = nullptr);
+    MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized);
     virtual ~MergerNode();
     virtual bool IsMerger() const override;
 

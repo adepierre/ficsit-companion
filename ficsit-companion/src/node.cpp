@@ -1,4 +1,5 @@
 #include "building.hpp"
+#include "game_data.hpp"
 #include "node.hpp"
 #include "pin.hpp"
 #include "recipe.hpp"
@@ -12,9 +13,20 @@ Node::Node(const ax::NodeEditor::NodeId id) : id(id)
 
 }
 
+Node::Node(const ax::NodeEditor::NodeId id, const Json::Value& serialized) : id(id)
+{
+    pos.x = serialized["pos"]["x"].get<float>();
+    pos.y = serialized["pos"]["y"].get<float>();
+}
+
 Node::~Node()
 {
 
+}
+
+bool Node::IsPowered() const
+{
+    return false;
 }
 
 bool Node::IsCraft() const
@@ -49,25 +61,95 @@ Json::Value Node::Serialize() const
     return node;
 }
 
-bool Node::Deserialize(const Json::Value& v)
+std::unique_ptr<Node> Node::Deserialize(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized)
 {
-    pos.x = v["pos"]["x"].get<float>();
-    pos.y = v["pos"]["y"].get<float>();
+    const Kind kind = static_cast<Node::Kind>(serialized["kind"].get<int>());
+    switch (kind)
+    {
+    case Kind::Craft:
+        return std::make_unique<CraftNode>(id, id_generator, serialized);
+    case Kind::Merger:
+        return std::make_unique<MergerNode>(id, id_generator, serialized);
+    case Kind::Splitter:
+        return std::make_unique<SplitterNode>(id, id_generator, serialized);
+    default: // To make compilers happy, but should never happen
+        throw std::domain_error("Unimplemented node type in Deserialize");
+        return nullptr;
+    }
 
+    return nullptr;
+}
+
+PoweredNode::PoweredNode(const ax::NodeEditor::NodeId id) : Node(id), current_rate(1, 1), same_clock_power(0, 1), last_underclock_power(0, 1)
+{
+
+}
+
+PoweredNode::PoweredNode(const ax::NodeEditor::NodeId id, const Json::Value& serialized) : Node(id, serialized), same_clock_power(0, 1), last_underclock_power(0, 1)
+{
+    const Kind kind = static_cast<Kind>(serialized["kind"].get<int>());
+    if (kind != Kind::Craft)
+    {
+        throw std::runtime_error("Trying to deserialize an unvalid node as a powered node");
+    }
+    current_rate = FractionalNumber(serialized["rate"]["num"].get<long long int>(), serialized["rate"]["den"].get<long long int>());
+}
+
+PoweredNode::~PoweredNode()
+{
+
+}
+
+bool PoweredNode::IsPowered() const
+{
     return true;
 }
 
-CraftNode::CraftNode(const ax::NodeEditor::NodeId id, const Recipe* recipe, const std::function<unsigned long long int()>& id_generator) :
-    Node(id), recipe(recipe), current_rate(1, 1), num_somersloop(0), same_clock_power(0.0), last_underclock_power(0.0)
+Json::Value PoweredNode::Serialize() const
 {
-    ComputePowerUsage();
-    for (const auto& input : recipe->ins)
+    Json::Value node = Node::Serialize();
+    node["rate"] = {
+        { "num", current_rate.GetNumerator()},
+        { "den", current_rate.GetDenominator()}
+    };
+    return node;
+}
+
+CraftNode::CraftNode(const ax::NodeEditor::NodeId id, const Recipe* recipe, const std::function<unsigned long long int()>& id_generator) :
+    PoweredNode(id), num_somersloop(0)
+{
+    ChangeRecipe(recipe, id_generator);
+}
+
+CraftNode::CraftNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) :
+    PoweredNode(id, serialized)
+{
+    if (static_cast<Kind>(serialized["kind"].get<int>()) != Kind::Craft)
     {
-        ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, input.item, input.quantity));
+        throw std::runtime_error("Trying to deserialize an unvalid node as a craft node");
     }
-    for (const auto& output : recipe->outs)
+    recipe = nullptr;
+    const std::string& recipe_name = serialized["recipe"].get_string();
+    const auto it = std::find_if(Data::Recipes().begin(), Data::Recipes().end(), [&recipe_name](const std::unique_ptr<Recipe>& recipe) { return recipe->name == recipe_name; });
+
+    if (it != Data::Recipes().end())
     {
-        outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, output.item, output.quantity));
+        ChangeRecipe(it->get(), id_generator);
+    }
+    else
+    {
+        throw std::runtime_error("Unknown recip when loading craft node");
+    }
+
+    num_somersloop = FractionalNumber(serialized["num_somersloop"].get<long long int>());
+    ComputePowerUsage();
+    for (auto& p : ins)
+    {
+        p->current_rate = p->base_rate * current_rate;
+    }
+    for (auto& p : outs)
+    {
+        p->current_rate = p->base_rate * current_rate * (1 + num_somersloop * recipe->building->somersloop_mult);
     }
 }
 
@@ -83,40 +165,31 @@ bool CraftNode::IsCraft() const
 
 Json::Value CraftNode::Serialize() const
 {
-    Json::Value node = Node::Serialize();
-    node["rate"] = {
-        { "num", current_rate.GetNumerator()},
-        { "den", current_rate.GetDenominator()}
-    };
+    Json::Value node = PoweredNode::Serialize();
+
     node["recipe"] = recipe->name;
     node["num_somersloop"] = num_somersloop.GetNumerator();
 
     return node;
 }
 
-bool CraftNode::Deserialize(const Json::Value& v)
+void CraftNode::UpdateRate(const FractionalNumber& new_rate)
 {
-    Node::Deserialize(v);
-
-    if (recipe->name != v["recipe"].get_string())
-    {
-        return false;
-    }
-
-    current_rate = FractionalNumber(v["rate"]["num"].get<long long int>(), v["rate"]["den"].get<long long int>());
-    num_somersloop = FractionalNumber(v["num_somersloop"].get<long long int>());
-    ComputePowerUsage();
+    current_rate = new_rate;
     for (auto& p : ins)
     {
         p->current_rate = p->base_rate * current_rate;
     }
     for (auto& p : outs)
     {
-        p->current_rate = p->base_rate * current_rate * (1 + num_somersloop * recipe->building->somersloop_mult);
+        p->current_rate = p->base_rate * current_rate * (1 + (num_somersloop * recipe->building->somersloop_mult));
     }
+    ComputePowerUsage();
+}
 
-
-    return true;
+bool CraftNode::HasVariablePower() const
+{
+    return recipe->building->variable_power;
 }
 
 void CraftNode::ComputePowerUsage()
@@ -146,14 +219,53 @@ void CraftNode::ComputePowerUsage()
 
 }
 
+void CraftNode::ChangeRecipe(const Recipe* recipe, const std::function<unsigned long long int()>& id_generator)
+{
+    this->recipe = recipe;
+    if (recipe == nullptr)
+    {
+        ins.clear();
+        outs.clear();
+        return;
+    }
+
+    ComputePowerUsage();
+    for (const auto& input : recipe->ins)
+    {
+        ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, input.item, input.quantity));
+    }
+    for (const auto& output : recipe->outs)
+    {
+        outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, output.item, output.quantity));
+    }
+}
+
 Node::Kind CraftNode::GetKind() const
 {
     return Node::Kind::Craft;
 }
 
-OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : Node(id)
+OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const Item* item) : Node(id)
 {
     ChangeItem(item);
+}
+
+OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const Json::Value& serialized) : Node(id, serialized), item(nullptr)
+{
+    const Kind kind = static_cast<Kind>(serialized["kind"].get<int>());
+    if (kind != Kind::Merger && kind != Kind::Splitter)
+    {
+        throw std::runtime_error("Trying to deserialize an unvalid node as an organizer node");
+    }
+    auto item_it = Data::Items().find(serialized["item"].get_string());
+    if (item_it != Data::Items().end())
+    {
+        ChangeItem(item_it->second.get());
+    }
+    else if (serialized["item"].get_string() != "")
+    {
+        throw std::runtime_error("Unknown item when loading organizer node");
+    }
 }
 
 OrganizerNode::~OrganizerNode()
@@ -195,35 +307,6 @@ Json::Value OrganizerNode::Serialize() const
     serialized["outs"] = outs_array;
 
     return serialized;
-}
-
-bool OrganizerNode::Deserialize(const Json::Value& v)
-{
-    Node::Deserialize(v);
-
-    if (item->name != v["item"].get_string())
-    {
-        return false;
-    }
-
-    for (int i = 0; i < v["ins"].size(); ++i)
-    {
-        if (i >= ins.size())
-        {
-            break;
-        }
-        ins[i]->current_rate = FractionalNumber(v["ins"][i]["num"].get<long long int>(), v["ins"][i]["den"].get<long long int>());
-    }
-    for (int i = 0; i < v["outs"].size(); ++i)
-    {
-        if (i >= outs.size())
-        {
-            break;
-        }
-        outs[i]->current_rate = FractionalNumber(v["outs"][i]["num"].get<long long int>(), v["outs"][i]["den"].get<long long int>());
-    }
-
-    return true;
 }
 
 void OrganizerNode::ChangeItem(const Item* item)
@@ -281,13 +364,43 @@ bool OrganizerNode::IsBalanced() const
     return input_sum == output_sum;
 }
 
-SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : OrganizerNode(id, id_generator, item)
+SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : OrganizerNode(id, item)
 {
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
     // We need to call ChangeItem again to update newly created pins
     ChangeItem(item);
+}
+
+SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, serialized)
+{
+    if (static_cast<Kind>(serialized["kind"].get<int>()) != Kind::Splitter)
+    {
+        throw std::runtime_error("Trying to deserialize an unvalid node as a splitter node");
+    }
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
+    // We need to call ChangeItem again to update newly created pins
+    ChangeItem(item);
+
+    for (int i = 0; i < serialized["ins"].size(); ++i)
+    {
+        if (i >= ins.size())
+        {
+            break;
+        }
+        ins[i]->current_rate = FractionalNumber(serialized["ins"][i]["num"].get<long long int>(), serialized["ins"][i]["den"].get<long long int>());
+    }
+    for (int i = 0; i < serialized["outs"].size(); ++i)
+    {
+        if (i >= outs.size())
+        {
+            break;
+        }
+        outs[i]->current_rate = FractionalNumber(serialized["outs"][i]["num"].get<long long int>(), serialized["outs"][i]["den"].get<long long int>());
+    }
 }
 
 SplitterNode::~SplitterNode()
@@ -304,13 +417,43 @@ Node::Kind SplitterNode::GetKind() const
     return Node::Kind::Splitter;
 }
 
-MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : OrganizerNode(id, id_generator, item)
+MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : OrganizerNode(id, item)
 {
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
     // We need to call ChangeItem again to update newly created pins
     ChangeItem(item);
+}
+
+MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, serialized)
+{
+    if (static_cast<Kind>(serialized["kind"].get<int>()) != Kind::Merger)
+    {
+        throw std::runtime_error("Trying to deserialize an unvalid node as a craft node");
+    }
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
+    // We need to call ChangeItem again to update newly created pins
+    ChangeItem(item);
+
+    for (int i = 0; i < serialized["ins"].size(); ++i)
+    {
+        if (i >= ins.size())
+        {
+            break;
+        }
+        ins[i]->current_rate = FractionalNumber(serialized["ins"][i]["num"].get<long long int>(), serialized["ins"][i]["den"].get<long long int>());
+    }
+    for (int i = 0; i < serialized["outs"].size(); ++i)
+    {
+        if (i >= outs.size())
+        {
+            break;
+        }
+        outs[i]->current_rate = FractionalNumber(serialized["outs"][i]["num"].get<long long int>(), serialized["outs"][i]["den"].get<long long int>());
+    }
 }
 
 MergerNode::~MergerNode()

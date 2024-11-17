@@ -278,81 +278,21 @@ void App::Deserialize(const std::string& s)
     }
     links.clear();
 
-    auto get_recipe = [&](const std::string& name) -> const Recipe* {
-        for (const auto& r : Data::Recipes())
-        {
-            if (r->name == name)
-            {
-                return r.get();
-            }
-        }
-        return nullptr;
-    };
-
     // Load nodes
     std::vector<int> node_indices;
     node_indices.reserve(content["nodes"].size());
     size_t num_nodes = 0;
     for (const auto& n : content["nodes"].get_array())
     {
-        const Node::Kind kind = static_cast<Node::Kind>(n["kind"].get<int>());
-        switch (kind)
+        try
         {
-        case Node::Kind::Craft:
-        {
-            const Recipe* recipe = get_recipe(n["recipe"].get_string());
-            if (recipe == nullptr)
-            {
-                node_indices.push_back(-1);
-                break;
-            }
-            nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipe, std::bind(&App::GetNextId, this)));
-            if (!nodes.back()->Deserialize(n))
-            {
-                nodes.pop_back();
-                node_indices.push_back(-1);
-            }
-            else
-            {
-                node_indices.push_back(num_nodes);
-                num_nodes += 1;
-            }
-            break;
+            nodes.emplace_back(Node::Deserialize(GetNextId(), std::bind(&App::GetNextId, this), n));
+            node_indices.push_back(num_nodes);
+            num_nodes += 1;
         }
-        case Node::Kind::Merger:
-        case Node::Kind::Splitter:
+        catch (std::exception)
         {
-            auto item_it = Data::Items().find(n["item"].get_string());
-            const Item* item = item_it == Data::Items().end() ? nullptr : item_it->second.get();
-
-            if (item == nullptr)
-            {
-                node_indices.push_back(-1);
-                break;
-            }
-
-            if (kind == Node::Kind::Merger)
-            {
-                nodes.emplace_back(std::make_unique<MergerNode>(GetNextId(), std::bind(&App::GetNextId, this), item));
-            }
-            else
-            {
-                nodes.emplace_back(std::make_unique<SplitterNode>(GetNextId(), std::bind(&App::GetNextId, this), item));
-            }
-
-            if (!nodes.back()->Deserialize(n))
-            {
-                nodes.pop_back();
-                node_indices.push_back(-1);
-            }
-            else
-            {
-                node_indices.push_back(num_nodes);
-                num_nodes += 1;
-            }
-
-            break;
-        }
+            node_indices.push_back(-1);
         }
     }
 
