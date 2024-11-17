@@ -1,5 +1,6 @@
 #include "building.hpp"
 #include "game_data.hpp"
+#include "link.hpp"
 #include "node.hpp"
 #include "pin.hpp"
 #include "recipe.hpp"
@@ -30,6 +31,11 @@ bool Node::IsPowered() const
 }
 
 bool Node::IsCraft() const
+{
+    return false;
+}
+
+bool Node::IsGroup() const
 {
     return false;
 }
@@ -72,6 +78,8 @@ std::unique_ptr<Node> Node::Deserialize(const ax::NodeEditor::NodeId id, const s
         return std::make_unique<MergerNode>(id, id_generator, serialized);
     case Kind::Splitter:
         return std::make_unique<SplitterNode>(id, id_generator, serialized);
+    case Kind::Group:
+        return std::make_unique<GroupNode>(id, id_generator, serialized);
     default: // To make compilers happy, but should never happen
         throw std::domain_error("Unimplemented node type in Deserialize");
         return nullptr;
@@ -88,7 +96,7 @@ PoweredNode::PoweredNode(const ax::NodeEditor::NodeId id) : Node(id), current_ra
 PoweredNode::PoweredNode(const ax::NodeEditor::NodeId id, const Json::Value& serialized) : Node(id, serialized), same_clock_power(0, 1), last_underclock_power(0, 1)
 {
     const Kind kind = static_cast<Kind>(serialized["kind"].get<int>());
-    if (kind != Kind::Craft)
+    if (kind != Kind::Craft && kind != Kind::Group)
     {
         throw std::runtime_error("Trying to deserialize an unvalid node as a powered node");
     }
@@ -245,9 +253,361 @@ Node::Kind CraftNode::GetKind() const
     return Node::Kind::Craft;
 }
 
-OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const Item* item) : Node(id)
+GroupNode::GroupNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator,
+    std::vector<std::unique_ptr<Node>>&& nodes_, std::vector<std::unique_ptr<Link>>&& links_) :
+    PoweredNode(id), nodes(std::move(nodes_)), links(std::move(links_)), name(""), variable_power(false), loading_error(false)
 {
-    ChangeItem(item);
+    CreateInsOuts(id_generator);
+    ComputePowerUsage();
+    UpdateDetails();
+}
+
+GroupNode::GroupNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : PoweredNode(id, serialized)
+{
+    if (static_cast<Kind>(serialized["kind"].get<int>()) != Kind::Group)
+    {
+        throw std::runtime_error("Trying to deserialize an unvalid node as a group node");
+    }
+    name = serialized["name"].get_string();
+
+    unsigned long long int current_id = 0;
+    auto local_id_generator = [&]() { return current_id++; };
+
+    std::vector<int> node_indices;
+    node_indices.reserve(serialized["nodes"].size());
+    size_t num_nodes = 0;
+    for (const auto& n : serialized["nodes"].get_array())
+    {
+        try
+        {
+            nodes.emplace_back(Node::Deserialize(local_id_generator(), local_id_generator, n));
+            node_indices.push_back(num_nodes);
+            num_nodes += 1;
+        }
+        catch (std::exception)
+        {
+            node_indices.push_back(-1);
+        }
+    }
+
+    loading_error = false;
+    for (const auto& l : serialized["links"].get_array())
+    {
+        const int start_node_index = l["start"]["node"].get<int>();
+        const int end_node_index = l["end"]["node"].get<int>();
+        // At least one of the linked node wasn't properly loaded
+        if (start_node_index >= node_indices.size() || end_node_index >= node_indices.size() ||
+            node_indices[start_node_index] == -1 || node_indices[end_node_index] == -1)
+        {
+            loading_error = true;
+        }
+
+        const Node* start_node = nodes[node_indices[start_node_index]].get();
+        const Node* end_node = nodes[node_indices[end_node_index]].get();
+
+        const int start_pin_index = l["start"]["pin"].get<int>();
+        const int end_pin_index = l["end"]["pin"].get<int>();
+
+        if (start_pin_index >= start_node->outs.size() || end_pin_index >= end_node->ins.size())
+        {
+            loading_error = true;
+        }
+
+        Pin* start = start_node->outs[start_pin_index].get();
+        Pin* end = end_node->ins[end_pin_index].get();
+        links.emplace_back(std::make_unique<Link>(local_id_generator(), start, end));
+        start->link = links.back().get();
+        end->link = links.back().get();
+    }
+
+    CreateInsOuts(id_generator);
+    ComputePowerUsage();
+    UpdateDetails();
+}
+
+Node::Kind GroupNode::GetKind() const
+{
+    return Kind::Group;
+}
+
+bool GroupNode::IsGroup() const
+{
+    return true;
+}
+
+Json::Value GroupNode::Serialize() const
+{
+    Json::Value node = PoweredNode::Serialize();
+    node["name"] = name;
+
+    Json::Array serialized_nodes;
+    serialized_nodes.reserve(nodes.size());
+    for (const auto& n : nodes)
+    {
+        serialized_nodes.push_back(n->Serialize());
+    }
+    node["nodes"] = serialized_nodes;
+
+    auto get_node_index = [&](const Node* node) {
+        for (int i = 0; i < nodes.size(); ++i)
+        {
+            if (nodes[i].get() == node)
+            {
+                return i;
+            }
+        }
+        return -1;
+    };
+
+    auto get_pin_index = [&](const Pin* pin) {
+        const std::vector<std::unique_ptr<Pin>>& pins = pin->direction == ax::NodeEditor::PinKind::Input ? pin->node->ins : pin->node->outs;
+        for (int i = 0; i < pins.size(); ++i)
+        {
+            if (pins[i].get() == pin)
+            {
+                return i;
+            }
+        }
+        return -1;
+    };
+
+    Json::Array serialized_links;
+    serialized_links.reserve(links.size());
+    for (const auto& l : links)
+    {
+        const int start_node_index = get_node_index(l->start->node);
+        const int end_node_index = get_node_index(l->end->node);
+        const int start_pin_index = get_pin_index(l->start);
+        const int end_pin_index = get_pin_index(l->end);
+        if (start_node_index == -1 || end_node_index == -1 ||
+            start_pin_index == -1 || end_pin_index == -1)
+        {
+            continue;
+        }
+
+        serialized_links.push_back({
+            { "start", {
+                { "node", get_node_index(l->start->node) },
+                { "pin", get_pin_index(l->start) }
+            }},
+            { "end", {
+                { "node", get_node_index(l->end->node) },
+                { "pin", get_pin_index(l->end) }
+            }}
+        });
+    }
+    node["links"] = serialized_links;
+
+    return node;
+}
+
+void GroupNode::UpdateRate(const FractionalNumber& new_rate)
+{
+    current_rate = new_rate;
+
+    PropagateRateToSubnodes();
+    ComputePowerUsage();
+    UpdateDetails();
+
+    // Inputs and outputs should always be proportional to the current rate as the group acts as one big CraftNode (I think)
+    for (auto& p : ins)
+    {
+        p->current_rate = p->base_rate * current_rate;
+    }
+    for (auto& p : outs)
+    {
+        p->current_rate = p->base_rate * current_rate;
+    }
+}
+
+bool GroupNode::HasVariablePower() const
+{
+    return variable_power;
+}
+
+void GroupNode::ComputePowerUsage()
+{
+    same_clock_power = FractionalNumber(0, 1);
+    last_underclock_power = FractionalNumber(0, 1);
+
+    variable_power = false;
+    for (auto& n : nodes)
+    {
+        if (n->IsPowered())
+        {
+            PoweredNode* powered = static_cast<CraftNode*>(n.get());
+            powered->ComputePowerUsage();
+            same_clock_power += powered->same_clock_power;
+            last_underclock_power += powered->last_underclock_power;
+            variable_power |= powered->HasVariablePower();
+        }
+    }
+}
+
+void GroupNode::PropagateRateToSubnodes()
+{
+    inputs.clear();
+    outputs.clear();
+
+    for (size_t i = 0; i < nodes.size(); ++i)
+    {
+        // Update powered node with current rate to get proper power
+        if (nodes[i]->IsPowered())
+        {
+            static_cast<PoweredNode*>(nodes[i].get())->UpdateRate(nodes_base_rate[i] * current_rate);
+
+            if (nodes[i]->IsCraft())
+            {
+                for (auto& p : nodes[i]->ins)
+                {
+                    inputs[p->item] += p->current_rate;
+                }
+                for (auto& p : nodes[i]->outs)
+                {
+                    outputs[p->item] += p->current_rate;
+                }
+            }
+            else if (nodes[i]->IsGroup())
+            {
+                const GroupNode* node = static_cast<const GroupNode*>(nodes[i].get());
+                for (const auto& [k, v] : node->inputs)
+                {
+                    inputs[k] += v;
+                }
+                for (const auto& [k, v] : node->outputs)
+                {
+                    outputs[k] += v;
+                }
+            }
+        }
+        // Don't update organizer nodes so the current_rate actually stores the base_rate
+        // (this prevents the information to be lost when group rate is set to 0)
+    }
+}
+
+void GroupNode::CreateInsOuts(const std::function<unsigned long long int()>& id_generator)
+{
+    inputs.clear();
+    outputs.clear();
+    nodes_base_rate.reserve(nodes.size());
+    for (auto& n : nodes)
+    {
+        if (n->IsCraft())
+        {
+            for (auto& p : n->ins)
+            {
+                inputs[p->item] += p->current_rate;
+            }
+            for (auto& p : n->outs)
+            {
+                outputs[p->item] += p->current_rate;
+            }
+        }
+        else if (n->IsGroup())
+        {
+            const GroupNode* node = static_cast<const GroupNode*>(n.get());
+            for (const auto& [k, v] : node->inputs)
+            {
+                inputs[k] += v;
+            }
+            for (const auto& [k, v] : node->outputs)
+            {
+                outputs[k] += v;
+            }
+        }
+
+        if (n->IsPowered())
+        {
+            nodes_base_rate.push_back(static_cast<PoweredNode*>(n.get())->current_rate);
+        }
+        else
+        {
+            nodes_base_rate.push_back(FractionalNumber(0, 1));
+        }
+    }
+
+    // Create input pins for resources required in the group
+    for (const auto& [k, v] : inputs)
+    {
+        const auto it = outputs.find(k);
+        // Only consumed, create an input pin
+        if (it == outputs.end())
+        {
+            ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, k, v));
+            ins.back()->current_rate = v;
+        }
+        // Less produced than consumed, create an input pin with the difference
+        else if (it->second < v)
+        {
+            ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, k, v - it->second));
+            ins.back()->current_rate = v - it->second;
+        }
+    }
+
+    // Create output pins for resources overproduced in the group
+    for (const auto& [k, v] : outputs)
+    {
+        const auto it = inputs.find(k);
+        // Only produced, create an output pin
+        if (it == inputs.end())
+        {
+            outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, k, v));
+            outs.back()->current_rate = v;
+        }
+        // Less consumed than produced, create an output pin with the difference
+        else if (it->second < v)
+        {
+            outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, k, v - it->second));
+            outs.back()->current_rate = v - it->second;
+        }
+    }
+}
+
+void GroupNode::UpdateDetails()
+{
+    total_machines = {};
+    detailed_machines = {};
+    detailed_power_same_clock = {};
+    detailed_power_last_underclock = {};
+    for (const auto& n : nodes)
+    {
+        if (n->IsCraft())
+        {
+            const CraftNode* node = static_cast<const CraftNode*>(n.get());
+            total_machines[node->recipe->building->name] += node->current_rate;
+            detailed_machines[node->recipe->building->name][node->recipe] += node->current_rate;
+            detailed_power_same_clock[node->recipe] += node->same_clock_power;
+            detailed_power_last_underclock[node->recipe] += node->last_underclock_power;
+        }
+        else if (n->IsGroup())
+        {
+            const GroupNode* node = static_cast<const GroupNode*>(n.get());
+            for (const auto& [k, v] : node->total_machines)
+            {
+                total_machines[k] += v;
+            }
+            for (const auto& [k, v] : node->detailed_machines)
+            {
+                for (const auto& [k2, v2] : v)
+                {
+                    detailed_machines[k][k2] += v2;
+                }
+            }
+            for (const auto& [k, v] : node->detailed_power_same_clock)
+            {
+                detailed_power_same_clock[k] += v;
+            }
+            for (const auto& [k, v] : node->detailed_power_last_underclock)
+            {
+                detailed_power_last_underclock[k] += v;
+            }
+        }
+    }
+}
+
+OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const Item* item) : Node(id), item(item)
+{
+
 }
 
 OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const Json::Value& serialized) : Node(id, serialized), item(nullptr)
@@ -260,7 +620,7 @@ OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const Json::Value&
     auto item_it = Data::Items().find(serialized["item"].get_string());
     if (item_it != Data::Items().end())
     {
-        ChangeItem(item_it->second.get());
+        item = item_it->second.get();
     }
     else if (serialized["item"].get_string() != "")
     {
@@ -366,11 +726,9 @@ bool OrganizerNode::IsBalanced() const
 
 SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : OrganizerNode(id, item)
 {
-    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
-    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
-    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
-    // We need to call ChangeItem again to update newly created pins
-    ChangeItem(item);
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
 }
 
 SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, serialized)
@@ -379,11 +737,9 @@ SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<
     {
         throw std::runtime_error("Trying to deserialize an unvalid node as a splitter node");
     }
-    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
-    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
-    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
-    // We need to call ChangeItem again to update newly created pins
-    ChangeItem(item);
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
 
     for (int i = 0; i < serialized["ins"].size(); ++i)
     {
@@ -419,11 +775,9 @@ Node::Kind SplitterNode::GetKind() const
 
 MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : OrganizerNode(id, item)
 {
-    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
-    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
-    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
-    // We need to call ChangeItem again to update newly created pins
-    ChangeItem(item);
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
 }
 
 MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, serialized)
@@ -432,11 +786,9 @@ MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsi
     {
         throw std::runtime_error("Trying to deserialize an unvalid node as a craft node");
     }
-    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
-    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, nullptr));
-    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, nullptr));
-    // We need to call ChangeItem again to update newly created pins
-    ChangeItem(item);
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
 
     for (int i = 0; i < serialized["ins"].size(); ++i)
     {

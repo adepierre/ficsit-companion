@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -9,8 +10,10 @@
 
 #include "fractional_number.hpp"
 #include "json.hpp"
+#include "utils.hpp"
 
 struct Item;
+struct Link;
 struct Pin;
 struct Recipe;
 
@@ -22,6 +25,7 @@ struct Node
         Craft,
         Splitter,
         Merger,
+        Group
     };
 
     Node(const ax::NodeEditor::NodeId id);
@@ -31,6 +35,7 @@ struct Node
     virtual Kind GetKind() const = 0;
     virtual bool IsPowered() const;
     virtual bool IsCraft() const;
+    virtual bool IsGroup() const;
     /// @brief Merger or Splitter
     virtual bool IsOrganizer() const;
     virtual bool IsMerger() const;
@@ -84,6 +89,43 @@ struct CraftNode : public PoweredNode
     const Recipe* recipe;
     /// @brief Technically it could be just an int, but FractionalNumber already has all string operations
     FractionalNumber num_somersloop;
+};
+
+struct GroupNode : public PoweredNode
+{
+    GroupNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator,
+        std::vector<std::unique_ptr<Node>>&& nodes_, std::vector<std::unique_ptr<Link>>&& links_);
+    GroupNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator,
+        const Json::Value& serialized);
+    virtual Kind GetKind() const override;
+    virtual bool IsGroup() const;
+    virtual Json::Value Serialize() const override;
+    virtual void UpdateRate(const FractionalNumber& new_rate) override;
+    virtual bool HasVariablePower() const override;
+    virtual void ComputePowerUsage() override;
+    void PropagateRateToSubnodes();
+
+private:
+    void CreateInsOuts(const std::function<unsigned long long int()>& id_generator);
+    void UpdateDetails();
+
+public:
+    std::vector<std::unique_ptr<Node>> nodes;
+    /// @brief The rate of the node when this group was created.
+    /// Required cause in case the group rate is set to 0 the info is lost otherwise
+    std::vector<FractionalNumber> nodes_base_rate;
+    std::vector<std::unique_ptr<Link>> links;
+
+    std::string name;
+    /// @brief Cached value to avoid looping through all the nodes everytime
+    bool variable_power;
+    std::map<std::string, FractionalNumber> total_machines;
+    std::map<std::string, std::map<const Recipe*, FractionalNumber>> detailed_machines;
+    std::map<const Recipe*, FractionalNumber> detailed_power_same_clock;
+    std::map<const Recipe*, FractionalNumber> detailed_power_last_underclock;
+    std::map<const Item*, FractionalNumber, ItemPtrCompare> inputs;
+    std::map<const Item*, FractionalNumber, ItemPtrCompare> outputs;
+    bool loading_error;
 };
 
 struct OrganizerNode : public Node

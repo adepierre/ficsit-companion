@@ -74,6 +74,12 @@ private:
     /// @brief Copy the position from the graph into the nodes struct
     void PullNodesPosition();
 
+    /// @brief Bundle all selected nodes by a group node
+    void GroupSelectedNodes();
+
+    /// @brief Unpack all nodes contained in the currently selected node
+    void UngroupSelectedNode();
+
 
     /// @brief Render the panel on the left with global info (inputs/outputs/etc...)
     void RenderLeftPanel();
@@ -113,8 +119,6 @@ private:
         bool hide_spoilers = true;
         /// @brief If true, somersloop override will not be displayed in the nodes
         bool hide_somersloop = false;
-        /// @brief If true, items in both inputs and outputs on the left panel will be subtracted and displayed only once
-        bool diff_in_out = false;
         /// @brief For each alt recipes, stores wether or not it's been unlocked yet
         std::map<const Recipe*, bool> unlocked_alts = {};
         /// @brief If true, will display power info with equal clocks on all machines in a node

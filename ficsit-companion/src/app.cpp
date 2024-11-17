@@ -156,7 +156,6 @@ void App::LoadSettings()
     settings.hide_spoilers = false;
 #endif
     settings.hide_somersloop = json.contains("hide_somersloop") && json["hide_somersloop"].get<bool>(); // default true
-    settings.diff_in_out = json.contains("diff_in_out") && json["diff_in_out"].get<bool>(); // default false
     settings.unlocked_alts = {};
 
     for (const auto& r : Data::Recipes())
@@ -180,7 +179,6 @@ void App::SaveSettings() const
     // Save all settings values in the json
     serialized["hide_spoilers"] = settings.hide_spoilers;
     serialized["hide_somersloop"] = settings.hide_somersloop;
-    serialized["diff_in_out"] = settings.diff_in_out;
 
     Json::Object unlocked;
     for (const auto& [r, b] : settings.unlocked_alts)
@@ -287,6 +285,7 @@ void App::Deserialize(const std::string& s)
         try
         {
             nodes.emplace_back(Node::Deserialize(GetNextId(), std::bind(&App::GetNextId, this), n));
+            ax::NodeEditor::SetNodePosition(nodes.back()->id, nodes.back()->pos);
             node_indices.push_back(num_nodes);
             num_nodes += 1;
         }
@@ -294,11 +293,6 @@ void App::Deserialize(const std::string& s)
         {
             node_indices.push_back(-1);
         }
-    }
-
-    for (const auto& n : nodes)
-    {
-        ax::NodeEditor::SetNodePosition(n->id, n->pos);
     }
 
     // Load links
@@ -466,6 +460,7 @@ void App::UpdateNodesRate()
         case Node::Kind::Craft:
         {
             CraftNode* node = static_cast<CraftNode*>(updating_pin->node);
+            // We can't use UpdateRate cause we wouldn't be able to know which pins have changed
             if (updating_pin->direction == ax::NodeEditor::PinKind::Output)
             {
                 node->current_rate = updating_pin->current_rate / (updating_pin->base_rate * (1 + node->num_somersloop * node->recipe->building->somersloop_mult));
@@ -477,12 +472,6 @@ void App::UpdateNodesRate()
             node->ComputePowerUsage();
             for (auto& p : node->ins)
             {
-                const Constraint constraint = GetConstraint(p.get());
-                if (constraint == Constraint::Strong)
-                {
-                    continue;
-                }
-
                 const FractionalNumber new_rate = node->current_rate * p->base_rate;
                 if (new_rate == p->current_rate)
                 {
@@ -505,9 +494,53 @@ void App::UpdateNodesRate()
                     continue;
                 }
                 p->current_rate = new_rate;
+                updated_pins[p.get()] = updating_constraint;
+
+                // Don't need to push it if it's not linked to anything
                 if (p->link != nullptr)
                 {
-                    updating_pins.push({ p.get(), Constraint::Strong });
+                    updating_pins.push({ p.get(), updating_constraint });
+                }
+            }
+            break;
+        }
+        case Node::Kind::Group:
+        {
+            GroupNode* node = static_cast<GroupNode*>(updating_pin->node);
+            // We can't use UpdateRate cause we wouldn't be able to know which pins have changed
+            node->current_rate = updating_pin->current_rate / updating_pin->base_rate;
+            node->PropagateRateToSubnodes();
+            node->ComputePowerUsage();
+            for (auto& p : node->ins)
+            {
+                const FractionalNumber new_rate = node->current_rate * p->base_rate;
+                if (new_rate == p->current_rate)
+                {
+                    continue;
+                }
+                p->current_rate = new_rate;
+                updated_pins[p.get()] = updating_constraint;
+
+                // Don't need to push it if it's not linked to anything
+                if (p->link != nullptr)
+                {
+                    updating_pins.push({ p.get(), updating_constraint });
+                }
+            }
+            for (auto& p : node->outs)
+            {
+                const FractionalNumber new_rate = node->current_rate * p->base_rate;
+                if (new_rate == p->current_rate)
+                {
+                    continue;
+                }
+                p->current_rate = new_rate;
+                updated_pins[p.get()] = updating_constraint;
+
+                // Don't need to push it if it's not linked to anything
+                if (p->link != nullptr)
+                {
+                    updating_pins.push({ p.get(), updating_constraint });
                 }
             }
             break;
@@ -715,7 +748,141 @@ void App::PullNodesPosition()
     }
 }
 
+void App::GroupSelectedNodes()
+{
+    std::vector<std::unique_ptr<Node>> selected_nodes;
+    std::vector<std::unique_ptr<Link>> kept_links;
 
+    auto process_link = [&](const Link* link) {
+        if (link == nullptr)
+        {
+            return;
+        }
+        for (auto it = links.begin(); it != links.end(); ++it)
+        {
+            if (it->get() == link)
+            {
+                // If this link is between two group nodes, move it in the group
+                if (ax::NodeEditor::IsNodeSelected((*it)->start->node->id) &&
+                    ax::NodeEditor::IsNodeSelected((*it)->end->node->id))
+                {
+                    ax::NodeEditor::DeleteLink((*it)->id);
+                    kept_links.emplace_back(std::move(*it));
+                    links.erase(it);
+                }
+                // Else just remove it
+                // TODO: can we keep the connections between the group and external nodes?
+                // it should be doable if it's a "simple" link, but what about multiple links
+                // to different pins with the same items ?
+                else
+                {
+                    DeleteLink((*it)->id);
+                }
+                return;
+            }
+        }
+    };
+
+    for (auto it = nodes.begin(); it != nodes.end();)
+    {
+        if (ax::NodeEditor::IsNodeSelected((*it)->id))
+        {
+            for (const auto& p : (*it)->ins)
+            {
+                process_link(p->link);
+            }
+            for (const auto& p : (*it)->outs)
+            {
+                process_link(p->link);
+            }
+            ax::NodeEditor::DeleteNode((*it)->id);
+            selected_nodes.emplace_back(std::move(*it));
+            it = nodes.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    if (selected_nodes.empty())
+    {
+        return;
+    }
+
+    // Get the top left corner of this group
+    ImVec2 min_pos(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+
+    for (const auto& n : selected_nodes)
+    {
+        min_pos.x = std::min(min_pos.x, n->pos.x);
+        min_pos.y = std::min(min_pos.y, n->pos.y);
+    }
+
+    // Offset all nodes in the group to store relative positions
+    for (auto& n : selected_nodes)
+    {
+        n->pos = ImVec2(
+            n->pos.x - min_pos.x,
+            n->pos.y - min_pos.y
+        );
+    }
+
+    nodes.emplace_back(std::make_unique<GroupNode>(GetNextId(), std::bind(&App::GetNextId, this), std::move(selected_nodes), std::move(kept_links)));
+    nodes.back()->pos = min_pos;
+    ax::NodeEditor::SetNodePosition(nodes.back()->id, min_pos);
+    ax::NodeEditor::SelectNode(nodes.back()->id, false);
+}
+
+void App::UngroupSelectedNode()
+{
+    // Get the selected node
+    GroupNode* group_node = nullptr;
+    for (const auto& n : nodes)
+    {
+        if (ax::NodeEditor::IsNodeSelected(n->id))
+        {
+            // Should not happen because we check before calling the function but just in case...
+            if (!n->IsGroup())
+            {
+                continue;
+            }
+            group_node = static_cast<GroupNode*>(n.get());
+        }
+    }
+    // Should not happen because we check before calling the function but just in case...
+    if (group_node == nullptr)
+    {
+        return;
+    }
+
+    const size_t num_node_before_add = nodes.size();
+    const Json::Value serialized = group_node->Serialize();
+    // Recreate the nodes of the group in the main graph
+    for (auto& n : serialized["nodes"].get_array())
+    {
+        // Deserialize should always work as it's serialized in this version of the app (not loaded from a file)
+        nodes.emplace_back(Node::Deserialize(GetNextId(), std::bind(&App::GetNextId, this), n));
+
+        // Offset the new node with the group node position
+        nodes.back()->pos.x += group_node->pos.x;
+        nodes.back()->pos.y += group_node->pos.y;
+        ax::NodeEditor::SetNodePosition(nodes.back()->id, nodes.back()->pos);
+        ax::NodeEditor::SelectNode(nodes.back()->id, true);
+    }
+
+    // Recreate the internal links
+    for (const auto& l : serialized["links"].get_array())
+    {
+        CreateLink(
+            nodes[num_node_before_add + l["start"]["node"].get<int>()]->outs[l["start"]["pin"].get<int>()].get(),
+            nodes[num_node_before_add + l["end"]["node"].get<int>()]->ins[l["end"]["pin"].get<int>()].get()
+        );
+    }
+
+    // Delete old group node
+    DeleteNode(group_node->id);
+}
 
 
 /******************************************************\
@@ -1046,15 +1213,6 @@ void App::RenderLeftPanel()
             "Otherwise, it will be calculated with machines at 100%% and one last machine underclocked");
     }
 
-    if (ImGui::Checkbox("Compute Inputs/Outputs diff", &settings.diff_in_out))
-    {
-        SaveSettings();
-    }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("%s", "If enabled, common part of items in both inputs and outputs will be moved to intermediates (even if they are not linked)");
-    }
-
     if (ImGui::Button("Unlock all alt recipes"))
     {
         settings.unlocked_alts = {};
@@ -1084,14 +1242,6 @@ void App::RenderLeftPanel()
         SaveSettings();
     }
 
-    struct ItemPtrCompare {
-        bool operator()(const Item* a, const Item* b) const { return a != nullptr && (b != nullptr && a->name < b->name); }
-    };
-
-    struct RecipePtrCompare {
-        bool operator()(const Recipe* a, const Recipe* b) const { return a != nullptr && (b != nullptr && a->name < b->name);}
-    };
-
     std::map<const Item*, FractionalNumber, ItemPtrCompare> inputs;
     std::map<const Item*, FractionalNumber, ItemPtrCompare> outputs;
     std::map<const Item*, FractionalNumber, ItemPtrCompare> intermediates;
@@ -1101,36 +1251,57 @@ void App::RenderLeftPanel()
     std::map<const Recipe*, FractionalNumber> detailed_power;
     bool has_variable_power = false;
 
-    // Gather all inputs/outputs/machines
+    // Gather all craft node stats (ins/outs/machines/power)
     for (const auto& n : nodes)
     {
-        for (const auto& p : n->ins)
+        if (n->IsCraft())
         {
-            if (p->link == nullptr && p->item != nullptr)
+            for (const auto& p : n->ins)
             {
                 inputs[p->item] += p->current_rate;
             }
-        }
-        for (const auto& p : n->outs)
-        {
-            if (p->link == nullptr && p->item != nullptr)
+            for (const auto& p : n->outs)
             {
                 outputs[p->item] += p->current_rate;
             }
-            else if (p->link != nullptr && p->item != nullptr && p->link->end->node->IsCraft())
-            {
-                intermediates[p->item] += p->current_rate;
-            }
-        }
 
-        if (n->IsCraft())
-        {
             const CraftNode* node = static_cast<const CraftNode*>(n.get());
             total_machines[node->recipe->building->name] += node->current_rate;
             detailed_machines[node->recipe->building->name][node->recipe] += node->current_rate;
             total_power += settings.power_equal_clocks ? node->same_clock_power : node->last_underclock_power;
             detailed_power[node->recipe] += settings.power_equal_clocks ? node->same_clock_power : node->last_underclock_power;
             has_variable_power |= node->recipe->building->variable_power;
+        }
+        else if (n->IsGroup())
+        {
+            const GroupNode* node = static_cast<const GroupNode*>(n.get());
+
+            for (const auto& [k, v] : node->inputs)
+            {
+                inputs[k] += v;
+            }
+            for (const auto& [k, v] : node->outputs)
+            {
+                outputs[k] += v;
+            }
+
+            total_power += settings.power_equal_clocks ? node->same_clock_power : node->last_underclock_power;
+            has_variable_power |= node->variable_power;
+            for (const auto& [k, v] : node->total_machines)
+            {
+                total_machines[k] += v;
+            }
+            for (const auto& [k, v] : node->detailed_machines)
+            {
+                for (const auto& [k2, v2] : v)
+                {
+                    detailed_machines[k][k2] += v2;
+                }
+            }
+            for (const auto& [k, v] : (settings.power_equal_clocks ? node->detailed_power_same_clock : node->detailed_power_last_underclock))
+            {
+                detailed_power[k] += v;
+            }
         }
     }
 
@@ -1240,29 +1411,26 @@ void App::RenderLeftPanel()
         {
             continue;
         }
-        if (settings.diff_in_out)
+        if (const auto out_it = outputs.find(item); out_it != outputs.end())
         {
-            if (const auto out_it = outputs.find(item); out_it != outputs.end())
+            // More output than input, don't display this in inputs
+            if (out_it->second > n)
             {
-                // More output than input, skip this
-                if (out_it->second > n)
-                {
-                    continue;
-                }
-                // Equal, just add it to intermediate
-                else if (out_it->second == n)
-                {
-                    outputs.erase(out_it);
-                    intermediates[item] += n;
-                    continue;
-                }
-                // More input than output, display the diff and add the common part to intermediate
-                else
-                {
-                    n = n - out_it->second;
-                    intermediates[item] += out_it->second;
-                    outputs.erase(out_it);
-                }
+                continue;
+            }
+            // Equal, just add it to intermediate
+            else if (out_it->second == n)
+            {
+                outputs.erase(out_it);
+                intermediates[item] += n;
+                continue;
+            }
+            // More input than output, display the diff and add the common part to intermediate
+            else
+            {
+                n = n - out_it->second;
+                intermediates[item] += out_it->second;
+                outputs.erase(out_it);
             }
         }
         n.RenderInputText("##rate", true, true, rate_width);
@@ -1279,23 +1447,20 @@ void App::RenderLeftPanel()
         {
             continue;
         }
-        if (settings.diff_in_out)
+        if (const auto in_it = inputs.find(item); in_it != inputs.end())
         {
-            if (const auto in_it = inputs.find(item); in_it != inputs.end())
+            // More input than output, skip this
+            if (in_it->second > n)
             {
-                // More input than output, skip this
-                if (in_it->second > n)
-                {
-                    continue;
-                }
-                // Equal should not happen as it's removed from output in input loop
-                // More output than input, display the diff and add the common part to intermediate
-                else
-                {
-                    n = n - in_it->second;
-                    intermediates[item] += in_it->second;
-                    inputs.erase(in_it);
-                }
+                continue;
+            }
+            // Equal should not happen as it's removed from output in input loop
+            // More output than input, display the diff and add the common part to intermediate
+            else
+            {
+                n = n - in_it->second;
+                intermediates[item] += in_it->second;
+                inputs.erase(in_it);
             }
         }
         n.RenderInputText("##rate", true, true, rate_width);
@@ -1352,16 +1517,18 @@ void App::RenderNodes()
                 l2 == nullptr ||
                 (p1->direction == ax::NodeEditor::PinKind::Input && l1->start->node->pos.y < l2->start->node->pos.y) ||
                 (p1->direction == ax::NodeEditor::PinKind::Output && l1->end->node->pos.y < l2->end->node->pos.y)
-            );
-        });
-    };
+                );
+            });
+        };
 
     for (const auto& node : nodes)
     {
-        const bool isnt_balanced = node->IsOrganizer() && !static_cast<OrganizerNode*>(node.get())->IsBalanced();
-        if (isnt_balanced)
+        int node_pushed_style = 0;
+        if (node->IsOrganizer() && !static_cast<OrganizerNode*>(node.get())->IsBalanced() ||
+            node->IsGroup() && static_cast<GroupNode*>(node.get())->loading_error)
         {
             ax::NodeEditor::PushStyleColor(ax::NodeEditor::StyleColor_NodeBorder, ImColor(255, 0, 0));
+            node_pushed_style += 1;
         }
         ax::NodeEditor::BeginNode(node->id);
         ImGui::PushID(node->id.AsPointer());
@@ -1380,6 +1547,15 @@ void App::RenderNodes()
                 case Node::Kind::Splitter:
                     ImGui::TextUnformatted("Splitter");
                     break;
+                case Node::Kind::Group:
+                {
+                    ImGui::TextUnformatted("Group");
+                    ImGui::Spring(0.0f);
+                    std::string& name = static_cast<GroupNode*>(node.get())->name;
+                    ImGui::SetNextItemWidth(std::max(ImGui::CalcTextSize(name.c_str()).x, ImGui::CalcTextSize("Name...").x) + ImGui::GetStyle().FramePadding.x * 4.0f);
+                    ImGui::InputTextWithHint("##name", "Name...", &name);
+                    break;
+                }
                 }
             }
             ImGui::EndHorizontal();
@@ -1443,7 +1619,7 @@ void App::RenderNodes()
                                 frame_tooltips.push_back(p->current_rate.GetStringFraction());
                             }
 
-                            if (node->IsCraft())
+                            if (node->IsPowered())
                             {
                                 ImGui::Spring(0.0f);
                                 ImGui::Image((void*)(intptr_t)p->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
@@ -1477,7 +1653,7 @@ void App::RenderNodes()
                         ax::NodeEditor::BeginPin(p->id, p->direction);
                         ImGui::BeginHorizontal(p->id.AsPointer());
                         {
-                            if (node->IsCraft())
+                            if (node->IsPowered())
                             {
                                 ImGui::Spring(0.0f);
                                 ImGui::TextUnformatted(p->item->new_line_name.c_str());
@@ -1540,100 +1716,106 @@ void App::RenderNodes()
 
             ImGui::BeginHorizontal("bottom");
             {
-                if (node->IsCraft())
+                if (node->IsPowered())
                 {
                     ImGui::Spring(0.0f);
-                    CraftNode* craft_node = static_cast<CraftNode*>(node.get());
-                    (settings.power_equal_clocks ? craft_node->same_clock_power : craft_node->last_underclock_power).RenderInputText("##power", true, false);
+                    PoweredNode* powered_node = static_cast<PoweredNode*>(node.get());
+                    (settings.power_equal_clocks ? powered_node->same_clock_power : powered_node->last_underclock_power).RenderInputText("##power", true, false);
                     ImGui::Spring(0.0f);
-                    ImGui::Text("%sMW", craft_node->recipe->building->variable_power ? "~" : "");
-                    if (craft_node->recipe->building->variable_power && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                    ImGui::Text("%sMW", powered_node->HasVariablePower() ? "~" : "");
+                    if (powered_node->HasVariablePower() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                     {
                         frame_tooltips.push_back("Average power");
                     }
                     ImGui::Spring(1.0f);
-                    craft_node->current_rate.RenderInputText("##rate", false, false, rate_width);
+                    powered_node->current_rate.RenderInputText("##rate", false, false, rate_width);
                     if (ImGui::IsItemDeactivatedAfterEdit())
                     {
+                        // Try updating the rate with the new string value
                         try
                         {
-                            craft_node->current_rate = FractionalNumber(craft_node->current_rate.GetStringFloat());
-                            for (auto& p : craft_node->ins)
+                            powered_node->UpdateRate(FractionalNumber(powered_node->current_rate.GetStringFloat()));
+                            for (auto& p : powered_node->ins)
                             {
-                                p->current_rate = p->base_rate * craft_node->current_rate;
                                 updating_pins.push({ p.get(), Constraint::Strong });
                             }
-                            for (auto& p : craft_node->outs)
+                            for (auto& p : powered_node->outs)
                             {
-                                p->current_rate = p->base_rate * craft_node->current_rate * (1 + (craft_node->num_somersloop * craft_node->recipe->building->somersloop_mult));
                                 updating_pins.push({ p.get(), Constraint::Strong });
                             }
-                            craft_node->ComputePowerUsage();
                         }
+                        // Rollback to previous value if the user input is not a valid fractional number
                         catch (const std::domain_error&)
                         {
-                            craft_node->current_rate = FractionalNumber(craft_node->current_rate.GetNumerator(), craft_node->current_rate.GetDenominator());
+                            powered_node->UpdateRate(FractionalNumber(powered_node->current_rate.GetNumerator(), powered_node->current_rate.GetDenominator()));
                         }
                     }
                     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                     {
-                        frame_tooltips.push_back(craft_node->current_rate.GetStringFraction());
+                        frame_tooltips.push_back(powered_node->current_rate.GetStringFraction());
                     }
-                    ImGui::Spring(0.0f);
-                    ImGui::TextUnformatted(craft_node->recipe->building->name.c_str());
-                    if (
-                        // Override settings if it's not 0 (for example if the production chain is imported)
-                        (settings.hide_somersloop && craft_node->num_somersloop.GetNumerator() == 0) ||
-                        // Don't display somersloop if this building can't have one
-                        craft_node->recipe->building->somersloop_mult.GetNumerator() == 0
-                    )
+                    if (node->IsGroup())
                     {
                         ImGui::Spring(1.0f);
                     }
-                    else
+                    else if (node->IsCraft())
                     {
-                        ImGui::Spring(1.0f);
-                        ImGui::SetNextItemWidth(somersloop_width);
-                        ImGui::InputText("##somersloop", &craft_node->num_somersloop.GetStringFraction(), ImGuiInputTextFlags_CharsDecimal);
-                        if (ImGui::IsItemDeactivatedAfterEdit())
+                        CraftNode* craft_node = static_cast<CraftNode*>(node.get());
+                        ImGui::Spring(0.0f);
+                        ImGui::TextUnformatted(craft_node->recipe->building->name.c_str());
+                        if (
+                            // Override settings if it's not 0 (for example if the production chain is imported)
+                            (settings.hide_somersloop && craft_node->num_somersloop.GetNumerator() == 0) ||
+                            // Don't display somersloop if this building can't have one
+                            craft_node->recipe->building->somersloop_mult.GetNumerator() == 0
+                            )
                         {
-                            try
+                            ImGui::Spring(1.0f);
+                        }
+                        else
+                        {
+                            ImGui::Spring(1.0f);
+                            ImGui::SetNextItemWidth(somersloop_width);
+                            ImGui::InputText("##somersloop", &craft_node->num_somersloop.GetStringFraction(), ImGuiInputTextFlags_CharsDecimal);
+                            if (ImGui::IsItemDeactivatedAfterEdit())
                             {
-                                FractionalNumber new_num_somersloop = FractionalNumber(craft_node->num_somersloop.GetStringFraction());
-                                // Only integer somersloop allowed
-                                if (new_num_somersloop.GetDenominator() != 1)
+                                try
                                 {
-                                    throw std::domain_error("somersloop num can only be whole integers");
+                                    FractionalNumber new_num_somersloop = FractionalNumber(craft_node->num_somersloop.GetStringFraction());
+                                    // Only integer somersloop allowed
+                                    if (new_num_somersloop.GetDenominator() != 1)
+                                    {
+                                        throw std::domain_error("somersloop num can only be whole integers");
+                                    }
+                                    // Check we don't try to boost more than 2x
+                                    // We know numerator is > 0 as otherwise somersloop input is not displayed, so it's ok to invert the fraction
+                                    if (new_num_somersloop > 1 / craft_node->recipe->building->somersloop_mult)
+                                    {
+                                        new_num_somersloop = 1 / craft_node->recipe->building->somersloop_mult;
+                                    }
+                                    craft_node->num_somersloop = new_num_somersloop;
+                                    craft_node->UpdateRate(craft_node->current_rate);
+                                    for (auto& p : craft_node->outs)
+                                    {
+                                        updating_pins.push({ p.get(), Constraint::Strong });
+                                    }
                                 }
-                                // Check we don't try to boost more than 2x
-                                // We know numerator is > 0 as otherwise somersloop input is not displayed, so it's ok to invert the fraction
-                                if (new_num_somersloop > 1 / craft_node->recipe->building->somersloop_mult)
+                                catch (const std::domain_error&)
                                 {
-                                    new_num_somersloop = 1 / craft_node->recipe->building->somersloop_mult;
-                                }
-                                craft_node->num_somersloop = new_num_somersloop;
-                                craft_node->ComputePowerUsage();
-                                for (auto& p : craft_node->outs)
-                                {
-                                    p->current_rate = p->base_rate * craft_node->current_rate * (1 + (craft_node->num_somersloop * craft_node->recipe->building->somersloop_mult));
-                                    updating_pins.push({ p.get(), Constraint::Strong });
+                                    craft_node->num_somersloop = FractionalNumber(craft_node->num_somersloop.GetNumerator(), 1);
                                 }
                             }
-                            catch (const std::domain_error&)
+                            ImGui::Spring(0.0f);
+                            ImGui::Image((void*)(intptr_t)somersloop_texture_id, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+                            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                             {
-                                craft_node->num_somersloop = FractionalNumber(craft_node->num_somersloop.GetNumerator(), 1);
+                                frame_tooltips.push_back("Alien Production Amplification");
                             }
+                            ImGui::Spring(0.0f);
                         }
-                        ImGui::Spring(0.0f);
-                        ImGui::Image((void*)(intptr_t)somersloop_texture_id, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-                        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                        {
-                            frame_tooltips.push_back("Alien Production Amplification");
-                        }
-                        ImGui::Spring(0.0f);
                     }
                 }
-                else
+                else if (node->IsOrganizer())
                 {
                     ImGui::Spring(1.0f);
                     OrganizerNode* org_node = static_cast<OrganizerNode*>(node.get());
@@ -1653,7 +1835,7 @@ void App::RenderNodes()
         ImGui::EndVertical();
         ImGui::PopID();
         ax::NodeEditor::EndNode();
-        if (isnt_balanced)
+        for (int i = 0; i < node_pushed_style; ++i)
         {
             ax::NodeEditor::PopStyleColor();
         }
@@ -2006,6 +2188,8 @@ void App::RenderControlsPopup()
             std::make_pair("Alt",                 "Disable grid snapping"),
             std::make_pair("Arrows",              "Nudge selection"),
             std::make_pair("Ctrl + A",            "Select all nodes"),
+            std::make_pair("Ctrl + G",            "Group/Ungroup nodes"),
+            std::make_pair("Ctrl + Left click",   "Add to selection"),
         };
         for (const auto [k, s] : controls)
         {
@@ -2030,6 +2214,8 @@ void App::RenderControlsPopup()
 void App::CustomKeyControl()
 {
     ImGuiIO& io = ImGui::GetIO();
+
+    // Ctrl + A, select all
     if (!io.WantCaptureKeyboard &&
         ImGui::IsKeyPressed(ImGuiKey_A, false) &&
         io.KeyCtrl)
@@ -2037,6 +2223,42 @@ void App::CustomKeyControl()
         for (const auto& n : nodes)
         {
             ax::NodeEditor::SelectNode(n->id, true);
+        }
+    }
+
+    // Ctrl + G, group/ungroup selected nodes
+    if (!io.WantCaptureKeyboard &&
+        ImGui::IsKeyPressed(ImGuiKey_G, false) &&
+        io.KeyCtrl)
+    {
+        size_t num_selected = 0;
+        bool group_selected = false;
+        for (const auto& n : nodes)
+        {
+            if (ax::NodeEditor::IsNodeSelected(n->id))
+            {
+                num_selected += 1;
+                // If we have multiple node selected, it's a group action
+                if (num_selected > 1)
+                {
+                    break;
+                }
+                group_selected = n->IsGroup();
+                // If we have at least one not group node, it's a group action
+                if (!group_selected)
+                {
+                    break;
+                }
+            }
+        }
+
+        if (num_selected == 1 && group_selected)
+        {
+            UngroupSelectedNode();
+        }
+        else if (num_selected > 0)
+        {
+            GroupSelectedNodes();
         }
     }
 

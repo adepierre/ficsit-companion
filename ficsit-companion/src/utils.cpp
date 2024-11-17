@@ -12,6 +12,7 @@
 #include <SDL_opengl.h>
 #endif
 
+#include "recipe.hpp"
 #include "utils.hpp"
 
 unsigned int DefaultTexture()
@@ -152,4 +153,14 @@ bool UpdateSave(Json::Value& save, const int to)
     }
 
     return false;
+}
+
+bool ItemPtrCompare::operator()(const Item* a, const Item* b) const
+{
+    return a != nullptr && (b != nullptr && a->name < b->name);
+}
+
+bool RecipePtrCompare::operator()(const Recipe* a, const Recipe* b) const
+{
+    return a != nullptr && (b != nullptr && a->name < b->name);
 }
