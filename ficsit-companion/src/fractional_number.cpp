@@ -19,6 +19,7 @@ FractionalNumber::FractionalNumber(const long long int n, const long long int d)
 // "40"      --> (40,     0)
 // "34.5"    --> (345,    1)
 // "4.12345" --> (412345, 5)
+// "-6.25"   --> (-625,   2)
 std::pair<long long int, int> StringToInt(const std::string& s)
 {
     const size_t point_index = s.find('.');
@@ -27,21 +28,22 @@ std::pair<long long int, int> StringToInt(const std::string& s)
         return { std::stoll(s), 0 };
     }
 
+    const int is_negative = s[0] == '-' ? 1 : 0; // Explicit bool to int conversion cause I don't like leaving the implicit one. Compiler will optimize it anyway
     const long long int int_part = std::stoll(s.substr(0, point_index));
     const long long int decimal_part = std::stoll(s.substr(point_index + 1));
 
     long long int multiplier = 1;
-    for (size_t i = 0; i < s.size() - point_index - 1; ++i)
+    for (size_t i = 0; i < s.size() - point_index - 1 - is_negative; ++i)
     {
         multiplier *= 10;
     }
 
-    return { int_part * multiplier + decimal_part, static_cast<int>(s.size() - point_index - 1) };
+    return { int_part * multiplier + decimal_part, static_cast<int>(s.size() - point_index - 1 - is_negative) };
 }
 
 FractionalNumber::FractionalNumber(const std::string& s)
 {
-    const std::regex pattern("(\\d+(?:\\.\\d+)?)(?:/(\\d+(?:\\.\\d+)?))?");
+    const std::regex pattern("(-?\\d+(?:\\.\\d+)?)(?:\\s*/\\s*(-?\\d+(?:\\.\\d+)?))?");
     std::smatch matches;
 
     if (!std::regex_match(s, matches, pattern))
