@@ -59,16 +59,18 @@ namespace Data
 
         for (const auto& r : json_recipes)
         {
-            const double time = r["time"].get<double>();
+            const FractionalNumber time = r["time"].is<double>() ?
+                FractionalNumber(std::to_string(r["time"].get<double>())) :
+                FractionalNumber(r["time"].get_string());
             std::vector<CountedItem> inputs;
             for (const auto& i : r["inputs"].get_array())
             {
-                inputs.emplace_back(CountedItem(items.at(i["name"].get_string()).get(), FractionalNumber(std::to_string(i["amount"].get<double>() * 60.0) + "/" + std::to_string(time))));
+                inputs.emplace_back(CountedItem(items.at(i["name"].get_string()).get(), FractionalNumber(std::to_string(i["amount"].get<double>() * 60.0)) / time));
             }
             std::vector<CountedItem> outputs;
             for (const auto& o : r["outputs"].get_array())
             {
-                outputs.emplace_back(CountedItem(items.at(o["name"].get_string()).get(), FractionalNumber(std::to_string(o["amount"].get<double>() * 60.0) + "/" + std::to_string(time))));
+                outputs.emplace_back(CountedItem(items.at(o["name"].get_string()).get(), FractionalNumber(std::to_string(o["amount"].get<double>() * 60.0)) / time));
             }
 
             const Building* building = buildings.at(r["building"].get_string()).get();

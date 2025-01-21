@@ -1315,8 +1315,8 @@ void App::RenderLeftPanel()
     }
 
     const float power_width = ImGui::CalcTextSize("000000.00").x + ImGui::GetStyle().FramePadding.x * 2.0f;
-    ImGui::SeparatorText(has_variable_power ? "Average Power" : "Power");
-    if (total_power.GetNumerator() > 0)
+    ImGui::SeparatorText(has_variable_power ? "Average Power Consumption" : "Power Consumption");
+    if (total_power.GetNumerator() != 0)
     {
         std::vector<std::pair<const Recipe*, FractionalNumber>> sorted_detailed_power(detailed_power.begin(), detailed_power.end());
         std::stable_sort(sorted_detailed_power.begin(), sorted_detailed_power.end(), [](const auto& a, const auto& b) {
@@ -1767,8 +1767,10 @@ void App::RenderNodes()
                             // Override settings if it's not 0 (for example if the production chain is imported)
                             (settings.hide_somersloop && craft_node->num_somersloop.GetNumerator() == 0) ||
                             // Don't display somersloop if this building can't have one
-                            craft_node->recipe->building->somersloop_mult.GetNumerator() == 0
-                            )
+                            craft_node->recipe->building->somersloop_mult.GetNumerator() == 0 ||
+                            // Don't display somersloop for power generators
+                            craft_node->recipe->building->power < 0.0
+                        )
                         {
                             ImGui::Spring(1.0f);
                         }

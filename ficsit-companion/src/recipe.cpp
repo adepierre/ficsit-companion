@@ -93,7 +93,10 @@ void Recipe::Render(const bool render_name, const bool display_items_icons) cons
             ImGui::SameLine();
         }
 
-        ImGui::TextUnformatted("-->");
+        if (outs.size() > 0)
+        {
+            ImGui::TextUnformatted("-->");
+        }
 
         for (const auto& out : outs)
         {
