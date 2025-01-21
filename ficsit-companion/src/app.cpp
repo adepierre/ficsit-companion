@@ -1210,7 +1210,7 @@ void App::RenderLeftPanel()
     {
         ImGui::SetTooltip("%s",
             "If set, the power per node will be calculated assuming all machines are set at the same clock value\n"
-            "Otherwise, it will be calculated with machines at 100%% and one last machine underclocked");
+            "Otherwise, it will be calculated with machines at 100% and one last machine underclocked");
     }
 
     if (ImGui::Button("Unlock all alt recipes"))
