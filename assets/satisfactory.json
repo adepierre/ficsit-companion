@@ -2,6 +2,30 @@
     "version": "1.0",
     "buildings": [
         {
+            "name": "Coal-Powered Generator",
+            "somersloop_mult": 1.0,
+            "power": -75.0,
+            "power_exponent": 1.6,
+            "somersloop_power_exponent": 2.0,
+            "variable_power": false
+        },
+        {
+            "name": "Fuel-Powered Generator",
+            "somersloop_mult": 1.0,
+            "power": -250.0,
+            "power_exponent": 1.6,
+            "somersloop_power_exponent": 2.0,
+            "variable_power": false
+        },
+        {
+            "name": "Biomass Burner",
+            "somersloop_mult": 1.0,
+            "power": -30.0,
+            "power_exponent": 1.6,
+            "somersloop_power_exponent": 2.0,
+            "variable_power": false
+        },
+        {
             "name": "Quantum Encoder",
             "somersloop_mult": 0.25,
             "power": 0.1,
@@ -86,6 +110,14 @@
             "somersloop_mult": 1.0,
             "power": 4.0,
             "power_exponent": 1.321929,
+            "somersloop_power_exponent": 2.0,
+            "variable_power": false
+        },
+        {
+            "name": "Nuclear Power Plant",
+            "somersloop_mult": 1.0,
+            "power": -2500.0,
+            "power_exponent": 1.6,
             "somersloop_power_exponent": 2.0,
             "variable_power": false
         }
@@ -7069,6 +7101,261 @@
                     "amount": 1.0
                 }
             ]
+        },
+        {
+            "name": "Power (Coal)",
+            "alternate": false,
+            "time": "300.0/75.000000",
+            "building": "Coal-Powered Generator",
+            "inputs": [
+                {
+                    "name": "Coal",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 3.0
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Compacted Coal)",
+            "alternate": false,
+            "time": "630.0/75.000000",
+            "building": "Coal-Powered Generator",
+            "inputs": [
+                {
+                    "name": "Compacted Coal",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 6.3
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Petroleum Coke)",
+            "alternate": false,
+            "time": "180.0/75.000000",
+            "building": "Coal-Powered Generator",
+            "inputs": [
+                {
+                    "name": "Petroleum Coke",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 1.8
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Fuel)",
+            "alternate": false,
+            "time": "0.75/250.000000",
+            "building": "Fuel-Powered Generator",
+            "inputs": [
+                {
+                    "name": "Fuel",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Turbofuel)",
+            "alternate": false,
+            "time": "2.0/250.000000",
+            "building": "Fuel-Powered Generator",
+            "inputs": [
+                {
+                    "name": "Turbofuel",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Liquid Biofuel)",
+            "alternate": false,
+            "time": "0.75/250.000000",
+            "building": "Fuel-Powered Generator",
+            "inputs": [
+                {
+                    "name": "Liquid Biofuel",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Rocket Fuel)",
+            "alternate": false,
+            "time": "3.6/250.000000",
+            "building": "Fuel-Powered Generator",
+            "inputs": [
+                {
+                    "name": "Rocket Fuel",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Ionized Fuel)",
+            "alternate": false,
+            "time": "5.0/250.000000",
+            "building": "Fuel-Powered Generator",
+            "inputs": [
+                {
+                    "name": "Ionized Fuel",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Leaves)",
+            "alternate": false,
+            "time": "15.0/30.000000",
+            "building": "Biomass Burner",
+            "inputs": [
+                {
+                    "name": "Leaves",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Wood)",
+            "alternate": false,
+            "time": "100.0/30.000000",
+            "building": "Biomass Burner",
+            "inputs": [
+                {
+                    "name": "Wood",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Mycelia)",
+            "alternate": false,
+            "time": "20.0/30.000000",
+            "building": "Biomass Burner",
+            "inputs": [
+                {
+                    "name": "Mycelia",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Biomass)",
+            "alternate": false,
+            "time": "180.0/30.000000",
+            "building": "Biomass Burner",
+            "inputs": [
+                {
+                    "name": "Biomass",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Solid Biofuel)",
+            "alternate": false,
+            "time": "450.0/30.000000",
+            "building": "Biomass Burner",
+            "inputs": [
+                {
+                    "name": "Solid Biofuel",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Packaged Liquid Biofuel)",
+            "alternate": false,
+            "time": "750.0/30.000000",
+            "building": "Biomass Burner",
+            "inputs": [
+                {
+                    "name": "Packaged Liquid Biofuel",
+                    "amount": 1.0
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "Power (Uranium Fuel Rod)",
+            "alternate": false,
+            "time": "750000.0/2500.000000",
+            "building": "Nuclear Power Plant",
+            "inputs": [
+                {
+                    "name": "Uranium Fuel Rod",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 1200.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Uranium Waste",
+                    "amount": 50.0
+                }
+            ]
+        },
+        {
+            "name": "Power (Plutonium Fuel Rod)",
+            "alternate": false,
+            "time": "1500000.0/2500.000000",
+            "building": "Nuclear Power Plant",
+            "inputs": [
+                {
+                    "name": "Plutonium Fuel Rod",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 2400.0
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Plutonium Waste",
+                    "amount": 10.0
+                }
+            ]
+        },
+        {
+            "name": "Power (Ficsonium Fuel Rod)",
+            "alternate": false,
+            "time": "150000.0/2500.000000",
+            "building": "Nuclear Power Plant",
+            "inputs": [
+                {
+                    "name": "Ficsonium Fuel Rod",
+                    "amount": 1.0
+                },
+                {
+                    "name": "Water",
+                    "amount": 240.0
+                }
+            ],
+            "outputs": []
         }
     ]
 }

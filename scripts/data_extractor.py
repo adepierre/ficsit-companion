@@ -5,10 +5,14 @@ from typing import List, Dict
 DOCS_PATH = "Docs.json"
 
 RECIPES = ["/Script/CoreUObject.Class'/Script/FactoryGame.FGRecipe'"]
+GENERATORS = [
+    "/Script/CoreUObject.Class'/Script/FactoryGame.FGBuildableGeneratorNuclear'",
+    "/Script/CoreUObject.Class'/Script/FactoryGame.FGBuildableGeneratorFuel'",
+]
 BUILDINGS = [
     "/Script/CoreUObject.Class'/Script/FactoryGame.FGBuildableManufacturer'",
-    "/Script/CoreUObject.Class'/Script/FactoryGame.FGBuildableManufacturerVariablePower'"
-]
+    "/Script/CoreUObject.Class'/Script/FactoryGame.FGBuildableManufacturerVariablePower'",
+] + GENERATORS
 ITEMS = [
     "/Script/CoreUObject.Class'/Script/FactoryGame.FGItemDescriptor'",
     "/Script/CoreUObject.Class'/Script/FactoryGame.FGResourceDescriptor'",
@@ -64,9 +68,8 @@ with open(DOCS_PATH, "r", encoding="utf-16") as f:
 buildings = {
     b["ClassName"]: {
         "name": b["mDisplayName"],
-        # TODO: add power data, need special cases for Particle Accelerator and potentially 1.0 quantum buildings (variable power + recipe dependant)
         "somersloop_mult": float(b["mProductionShardBoostMultiplier"]),
-        "power": float(b["mPowerConsumption"]),
+        "power": -float(b["mPowerProduction"]) if "mPowerProduction" in b else float(b["mPowerConsumption"]),
         "power_exponent": float(b["mPowerConsumptionExponent"]),
         "somersloop_power_exponent": float(b["mProductionBoostPowerConsumptionExponent"]),
         "variable_power": "FGBuildableManufacturerVariablePower" in b["NativeClass"],
@@ -77,7 +80,8 @@ items = {
     c["ClassName"]: {
         "name": c["mDisplayName"],
         "icon": c["mSmallIcon"],
-        "state": c["mForm"]
+        "state": c["mForm"],
+        "energy": float(c["mEnergyValue"]),
     } for c in get_classes(data, ITEMS)
 }
 
@@ -102,6 +106,19 @@ for recipe in get_classes(data, RECIPES):
     if building["variable_power"]:
         recipes[recipe["ClassName"]]["power_constant"] = float(recipe["mVariablePowerConsumptionConstant"])
         recipes[recipe["ClassName"]]["power_range"] = float(recipe["mVariablePowerConsumptionFactor"])
+
+# Add custom recipes with negative power for each power source
+for gen in get_classes(data, GENERATORS):
+    for fuel in gen["mFuel"]:
+        fuel_item = items[fuel["mFuelClass"]]
+        recipes[gen["ClassName"] + "_" + fuel["mFuelClass"]] = {
+            "name": "Power (" + fuel_item["name"] + ")",
+            "alternate": False,
+            "time": f"{fuel_item['energy']}/{gen['mPowerProduction']}", # Write time as a fraction string to prevent floating point precision error
+            "building": buildings[gen["ClassName"]]["name"],
+            "inputs": [{"name": fuel_item["name"], "amount": 1.0}] + ([] if gen["mRequiresSupplementalResource"] != "True" else [{"name": items[fuel["mSupplementalResourceClass"]]["name"], "amount": float(gen["mSupplementalToPowerRatio"]) * fuel_item["energy"] / (1.0 if items[fuel["mSupplementalResourceClass"]]["state"] == "RF_SOLID" else 1000.0)}]),
+            "outputs": [] if not fuel["mByproduct"] else [{"name": items[fuel["mByproduct"]]["name"], "amount": float(fuel["mByproductAmount"])}]
+        }
 
 # Make sure all recipe names are unique
 recipes_names_counter = {}
