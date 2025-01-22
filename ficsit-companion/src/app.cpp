@@ -1975,16 +1975,24 @@ void App::AddNewNode()
             std::clamp(ImGui::GetMainViewport()->Size.y - ax::NodeEditor::CanvasToScreen(new_node_position).y, ImGui::GetTextLineHeightWithSpacing() * 10.0f, ImGui::GetTextLineHeightWithSpacing() * 25.0f)
         )
     );
+    enum RecipeSelectionIndex : int
+    {
+        None = -1,
+        Merger,
+        Splitter,
+        FIRST_REAL_RECIPE_INDEX,
+    };
+
     if (ImGui::BeginPopup(add_node_popup_id.data()))
     {
-        int recipe_index = -1;
+        int recipe_index = RecipeSelectionIndex::None;
         if (ImGui::MenuItem("Merger"))
         {
-            recipe_index = 0;
+            recipe_index = RecipeSelectionIndex::Merger;
         }
         if (ImGui::MenuItem("Splitter"))
         {
-            recipe_index = 1;
+            recipe_index = RecipeSelectionIndex::Splitter;
         }
         ImGui::Separator();
         // Stores the recipe index and a "match score" to sort them in the display
@@ -1998,7 +2006,7 @@ void App::AddNewNode()
             const std::string& item_name = new_node_pin->item->new_line_name;
             for (int i = 0; i < recipes.size(); ++i)
             {
-                if (recipe_index != -1)
+                if (recipe_index != RecipeSelectionIndex::None)
                 {
                     break;
                 }
@@ -2014,7 +2022,7 @@ void App::AddNewNode()
             }
         }
         // Otherwise display all recipes, with a filter option
-        else if (recipe_index == -1 || (new_node_pin != nullptr && new_node_pin->item == nullptr))
+        else if (recipe_index == RecipeSelectionIndex::None || (new_node_pin != nullptr && new_node_pin->item == nullptr))
         {
             if (ImGui::IsWindowAppearing())
             {
@@ -2102,7 +2110,7 @@ void App::AddNewNode()
             ImGui::BeginDisabled(recipes[i]->alternate && !settings.unlocked_alts.at(recipes[i].get()));
             if (ImGui::MenuItem(recipes[i]->display_name.c_str()))
             {
-                recipe_index = i + 2;
+                recipe_index = i + RecipeSelectionIndex::FIRST_REAL_RECIPE_INDEX;
                 // Need to duplicate the EndDisabled because of the break
                 ImGui::EndDisabled();
                 break;
@@ -2114,19 +2122,21 @@ void App::AddNewNode()
         }
         ImGui::EndTable();
 
-        if (recipe_index != -1)
+        if (recipe_index != RecipeSelectionIndex::None)
         {
-            if (recipe_index == 0)
+            switch (recipe_index)
             {
+            case RecipeSelectionIndex::None:
+                break; // Should not happen because of the if above
+            case RecipeSelectionIndex::Merger:
                 nodes.emplace_back(std::make_unique<MergerNode>(GetNextId(), std::bind(&App::GetNextId, this)));
-            }
-            else if (recipe_index == 1)
-            {
+                break;
+            case RecipeSelectionIndex::Splitter:
                 nodes.emplace_back(std::make_unique<SplitterNode>(GetNextId(), std::bind(&App::GetNextId, this)));
-            }
-            else
-            {
-                nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipes[recipe_index - 2].get(), std::bind(&App::GetNextId, this)));
+                break;
+            default:
+                nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipes[recipe_index - RecipeSelectionIndex::FIRST_REAL_RECIPE_INDEX].get(), std::bind(&App::GetNextId, this)));
+                break;
             }
             ax::NodeEditor::SetNodePosition(nodes.back()->id, new_node_position);
             if (new_node_pin != nullptr)
