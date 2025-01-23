@@ -7156,7 +7156,7 @@
         {
             "name": "Power (Fuel)",
             "alternate": false,
-            "time": "0.75/250.000000",
+            "time": "750.0/250.000000",
             "building": "Fuel-Powered Generator",
             "inputs": [
                 {
@@ -7169,7 +7169,7 @@
         {
             "name": "Power (Turbofuel)",
             "alternate": false,
-            "time": "2.0/250.000000",
+            "time": "2000.0/250.000000",
             "building": "Fuel-Powered Generator",
             "inputs": [
                 {
@@ -7182,7 +7182,7 @@
         {
             "name": "Power (Liquid Biofuel)",
             "alternate": false,
-            "time": "0.75/250.000000",
+            "time": "750.0/250.000000",
             "building": "Fuel-Powered Generator",
             "inputs": [
                 {
@@ -7195,7 +7195,7 @@
         {
             "name": "Power (Rocket Fuel)",
             "alternate": false,
-            "time": "3.6/250.000000",
+            "time": "3600.0/250.000000",
             "building": "Fuel-Powered Generator",
             "inputs": [
                 {
@@ -7208,7 +7208,7 @@
         {
             "name": "Power (Ionized Fuel)",
             "alternate": false,
-            "time": "5.0/250.000000",
+            "time": "5000.0/250.000000",
             "building": "Fuel-Powered Generator",
             "inputs": [
                 {

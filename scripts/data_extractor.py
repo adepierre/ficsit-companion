@@ -114,7 +114,7 @@ for gen in get_classes(data, GENERATORS):
         recipes[gen["ClassName"] + "_" + fuel["mFuelClass"]] = {
             "name": "Power (" + fuel_item["name"] + ")",
             "alternate": False,
-            "time": f"{fuel_item['energy']}/{gen['mPowerProduction']}", # Write time as a fraction string to prevent floating point precision error
+            "time": f"{fuel_item['energy'] * (1.0 if fuel_item['state'] == 'RF_SOLID' else 1000.0)}/{gen['mPowerProduction']}", # Write time as a fraction string to prevent floating point precision error
             "building": buildings[gen["ClassName"]]["name"],
             "inputs": [{"name": fuel_item["name"], "amount": 1.0}] + ([] if gen["mRequiresSupplementalResource"] != "True" else [{"name": items[fuel["mSupplementalResourceClass"]]["name"], "amount": float(gen["mSupplementalToPowerRatio"]) * fuel_item["energy"] / (1.0 if items[fuel["mSupplementalResourceClass"]]["state"] == "RF_SOLID" else 1000.0)}]),
             "outputs": [] if not fuel["mByproduct"] else [{"name": items[fuel["mByproduct"]]["name"], "amount": float(fuel["mByproductAmount"])}]
