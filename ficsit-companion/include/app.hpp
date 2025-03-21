@@ -10,6 +10,8 @@
 
 #include <imgui_node_editor.h>
 
+#include "fractional_number.hpp"
+
 struct Link;
 struct Node;
 struct Pin;
@@ -148,9 +150,9 @@ private:
     std::string recipe_filter;
     std::vector<std::string> frame_tooltips;
 
-    enum class Constraint { None, Weak, Strong };
     /// @brief All pins which had their value changed and need to propagate updates
-    std::queue<std::pair<const Pin*, Constraint>> updating_pins;
+    /// Stored as a vector rather than a map to preserve order
+    std::vector<std::pair<const Pin*, FractionalNumber>> updated_pins_new_rates;
 
     unsigned int somersloop_texture_id;
 
