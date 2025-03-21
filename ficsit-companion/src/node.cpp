@@ -729,6 +729,7 @@ SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
 }
 
 SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, serialized)
@@ -737,25 +738,18 @@ SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<
     {
         throw std::runtime_error("Trying to deserialize an unvalid node as a splitter node");
     }
-    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
-    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
-    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
 
-    for (int i = 0; i < serialized["ins"].size(); ++i)
+    if (serialized["ins"].size() != 1)
     {
-        if (i >= ins.size())
-        {
-            break;
-        }
-        ins[i]->current_rate = FractionalNumber(serialized["ins"][i]["num"].get<long long int>(), serialized["ins"][i]["den"].get<long long int>());
+        throw std::runtime_error("Trying to deserialize an unvalid splitter node (wrong number of inputs)");
     }
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+    ins.back()->current_rate = FractionalNumber(serialized["ins"][0]["num"].get<long long int>(), serialized["ins"][0]["den"].get<long long int>());
+
     for (int i = 0; i < serialized["outs"].size(); ++i)
     {
-        if (i >= outs.size())
-        {
-            break;
-        }
-        outs[i]->current_rate = FractionalNumber(serialized["outs"][i]["num"].get<long long int>(), serialized["outs"][i]["den"].get<long long int>());
+        outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
+        outs.back()->current_rate = FractionalNumber(serialized["outs"][i]["num"].get<long long int>(), serialized["outs"][i]["den"].get<long long int>());
     }
 }
 
@@ -777,6 +771,7 @@ MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsi
 {
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
 }
 
@@ -784,28 +779,21 @@ MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsi
 {
     if (static_cast<Kind>(serialized["kind"].get<int>()) != Kind::Merger)
     {
-        throw std::runtime_error("Trying to deserialize an unvalid node as a craft node");
+        throw std::runtime_error("Trying to deserialize an unvalid node as a merger node");
     }
-    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
-    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
-    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
 
     for (int i = 0; i < serialized["ins"].size(); ++i)
     {
-        if (i >= ins.size())
-        {
-            break;
-        }
-        ins[i]->current_rate = FractionalNumber(serialized["ins"][i]["num"].get<long long int>(), serialized["ins"][i]["den"].get<long long int>());
+        ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+        ins.back()->current_rate = FractionalNumber(serialized["ins"][i]["num"].get<long long int>(), serialized["ins"][i]["den"].get<long long int>());
     }
-    for (int i = 0; i < serialized["outs"].size(); ++i)
+
+    if (serialized["outs"].size() != 1)
     {
-        if (i >= outs.size())
-        {
-            break;
-        }
-        outs[i]->current_rate = FractionalNumber(serialized["outs"][i]["num"].get<long long int>(), serialized["outs"][i]["den"].get<long long int>());
+        throw std::runtime_error("Trying to deserialize an unvalid merger node (wrong number of outputs)");
     }
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
+    outs.back()->current_rate = FractionalNumber(serialized["outs"][0]["num"].get<long long int>(), serialized["outs"][0]["den"].get<long long int>());
 }
 
 MergerNode::~MergerNode()

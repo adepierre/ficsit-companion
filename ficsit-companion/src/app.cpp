@@ -22,6 +22,7 @@
 #include <filesystem>
 #include <fstream>
 #include <optional>
+#include <queue>
 #include <stdexcept>
 #include <unordered_set>
 
@@ -1824,6 +1825,7 @@ void App::RenderNodes()
                     ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_PivotAlignment, ImVec2(0, 0.5f));
                     ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_PivotSize, ImVec2(0, 0));
 
+                    std::optional<int> merger_removed_input_idx = std::nullopt;
                     sort_pin_indices(node->ins);
                     for (int idx = 0; idx < node->ins.size(); ++idx)
                     {
@@ -1852,6 +1854,17 @@ void App::RenderNodes()
                                 }
                             }
                             ImGui::Dummy(size);
+                            ImGui::Spring(0.0f);
+                            if (node->IsMerger())
+                            {
+                                ImGui::BeginDisabled(node->ins.size() == 1);
+                                if (ImGui::Button("x"))
+                                {
+                                    // We can't remove it directly as we are currently looping through the pins
+                                    merger_removed_input_idx = idx;
+                                }
+                                ImGui::EndDisabled();
+                            }
                             ImGui::Spring(0.0f);
                             p->current_rate.RenderInputText("##rate", false, false, rate_width);
                             if (ImGui::IsItemDeactivatedAfterEdit())
@@ -1886,6 +1899,33 @@ void App::RenderNodes()
                     }
                     ax::NodeEditor::PopStyleVar();
                     ax::NodeEditor::PopStyleVar();
+                    if (node->IsMerger())
+                    {
+                        MergerNode* merger_node = static_cast<MergerNode*>(node.get());
+                        ImGui::BeginHorizontal("merger_+_buttton");
+                        ImGui::Spring(1.0f, 0.0f);
+                        if (ImGui::Button("+"))
+                        {
+                            node->ins.emplace_back(std::make_unique<Pin>(GetNextId(), ax::NodeEditor::PinKind::Input, merger_node, merger_node->item));
+                        }
+                        ImGui::Spring(1.0f, 0.0f);
+                        ImGui::EndHorizontal();
+                        if (merger_removed_input_idx.has_value())
+                        {
+                            const int idx = merger_removed_input_idx.value();
+                            if (node->ins[sorted_pin_indices[idx]]->link != nullptr)
+                            {
+                                DeleteLink(node->ins[sorted_pin_indices[idx]]->link->id);
+                            }
+                            node->ins.erase(node->ins.begin() + sorted_pin_indices[idx]);
+                            FractionalNumber sum_inputs;
+                            for (const auto& p : node->ins)
+                            {
+                                sum_inputs += p->current_rate;
+                            }
+                            updated_pins_new_rates.push_back({ node->outs[0].get(), sum_inputs });
+                        }
+                    }
                     ImGui::Spring(1.0f, 0.0f);
                 }
                 ImGui::EndVertical();
@@ -1897,6 +1937,7 @@ void App::RenderNodes()
                     // Set where the link will connect to (right center)
                     ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_PivotAlignment, ImVec2(1.0f, 0.5f));
                     ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_PivotSize, ImVec2(0, 0));
+                    std::optional<int> splitter_removed_input_idx = std::nullopt;
                     sort_pin_indices(node->outs);
                     for (int idx = 0; idx < node->outs.size(); ++idx)
                     {
@@ -1929,6 +1970,17 @@ void App::RenderNodes()
                                 frame_tooltips.push_back(p->current_rate.GetStringFraction());
                             }
                             ImGui::Spring(0.0f);
+                            if (node->IsSplitter())
+                            {
+                                ImGui::BeginDisabled(node->outs.size() == 1);
+                                if (ImGui::Button("x"))
+                                {
+                                    // We can't remove it directly as we are currently looping through the pins
+                                    splitter_removed_input_idx = idx;
+                                }
+                                ImGui::EndDisabled();
+                            }
+                            ImGui::Spring(0.0f);
                             const float radius = 0.2f * ImGui::GetTextLineHeightWithSpacing();
                             const ImVec2 size(2.0f * radius, 2.0f * radius);
                             // Draw circle
@@ -1958,6 +2010,33 @@ void App::RenderNodes()
                     }
                     ax::NodeEditor::PopStyleVar();
                     ax::NodeEditor::PopStyleVar();
+                    if (node->IsSplitter())
+                    {
+                        SplitterNode* splitter_node = static_cast<SplitterNode*>(node.get());
+                        ImGui::BeginHorizontal("splitter_+_buttton");
+                        ImGui::Spring(1.0f, 0.0f);
+                        if (ImGui::Button("+"))
+                        {
+                            splitter_node->outs.emplace_back(std::make_unique<Pin>(GetNextId(), ax::NodeEditor::PinKind::Output, splitter_node, splitter_node->item));
+                        }
+                        ImGui::Spring(1.0f, 0.0f);
+                        ImGui::EndHorizontal();
+                        if (splitter_removed_input_idx.has_value())
+                        {
+                            const int idx = splitter_removed_input_idx.value();
+                            if (node->outs[sorted_pin_indices[idx]]->link != nullptr)
+                            {
+                                DeleteLink(node->outs[sorted_pin_indices[idx]]->link->id);
+                            }
+                            node->outs.erase(node->outs.begin() + sorted_pin_indices[idx]);
+                            FractionalNumber sum_outputs;
+                            for (const auto& p : node->outs)
+                            {
+                                sum_outputs += p->current_rate;
+                            }
+                            updated_pins_new_rates.push_back({ node->ins[0].get(), sum_outputs });
+                        }
+                    }
                     ImGui::Spring(1.0f, 0.0f);
                 }
                 ImGui::EndVertical();
