@@ -1765,14 +1765,52 @@ void App::RenderNodes()
             const std::unique_ptr<Pin>& p2 = pins[i2];
             const Link* l1 = p1->link;
             const Link* l2 = p2->link;
-            // Place pin with link above the others, and if multiple pin have a link, sort by linked node Y position
-            return l1 != nullptr && (
-                l2 == nullptr ||
-                (p1->direction == ax::NodeEditor::PinKind::Input && l1->start->node->pos.y < l2->start->node->pos.y) ||
-                (p1->direction == ax::NodeEditor::PinKind::Output && l1->end->node->pos.y < l2->end->node->pos.y)
-                );
-            });
-        };
+
+            const bool p1_is_above = l1 != nullptr && (p1->direction == ax::NodeEditor::PinKind::Input ? l1->start : l1->end)->node->pos.y < p1->node->pos.y;
+            const bool p2_is_above = l2 != nullptr && (p2->direction == ax::NodeEditor::PinKind::Input ? l2->start : l2->end)->node->pos.y < p1->node->pos.y;
+
+            // Both are linked and above
+            if (p1_is_above && p2_is_above)
+            {
+                return (p1->direction == ax::NodeEditor::PinKind::Input && l1->start->node->pos.y < l2->start->node->pos.y) ||
+                    (p1->direction == ax::NodeEditor::PinKind::Output && l1->end->node->pos.y < l2->end->node->pos.y);
+            }
+
+            // p1 is above, p2 is either unlinked or below
+            if (p1_is_above)
+            {
+                return true;
+            }
+
+            // p2 is above, p1 is either unlinked or below
+            if (p2_is_above)
+            {
+                return false;
+            }
+
+            // No link, keep default order
+            if (l1 == nullptr && l2 == nullptr)
+            {
+                return i1 < i2;
+            }
+
+            // p1 isn't linked, p2 is and we know it's not above, so p1 < p2
+            if (l1 == nullptr)
+            {
+                return true;
+            }
+
+            // p2 isn't linked, p1 is and we know it's not above, so p2 < p1
+            if (l2 == nullptr)
+            {
+                return false;
+            }
+
+            // Both are linked and below
+            return (p1->direction == ax::NodeEditor::PinKind::Input && l1->start->node->pos.y < l2->start->node->pos.y) ||
+                (p1->direction == ax::NodeEditor::PinKind::Output && l1->end->node->pos.y < l2->end->node->pos.y);
+        });
+    };
 
     for (const auto& node : nodes)
     {
