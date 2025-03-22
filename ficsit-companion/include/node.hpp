@@ -23,9 +23,10 @@ struct Node
     enum class Kind
     {
         Craft,
-        Splitter,
+        CustomSplitter,
         Merger,
-        Group
+        Group,
+        GameSplitter,
     };
 
     Node(const ax::NodeEditor::NodeId id);
@@ -39,7 +40,8 @@ struct Node
     /// @brief Merger or Splitter
     virtual bool IsOrganizer() const;
     virtual bool IsMerger() const;
-    virtual bool IsSplitter() const;
+    virtual bool IsCustomSplitter() const;
+    virtual bool IsGameSplitter() const;
     virtual Json::Value Serialize() const;
 
     static std::unique_ptr<Node> Deserialize(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized);
@@ -138,17 +140,17 @@ struct OrganizerNode : public Node
 
     void ChangeItem(const Item* item);
     void RemoveItemIfNotForced();
-    bool IsBalanced() const;
+    virtual bool IsBalanced() const;
 
     const Item* item;
 };
 
-struct SplitterNode : public OrganizerNode
+struct CustomSplitterNode : public OrganizerNode
 {
-    SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item = nullptr);
-    SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized);
-    virtual ~SplitterNode();
-    virtual bool IsSplitter() const override;
+    CustomSplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item = nullptr);
+    CustomSplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized);
+    virtual ~CustomSplitterNode();
+    virtual bool IsCustomSplitter() const override;
 
     virtual Kind GetKind() const override;
 };
@@ -161,4 +163,15 @@ struct MergerNode : public OrganizerNode
     virtual bool IsMerger() const override;
 
     virtual Kind GetKind() const override;
+};
+
+struct GameSplitterNode : public OrganizerNode
+{
+    GameSplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item = nullptr);
+    GameSplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized);
+    virtual ~GameSplitterNode();
+    virtual bool IsGameSplitter() const override;
+
+    virtual Kind GetKind() const override;
+    virtual bool IsBalanced() const override;
 };

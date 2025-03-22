@@ -50,7 +50,12 @@ bool Node::IsMerger() const
     return false;
 }
 
-bool Node::IsSplitter() const
+bool Node::IsCustomSplitter() const
+{
+    return false;
+}
+
+bool Node::IsGameSplitter() const
 {
     return false;
 }
@@ -76,10 +81,12 @@ std::unique_ptr<Node> Node::Deserialize(const ax::NodeEditor::NodeId id, const s
         return std::make_unique<CraftNode>(id, id_generator, serialized);
     case Kind::Merger:
         return std::make_unique<MergerNode>(id, id_generator, serialized);
-    case Kind::Splitter:
-        return std::make_unique<SplitterNode>(id, id_generator, serialized);
+    case Kind::CustomSplitter:
+        return std::make_unique<CustomSplitterNode>(id, id_generator, serialized);
     case Kind::Group:
         return std::make_unique<GroupNode>(id, id_generator, serialized);
+    case Kind::GameSplitter:
+        return std::make_unique<GameSplitterNode>(id, id_generator, serialized);
     default: // To make compilers happy, but should never happen
         throw std::domain_error("Unimplemented node type in Deserialize");
         return nullptr;
@@ -613,7 +620,7 @@ OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const Item* item) 
 OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const Json::Value& serialized) : Node(id, serialized), item(nullptr)
 {
     const Kind kind = static_cast<Kind>(serialized["kind"].get<int>());
-    if (kind != Kind::Merger && kind != Kind::Splitter)
+    if (kind != Kind::Merger && kind != Kind::CustomSplitter && kind != Kind::GameSplitter)
     {
         throw std::runtime_error("Trying to deserialize an unvalid node as an organizer node");
     }
@@ -724,7 +731,7 @@ bool OrganizerNode::IsBalanced() const
     return input_sum == output_sum;
 }
 
-SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : OrganizerNode(id, item)
+CustomSplitterNode::CustomSplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : OrganizerNode(id, item)
 {
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
@@ -732,16 +739,16 @@ SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
 }
 
-SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, serialized)
+CustomSplitterNode::CustomSplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, serialized)
 {
-    if (static_cast<Kind>(serialized["kind"].get<int>()) != Kind::Splitter)
+    if (static_cast<Kind>(serialized["kind"].get<int>()) != Kind::CustomSplitter)
     {
-        throw std::runtime_error("Trying to deserialize an unvalid node as a splitter node");
+        throw std::runtime_error("Trying to deserialize an unvalid node as a custom splitter node");
     }
 
     if (serialized["ins"].size() != 1)
     {
-        throw std::runtime_error("Trying to deserialize an unvalid splitter node (wrong number of inputs)");
+        throw std::runtime_error("Trying to deserialize an unvalid custom splitter node (wrong number of inputs)");
     }
     ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
     ins.back()->current_rate = FractionalNumber(serialized["ins"][0]["num"].get<long long int>(), serialized["ins"][0]["den"].get<long long int>());
@@ -753,18 +760,18 @@ SplitterNode::SplitterNode(const ax::NodeEditor::NodeId id, const std::function<
     }
 }
 
-SplitterNode::~SplitterNode()
+CustomSplitterNode::~CustomSplitterNode()
 {
 }
 
-bool SplitterNode::IsSplitter() const
+bool CustomSplitterNode::IsCustomSplitter() const
 {
     return true;
 }
 
-Node::Kind SplitterNode::GetKind() const
+Node::Kind CustomSplitterNode::GetKind() const
 {
-    return Node::Kind::Splitter;
+    return Node::Kind::CustomSplitter;
 }
 
 MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : OrganizerNode(id, item)
@@ -809,4 +816,64 @@ bool MergerNode::IsMerger() const
 Node::Kind MergerNode::GetKind() const
 {
     return Node::Kind::Merger;
+}
+
+GameSplitterNode::GameSplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : OrganizerNode(id, item)
+{
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
+    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
+}
+
+GameSplitterNode::GameSplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, serialized)
+{
+    if (static_cast<Kind>(serialized["kind"].get<int>()) != Kind::GameSplitter)
+    {
+        throw std::runtime_error("Trying to deserialize an unvalid node as a game splitter node");
+    }
+
+    if (serialized["ins"].size() != 1)
+    {
+        throw std::runtime_error("Trying to deserialize an unvalid game splitter node (wrong number of inputs)");
+    }
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+    ins.back()->current_rate = FractionalNumber(serialized["ins"][0]["num"].get<long long int>(), serialized["ins"][0]["den"].get<long long int>());
+
+    for (int i = 0; i < serialized["outs"].size(); ++i)
+    {
+        outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
+        outs.back()->current_rate = FractionalNumber(serialized["outs"][i]["num"].get<long long int>(), serialized["outs"][i]["den"].get<long long int>());
+    }
+}
+
+GameSplitterNode::~GameSplitterNode()
+{
+}
+
+bool GameSplitterNode::IsGameSplitter() const
+{
+    return true;
+}
+
+Node::Kind GameSplitterNode::GetKind() const
+{
+    return Node::Kind::GameSplitter;
+}
+
+bool GameSplitterNode::IsBalanced() const
+{
+    if (outs.size() == 0)
+    {
+        return OrganizerNode::IsBalanced();
+    }
+
+    for (const auto& p : outs)
+    {
+        if (p->current_rate != outs[0]->current_rate)
+        {
+            return false;
+        }
+    }
+    return OrganizerNode::IsBalanced();
 }

@@ -505,9 +505,10 @@ void App::UpdateNodesRate()
             {
             case Node::Kind::Craft:
             case Node::Kind::Group:
+            case Node::Kind::GameSplitter:
             {
-                std::unordered_set<const Pin*> updated_for_inputs = current_pin->direction == ax::NodeEditor::PinKind::Input ? updated_from_right : updated_from_left;
-                std::unordered_set<const Pin*> updated_for_outputs = current_pin->direction == ax::NodeEditor::PinKind::Input ? updated_from_left : updated_from_right;
+                std::unordered_set<const Pin*>& updated_for_inputs = current_pin->direction == ax::NodeEditor::PinKind::Input ? updated_from_right : updated_from_left;
+                std::unordered_set<const Pin*>& updated_for_outputs = current_pin->direction == ax::NodeEditor::PinKind::Input ? updated_from_left : updated_from_right;
                 for (const auto& p : current_pin->node->ins)
                 {
                     // Update the other inputs from right/left (depending on the type of the current pin)
@@ -534,7 +535,7 @@ void App::UpdateNodesRate()
                 }
             }
                 break;
-            case Node::Kind::Splitter:
+            case Node::Kind::CustomSplitter:
             case Node::Kind::Merger:
                 if (current_pin->direction == ax::NodeEditor::PinKind::Input)
                 {
@@ -666,14 +667,14 @@ void App::UpdateNodesRate()
                 }
             }
                 break;
-            case Node::Kind::Splitter:
+            case Node::Kind::CustomSplitter:
             case Node::Kind::Merger:
             {
-                const std::vector<std::unique_ptr<Pin>>& single_pin = kind == Node::Kind::Splitter ? updated_pin->node->ins : updated_pin->node->outs;
-                const std::vector<std::unique_ptr<Pin>>& multi_pin = kind == Node::Kind::Splitter ? updated_pin->node->outs : updated_pin->node->ins;
+                const std::vector<std::unique_ptr<Pin>>& single_pin = kind == Node::Kind::CustomSplitter ? updated_pin->node->ins : updated_pin->node->outs;
+                const std::vector<std::unique_ptr<Pin>>& multi_pin = kind == Node::Kind::CustomSplitter ? updated_pin->node->outs : updated_pin->node->ins;
 
                 // If single pin side is updated, update all multi pin side pins that have not already been updated
-                if ((kind == Node::Kind::Splitter && updated_pin->direction == ax::NodeEditor::PinKind::Input) ||
+                if ((kind == Node::Kind::CustomSplitter && updated_pin->direction == ax::NodeEditor::PinKind::Input) ||
                     (kind == Node::Kind::Merger   && updated_pin->direction == ax::NodeEditor::PinKind::Output))
                 {
                     FractionalNumber old_sum_to_update;
@@ -817,6 +818,83 @@ void App::UpdateNodesRate()
                 }
             }
                 break;
+                case Node::Kind::GameSplitter:
+                {
+                    // If single pin side is updated, update all multi pin side
+                    if (updated_pin->direction == ax::NodeEditor::PinKind::Input)
+                    {
+                        const FractionalNumber single_pin_rate = all_pins_new_rates.at(updated_pin);
+                        const FractionalNumber out_pin_rate = single_pin_rate / updated_pin->node->outs.size();
+                        for (const auto& p : updated_pin->node->outs)
+                        {
+                            all_pins_new_rates[p.get()] = out_pin_rate;
+                            if (p->link != nullptr)
+                            {
+                                if (p->current_rate != out_pin_rate)
+                                {
+                                    p->link->flow = ax::NodeEditor::FlowDirection::Backward;
+                                }
+                                Pin* linked_pin = p->link->end;
+                                if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
+                                {
+                                    all_pins_new_rates[linked_pin] = out_pin_rate;
+                                    pins_to_propagate.push(linked_pin);
+                                }
+                            }
+                        }
+                        if (updated_pin->link != nullptr)
+                        {
+                            if (updated_pin->current_rate != single_pin_rate)
+                            {
+                                updated_pin->link->flow = ax::NodeEditor::FlowDirection::Forward;
+                            }
+                            Pin* linked_pin = updated_pin->link->start;
+                            if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
+                            {
+                                all_pins_new_rates[linked_pin] = single_pin_rate;
+                                pins_to_propagate.push(linked_pin);
+                            }
+                        }
+                    }
+                    else // One of the multi-pin side is updated
+                    {
+                        // Update all other output pins
+                        const FractionalNumber new_rate_out_pins = all_pins_new_rates.at(updated_pin);
+                        for (const auto& p : updated_pin->node->outs)
+                        {
+                            all_pins_new_rates[p.get()] = new_rate_out_pins;
+                            if (p->link != nullptr)
+                            {
+                                if (p->current_rate != new_rate_out_pins)
+                                {
+                                    p->link->flow = ax::NodeEditor::FlowDirection::Backward;
+                                }
+                                Pin* linked_pin = p->link->end;
+                                if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
+                                {
+                                    all_pins_new_rates[linked_pin] = new_rate_out_pins;
+                                    pins_to_propagate.push(linked_pin);
+                                }
+                            }
+                        }
+                        // Update input pin
+                        all_pins_new_rates[updated_pin->node->ins[0].get()] = new_rate_out_pins * updated_pin->node->outs.size();
+                        if (updated_pin->node->ins[0]->link != nullptr)
+                        {
+                            if (updated_pin->node->ins[0]->current_rate != new_rate_out_pins * updated_pin->node->outs.size())
+                            {
+                                updated_pin->node->ins[0]->link->flow = ax::NodeEditor::FlowDirection::Forward;
+                            }
+                            Pin* linked_pin = updated_pin->node->ins[0]->link->start;
+                            if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
+                            {
+                                all_pins_new_rates[linked_pin] = new_rate_out_pins * updated_pin->node->outs.size();
+                                pins_to_propagate.push(linked_pin);
+                            }
+                        }
+                    }
+                }
+                break;
             }
         }
 
@@ -829,13 +907,13 @@ void App::UpdateNodesRate()
         balanced = true;
         for (const auto& n : nodes)
         {
-            if (!n->IsOrganizer())
+            if (!n->IsCustomSplitter() && !n->IsMerger())
             {
                 continue;
             }
 
-            const std::vector<std::unique_ptr<Pin>>& single_pin = n->GetKind() == Node::Kind::Splitter ? n->ins : n->outs;
-            const std::vector<std::unique_ptr<Pin>>& multi_pin = n->GetKind() == Node::Kind::Splitter ? n->outs : n->ins;
+            const std::vector<std::unique_ptr<Pin>>& single_pin = n->GetKind() == Node::Kind::CustomSplitter ? n->ins : n->outs;
+            const std::vector<std::unique_ptr<Pin>>& multi_pin = n->GetKind() == Node::Kind::CustomSplitter ? n->outs : n->ins;
             const auto it_single_pin = relevant_pins.find(single_pin[0].get());
             // If the single pin of this node is not relevant, we can skip it entirely
             if (it_single_pin == relevant_pins.end())
@@ -1835,7 +1913,10 @@ void App::RenderNodes()
                 case Node::Kind::Merger:
                     ImGui::TextUnformatted("Merger");
                     break;
-                case Node::Kind::Splitter:
+                case Node::Kind::CustomSplitter:
+                    ImGui::TextUnformatted("Splitter*");
+                    break;
+                case Node::Kind::GameSplitter:
                     ImGui::TextUnformatted("Splitter");
                     break;
                 case Node::Kind::Group:
@@ -2008,7 +2089,7 @@ void App::RenderNodes()
                                 frame_tooltips.push_back(p->current_rate.GetStringFraction());
                             }
                             ImGui::Spring(0.0f);
-                            if (node->IsSplitter())
+                            if (node->IsCustomSplitter() || node->IsGameSplitter())
                             {
                                 ImGui::BeginDisabled(node->outs.size() == 1);
                                 if (ImGui::Button("x"))
@@ -2048,14 +2129,21 @@ void App::RenderNodes()
                     }
                     ax::NodeEditor::PopStyleVar();
                     ax::NodeEditor::PopStyleVar();
-                    if (node->IsSplitter())
+                    if (node->IsCustomSplitter() || node->IsGameSplitter())
                     {
-                        SplitterNode* splitter_node = static_cast<SplitterNode*>(node.get());
+                        OrganizerNode* org_node = static_cast<OrganizerNode*>(node.get());
                         ImGui::BeginHorizontal("splitter_+_buttton");
                         ImGui::Spring(1.0f, 0.0f);
                         if (ImGui::Button("+"))
                         {
-                            splitter_node->outs.emplace_back(std::make_unique<Pin>(GetNextId(), ax::NodeEditor::PinKind::Output, splitter_node, splitter_node->item));
+                            org_node->outs.emplace_back(std::make_unique<Pin>(GetNextId(), ax::NodeEditor::PinKind::Output, org_node, org_node->item));
+                            if (node->IsGameSplitter())
+                            {
+                                for (const auto& p : node->outs)
+                                {
+                                    updated_pins_new_rates.push_back({ p.get(), node->ins[0]->current_rate / node->outs.size() });
+                                }
+                            }
                         }
                         ImGui::Spring(1.0f, 0.0f);
                         ImGui::EndHorizontal();
@@ -2067,12 +2155,22 @@ void App::RenderNodes()
                                 DeleteLink(node->outs[sorted_pin_indices[idx]]->link->id);
                             }
                             node->outs.erase(node->outs.begin() + sorted_pin_indices[idx]);
-                            FractionalNumber sum_outputs;
-                            for (const auto& p : node->outs)
+                            if (node->IsCustomSplitter())
                             {
-                                sum_outputs += p->current_rate;
+                                FractionalNumber sum_outputs;
+                                for (const auto& p : node->outs)
+                                {
+                                    sum_outputs += p->current_rate;
+                                }
+                                updated_pins_new_rates.push_back({ node->ins[0].get(), sum_outputs });
                             }
-                            updated_pins_new_rates.push_back({ node->ins[0].get(), sum_outputs });
+                            else // GameSplitter
+                            {
+                                for (const auto& p : node->outs)
+                                {
+                                    updated_pins_new_rates.push_back({ p.get(), node->ins[0]->current_rate / node->outs.size() });
+                                }
+                            }
                         }
                     }
                     ImGui::Spring(1.0f, 0.0f);
@@ -2346,7 +2444,8 @@ void App::AddNewNode()
     {
         None = -1,
         Merger,
-        Splitter,
+        CustomSplitter,
+        GameSplitter,
         FIRST_REAL_RECIPE_INDEX,
     };
 
@@ -2357,9 +2456,21 @@ void App::AddNewNode()
         {
             recipe_index = RecipeSelectionIndex::Merger;
         }
+        if (ImGui::MenuItem("Splitter*"))
+        {
+            recipe_index = RecipeSelectionIndex::CustomSplitter;
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("%s", "Splitter with independant output rates");
+        }
         if (ImGui::MenuItem("Splitter"))
         {
-            recipe_index = RecipeSelectionIndex::Splitter;
+            recipe_index = RecipeSelectionIndex::GameSplitter;
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("%s", "Splitter with equals output rates");
         }
         ImGui::Separator();
         // Stores the recipe index and a "match score" to sort them in the display
@@ -2498,8 +2609,11 @@ void App::AddNewNode()
             case RecipeSelectionIndex::Merger:
                 nodes.emplace_back(std::make_unique<MergerNode>(GetNextId(), std::bind(&App::GetNextId, this)));
                 break;
-            case RecipeSelectionIndex::Splitter:
-                nodes.emplace_back(std::make_unique<SplitterNode>(GetNextId(), std::bind(&App::GetNextId, this)));
+            case RecipeSelectionIndex::CustomSplitter:
+                nodes.emplace_back(std::make_unique<CustomSplitterNode>(GetNextId(), std::bind(&App::GetNextId, this)));
+                break;
+            case RecipeSelectionIndex::GameSplitter:
+                nodes.emplace_back(std::make_unique<GameSplitterNode>(GetNextId(), std::bind(&App::GetNextId, this)));
                 break;
             default:
                 nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipes[recipe_index - RecipeSelectionIndex::FIRST_REAL_RECIPE_INDEX].get(), std::bind(&App::GetNextId, this)));
