@@ -9,10 +9,11 @@ struct Building;
 
 struct Item
 {
-    Item(const std::string& name, const std::string& icon_path);
+    Item(const std::string& name, const std::string& icon_path, const int sink_value);
     const std::string name;
     const std::string new_line_name;
     const unsigned int icon_gl_index;
+    const int sink_value;
 };
 
 struct CountedItem

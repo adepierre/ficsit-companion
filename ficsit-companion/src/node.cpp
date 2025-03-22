@@ -60,6 +60,11 @@ bool Node::IsGameSplitter() const
     return false;
 }
 
+bool Node::IsSink() const
+{
+    return false;
+}
+
 Json::Value Node::Serialize() const
 {
     Json::Value node;
@@ -87,6 +92,8 @@ std::unique_ptr<Node> Node::Deserialize(const ax::NodeEditor::NodeId id, const s
         return std::make_unique<GroupNode>(id, id_generator, serialized);
     case Kind::GameSplitter:
         return std::make_unique<GameSplitterNode>(id, id_generator, serialized);
+    case Kind::Sink:
+        return std::make_unique<SinkNode>(id, id_generator, serialized);
     default: // To make compilers happy, but should never happen
         throw std::domain_error("Unimplemented node type in Deserialize");
         return nullptr;
@@ -486,6 +493,16 @@ void GroupNode::PropagateRateToSubnodes()
                     outputs[k] += v;
                 }
             }
+            else if (nodes[i]->IsSink())
+            {
+                for (auto& p : nodes[i]->ins)
+                {
+                    if (p->item != nullptr)
+                    {
+                        inputs[p->item] += p->current_rate * current_rate;
+                    }
+                }
+            }
         }
         // Don't update organizer nodes so the current_rate actually stores the base_rate
         // (this prevents the information to be lost when group rate is set to 0)
@@ -520,6 +537,17 @@ void GroupNode::CreateInsOuts(const std::function<unsigned long long int()>& id_
             for (const auto& [k, v] : node->outputs)
             {
                 outputs[k] += v;
+            }
+        }
+        // Add all sink inputs as required additional inputs
+        else if (n->IsSink())
+        {
+            for (auto& p : n->ins)
+            {
+                if (p->item != nullptr)
+                {
+                    inputs[p->item] += p->current_rate;
+                }
             }
         }
 
@@ -576,6 +604,7 @@ void GroupNode::UpdateDetails()
     detailed_machines = {};
     detailed_power_same_clock = {};
     detailed_power_last_underclock = {};
+    detailed_sinked_points = {};
     for (const auto& n : nodes)
     {
         if (n->IsCraft())
@@ -607,6 +636,16 @@ void GroupNode::UpdateDetails()
             for (const auto& [k, v] : node->detailed_power_last_underclock)
             {
                 detailed_power_last_underclock[k] += v;
+            }
+        }
+        else if (n->IsSink())
+        {
+            for (const auto& p : n->ins)
+            {
+                if (p->item != nullptr)
+                {
+                    detailed_sinked_points[p->item] = p->current_rate * current_rate * p->item->sink_value;
+                }
             }
         }
     }
@@ -876,4 +915,71 @@ bool GameSplitterNode::IsBalanced() const
         }
     }
     return OrganizerNode::IsBalanced();
+}
+
+SinkNode::SinkNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item) : Node(id)
+{
+    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+}
+
+SinkNode::SinkNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : Node(id, serialized)
+{
+    if (static_cast<Kind>(serialized["kind"].get<int>()) != Kind::Sink)
+    {
+        throw std::runtime_error("Trying to deserialize an unvalid node as a sink node");
+    }
+
+    if (serialized["ins"].size() == 0)
+    {
+        throw std::runtime_error("Trying to deserialize an unvalid sink node (wrong number of inputs)");
+    }
+    for (const auto& i : serialized["ins"].get_array())
+    {
+        const Item* item = nullptr;
+        auto item_it = Data::Items().find(i["item"].get_string());
+        if (item_it != Data::Items().end())
+        {
+            item = item_it->second.get();
+        }
+        else if (i["item"].get_string() != "")
+        {
+            throw std::runtime_error("Unknown item when loading sink node");
+        }
+        ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+        ins.back()->current_rate = FractionalNumber(i["num"].get<long long int>(), i["den"].get<long long int>());
+    }
+}
+
+SinkNode::~SinkNode()
+{
+
+}
+
+bool SinkNode::IsSink() const
+{
+    return true;
+}
+
+Node::Kind SinkNode::GetKind() const
+{
+    return Node::Kind::Sink;
+}
+
+Json::Value SinkNode::Serialize() const
+{
+    Json::Value serialized = Node::Serialize();
+
+    Json::Array ins_array;
+    ins_array.reserve(ins.size());
+    for (auto& i : ins)
+    {
+        ins_array.push_back({
+            { "num", i->current_rate.GetNumerator() },
+            { "den", i->current_rate.GetDenominator() },
+            { "item",i->item == nullptr ? "" : i->item->name }
+        });
+    }
+    serialized["ins"] = ins_array;
+
+    return serialized;
 }

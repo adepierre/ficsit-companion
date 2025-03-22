@@ -12,10 +12,11 @@ std::string SpaceToNewLine(const std::string& s)
     return output;
 }
 
-Item::Item(const std::string& name, const std::string& icon_path) :
+Item::Item(const std::string& name, const std::string& icon_path, const int sink_value) :
     name(name),
     new_line_name(SpaceToNewLine(name)),
-    icon_gl_index(LoadTextureFromFile(icon_path))
+    icon_gl_index(LoadTextureFromFile(icon_path)),
+    sink_value(sink_value)
 {
 
 }

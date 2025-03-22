@@ -27,6 +27,7 @@ struct Node
         Merger,
         Group,
         GameSplitter,
+        Sink,
     };
 
     Node(const ax::NodeEditor::NodeId id);
@@ -42,6 +43,7 @@ struct Node
     virtual bool IsMerger() const;
     virtual bool IsCustomSplitter() const;
     virtual bool IsGameSplitter() const;
+    virtual bool IsSink() const;
     virtual Json::Value Serialize() const;
 
     static std::unique_ptr<Node> Deserialize(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized);
@@ -127,6 +129,7 @@ public:
     std::map<const Recipe*, FractionalNumber> detailed_power_last_underclock;
     std::map<const Item*, FractionalNumber, ItemPtrCompare> inputs;
     std::map<const Item*, FractionalNumber, ItemPtrCompare> outputs;
+    std::map<const Item*, FractionalNumber> detailed_sinked_points;
     bool loading_error;
 };
 
@@ -174,4 +177,15 @@ struct GameSplitterNode : public OrganizerNode
 
     virtual Kind GetKind() const override;
     virtual bool IsBalanced() const override;
+};
+
+struct SinkNode : public Node
+{
+    SinkNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Item* item = nullptr);
+    SinkNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized);
+    virtual ~SinkNode();
+    virtual bool IsSink() const override;
+
+    virtual Kind GetKind() const override;
+    virtual Json::Value Serialize() const override;
 };

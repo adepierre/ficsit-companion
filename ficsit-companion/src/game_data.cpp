@@ -52,7 +52,7 @@ namespace Data
         for (const auto& i : data["items"].get_array())
         {
             const std::string& name = i["name"].get_string();
-            items[name] = std::make_unique<Item>(name, i["icon"].get_string());
+            items[name] = std::make_unique<Item>(name, i["icon"].get_string(), i["sink"].get_number<int>());
         }
 
         const Json::Array& json_recipes = data["recipes"].get_array();

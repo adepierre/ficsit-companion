@@ -82,6 +82,7 @@ items = {
         "icon": c["mSmallIcon"],
         "state": c["mForm"],
         "energy": float(c["mEnergyValue"]),
+        "sink": int(c["mResourceSinkPoints"]) if c["mForm"] == "RF_SOLID" else 0,
     } for c in get_classes(data, ITEMS)
 }
 
@@ -172,7 +173,7 @@ with open("satisfactory.json", "w") as out_file:
     json.dump({
         "version": "",
         "buildings": list(buildings.values()),
-        "items": [ { "name": v["name"], "icon": v["icon"] } for v in items.values() if not v in removed],
+        "items": [ { "name": v["name"], "icon": v["icon"], "sink": v["sink"] } for v in items.values() if not v in removed],
         "recipes": list(recipes.values())
     }, out_file, indent=4, ensure_ascii=False)
 

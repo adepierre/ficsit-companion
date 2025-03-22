@@ -380,6 +380,11 @@ void App::CreateLink(Pin* start, Pin* end)
             organizer_node->ChangeItem(start->item);
         }
     }
+    Pin* real_end = end->direction == ax::NodeEditor::PinKind::Input ? end : start;
+    if (real_end->node->IsSink())
+    {
+        real_end->item = (start->direction == ax::NodeEditor::PinKind::Output ? start : end)->item;
+    }
     if (start->current_rate != end->current_rate)
     {
         updated_pins_new_rates.push_back({ start, start->current_rate });
@@ -408,6 +413,11 @@ void App::DeleteLink(const ax::NodeEditor::LinkId id)
             if (end->node->IsOrganizer())
             {
                 static_cast<OrganizerNode*>(end->node)->RemoveItemIfNotForced();
+            }
+            else if (end->node->IsSink())
+            {
+                end->item = nullptr;
+                end->current_rate = 0;
             }
         }
         links.erase(it);
@@ -567,6 +577,9 @@ void App::UpdateNodesRate()
                         }
                     }
                 }
+                break;
+            case Node::Kind::Sink:
+                // Nothing to propagate
                 break;
             }
         }
@@ -818,80 +831,96 @@ void App::UpdateNodesRate()
                 }
             }
                 break;
-                case Node::Kind::GameSplitter:
+            case Node::Kind::GameSplitter:
+            {
+                // If single pin side is updated, update all multi pin side
+                if (updated_pin->direction == ax::NodeEditor::PinKind::Input)
                 {
-                    // If single pin side is updated, update all multi pin side
-                    if (updated_pin->direction == ax::NodeEditor::PinKind::Input)
+                    const FractionalNumber single_pin_rate = all_pins_new_rates.at(updated_pin);
+                    const FractionalNumber out_pin_rate = single_pin_rate / updated_pin->node->outs.size();
+                    for (const auto& p : updated_pin->node->outs)
                     {
-                        const FractionalNumber single_pin_rate = all_pins_new_rates.at(updated_pin);
-                        const FractionalNumber out_pin_rate = single_pin_rate / updated_pin->node->outs.size();
-                        for (const auto& p : updated_pin->node->outs)
+                        all_pins_new_rates[p.get()] = out_pin_rate;
+                        if (p->link != nullptr)
                         {
-                            all_pins_new_rates[p.get()] = out_pin_rate;
-                            if (p->link != nullptr)
+                            if (p->current_rate != out_pin_rate)
                             {
-                                if (p->current_rate != out_pin_rate)
-                                {
-                                    p->link->flow = ax::NodeEditor::FlowDirection::Backward;
-                                }
-                                Pin* linked_pin = p->link->end;
-                                if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
-                                {
-                                    all_pins_new_rates[linked_pin] = out_pin_rate;
-                                    pins_to_propagate.push(linked_pin);
-                                }
+                                p->link->flow = ax::NodeEditor::FlowDirection::Backward;
                             }
-                        }
-                        if (updated_pin->link != nullptr)
-                        {
-                            if (updated_pin->current_rate != single_pin_rate)
-                            {
-                                updated_pin->link->flow = ax::NodeEditor::FlowDirection::Forward;
-                            }
-                            Pin* linked_pin = updated_pin->link->start;
+                            Pin* linked_pin = p->link->end;
                             if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                             {
-                                all_pins_new_rates[linked_pin] = single_pin_rate;
+                                all_pins_new_rates[linked_pin] = out_pin_rate;
                                 pins_to_propagate.push(linked_pin);
                             }
                         }
                     }
-                    else // One of the multi-pin side is updated
+                    if (updated_pin->link != nullptr)
                     {
-                        // Update all other output pins
-                        const FractionalNumber new_rate_out_pins = all_pins_new_rates.at(updated_pin);
-                        for (const auto& p : updated_pin->node->outs)
+                        if (updated_pin->current_rate != single_pin_rate)
                         {
-                            all_pins_new_rates[p.get()] = new_rate_out_pins;
-                            if (p->link != nullptr)
-                            {
-                                if (p->current_rate != new_rate_out_pins)
-                                {
-                                    p->link->flow = ax::NodeEditor::FlowDirection::Backward;
-                                }
-                                Pin* linked_pin = p->link->end;
-                                if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
-                                {
-                                    all_pins_new_rates[linked_pin] = new_rate_out_pins;
-                                    pins_to_propagate.push(linked_pin);
-                                }
-                            }
+                            updated_pin->link->flow = ax::NodeEditor::FlowDirection::Forward;
                         }
-                        // Update input pin
-                        all_pins_new_rates[updated_pin->node->ins[0].get()] = new_rate_out_pins * updated_pin->node->outs.size();
-                        if (updated_pin->node->ins[0]->link != nullptr)
+                        Pin* linked_pin = updated_pin->link->start;
+                        if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                         {
-                            if (updated_pin->node->ins[0]->current_rate != new_rate_out_pins * updated_pin->node->outs.size())
+                            all_pins_new_rates[linked_pin] = single_pin_rate;
+                            pins_to_propagate.push(linked_pin);
+                        }
+                    }
+                }
+                else // One of the multi-pin side is updated
+                {
+                    // Update all other output pins
+                    const FractionalNumber new_rate_out_pins = all_pins_new_rates.at(updated_pin);
+                    for (const auto& p : updated_pin->node->outs)
+                    {
+                        all_pins_new_rates[p.get()] = new_rate_out_pins;
+                        if (p->link != nullptr)
+                        {
+                            if (p->current_rate != new_rate_out_pins)
                             {
-                                updated_pin->node->ins[0]->link->flow = ax::NodeEditor::FlowDirection::Forward;
+                                p->link->flow = ax::NodeEditor::FlowDirection::Backward;
                             }
-                            Pin* linked_pin = updated_pin->node->ins[0]->link->start;
+                            Pin* linked_pin = p->link->end;
                             if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                             {
-                                all_pins_new_rates[linked_pin] = new_rate_out_pins * updated_pin->node->outs.size();
+                                all_pins_new_rates[linked_pin] = new_rate_out_pins;
                                 pins_to_propagate.push(linked_pin);
                             }
                         }
+                    }
+                    // Update input pin
+                    all_pins_new_rates[updated_pin->node->ins[0].get()] = new_rate_out_pins * updated_pin->node->outs.size();
+                    if (updated_pin->node->ins[0]->link != nullptr)
+                    {
+                        if (updated_pin->node->ins[0]->current_rate != new_rate_out_pins * updated_pin->node->outs.size())
+                        {
+                            updated_pin->node->ins[0]->link->flow = ax::NodeEditor::FlowDirection::Forward;
+                        }
+                        Pin* linked_pin = updated_pin->node->ins[0]->link->start;
+                        if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
+                        {
+                            all_pins_new_rates[linked_pin] = new_rate_out_pins * updated_pin->node->outs.size();
+                            pins_to_propagate.push(linked_pin);
+                        }
+                    }
+                }
+            }
+                break;
+            case Node::Kind::Sink:
+                // Nothing to update on the other inputs, just update the linked pin if there's one
+                if (updated_pin->link != nullptr)
+                {
+                    Pin* linked_pin = updated_pin->link->start;
+                    if (updated_pin->current_rate != all_pins_new_rates.at(updated_pin))
+                    {
+                        updated_pin->link->flow = ax::NodeEditor::FlowDirection::Backward;
+                    }
+                    if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
+                    {
+                        all_pins_new_rates[linked_pin] = all_pins_new_rates.at(updated_pin);
+                        pins_to_propagate.push(linked_pin);
                     }
                 }
                 break;
@@ -1578,6 +1607,8 @@ void App::RenderLeftPanel()
     std::map<const Item*, FractionalNumber, ItemPtrCompare> intermediates;
     std::map<std::string, FractionalNumber> total_machines;
     std::map<std::string, std::map<const Recipe*, FractionalNumber, RecipePtrCompare>> detailed_machines;
+    FractionalNumber total_sink_points;
+    std::map<const Item*, FractionalNumber> detailed_sink_points;
     FractionalNumber total_power;
     std::map<const Recipe*, FractionalNumber> detailed_power;
     bool has_variable_power = false;
@@ -1633,6 +1664,24 @@ void App::RenderLeftPanel()
             {
                 detailed_power[k] += v;
             }
+
+            for (const auto& [k, v] : node->detailed_sinked_points)
+            {
+                total_sink_points += v;
+                detailed_sink_points[k] += v;
+            }
+        }
+        else if (n->IsSink())
+        {
+            for (const auto& p : n->ins)
+            {
+                if (p->item != nullptr)
+                {
+                    inputs[p->item] += p->current_rate;
+                    total_sink_points += p->current_rate * p->item->sink_value;
+                    detailed_sink_points[p->item] += p->current_rate * p->item->sink_value;
+                }
+            }
         }
     }
 
@@ -1645,10 +1694,10 @@ void App::RenderLeftPanel()
         }
     }
 
-    const float power_width = ImGui::CalcTextSize("000000.00").x + ImGui::GetStyle().FramePadding.x * 2.0f;
     ImGui::SeparatorText(has_variable_power ? "Average Power Consumption" : "Power Consumption");
     if (total_power.GetNumerator() != 0)
     {
+        const float power_width = ImGui::CalcTextSize("000000.00").x + ImGui::GetStyle().FramePadding.x * 2.0f;
         std::vector<std::pair<const Recipe*, FractionalNumber>> sorted_detailed_power(detailed_power.begin(), detailed_power.end());
         std::stable_sort(sorted_detailed_power.begin(), sorted_detailed_power.end(), [](const auto& a, const auto& b) {
             return a.second.GetValue() > b.second.GetValue();
@@ -1679,6 +1728,48 @@ void App::RenderLeftPanel()
                 recipe->Render();
             }
 
+            ImGui::Unindent();
+            ImGui::TreePop();
+        }
+    }
+
+    ImGui::SeparatorText("Sink points");
+    if (total_sink_points.GetNumerator() != 0)
+    {
+        const float sink_points_width = ImGui::CalcTextSize("00000000.00").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+        std::vector<std::pair<const Item*, FractionalNumber>> sorted_sink_points(detailed_sink_points.begin(), detailed_sink_points.end());
+        std::stable_sort(sorted_sink_points.begin(), sorted_sink_points.end(), [](const auto& a, const auto& b) {
+            return a.second.GetValue() > b.second.GetValue();
+            });
+
+        // No visible color change when hovered/click
+        ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderActive, ImVec4(0, 0, 0, 0));
+        const bool display_sink_points_details = ImGui::TreeNodeEx("##sink_points", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanAvailWidth);
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+
+        // Displayed over the TreeNodeEx element (same line)
+        ImGui::SameLine();
+        total_sink_points.RenderInputText("##sink_points", true, true, sink_points_width);
+        ImGui::SameLine();
+        ImGui::TextUnformatted("Points");
+        // Detailed list of items if the tree node is open
+        if (display_sink_points_details)
+        {
+            ImGui::Indent();
+            for (auto& [item, p] : sorted_sink_points)
+            {
+                p.RenderInputText("##sink_points", true, true, sink_points_width);
+                ImGui::SameLine();
+                ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+                ImGui::SameLine();
+                ImGui::TextUnformatted(item->name.c_str());
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                {
+                    ImGui::SetTooltip("%s", item->name.c_str());
+                }
+            }
             ImGui::Unindent();
             ImGui::TreePop();
         }
@@ -1919,6 +2010,9 @@ void App::RenderNodes()
                 case Node::Kind::GameSplitter:
                     ImGui::TextUnformatted("Splitter");
                     break;
+                case Node::Kind::Sink:
+                    ImGui::TextUnformatted("Sink");
+                    break;
                 case Node::Kind::Group:
                 {
                     ImGui::TextUnformatted("Group");
@@ -1944,7 +2038,7 @@ void App::RenderNodes()
                     ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_PivotAlignment, ImVec2(0, 0.5f));
                     ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_PivotSize, ImVec2(0, 0));
 
-                    std::optional<int> merger_removed_input_idx = std::nullopt;
+                    std::optional<int> removed_input_idx = std::nullopt;
                     sort_pin_indices(node->ins);
                     for (int idx = 0; idx < node->ins.size(); ++idx)
                     {
@@ -1974,13 +2068,13 @@ void App::RenderNodes()
                             }
                             ImGui::Dummy(size);
                             ImGui::Spring(0.0f);
-                            if (node->IsMerger())
+                            if (node->IsMerger() || node->IsSink())
                             {
                                 ImGui::BeginDisabled(node->ins.size() == 1);
                                 if (ImGui::Button("x"))
                                 {
                                     // We can't remove it directly as we are currently looping through the pins
-                                    merger_removed_input_idx = idx;
+                                    removed_input_idx = idx;
                                 }
                                 ImGui::EndDisabled();
                             }
@@ -2002,7 +2096,7 @@ void App::RenderNodes()
                                 frame_tooltips.push_back(p->current_rate.GetStringFraction());
                             }
 
-                            if (node->IsPowered())
+                            if (node->IsPowered() || (node->IsSink() && p->item != nullptr))
                             {
                                 ImGui::Spring(0.0f);
                                 ImGui::Image((void*)(intptr_t)p->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
@@ -2018,31 +2112,38 @@ void App::RenderNodes()
                     }
                     ax::NodeEditor::PopStyleVar();
                     ax::NodeEditor::PopStyleVar();
-                    if (node->IsMerger())
+                    if (node->IsMerger() || node->IsSink())
                     {
-                        MergerNode* merger_node = static_cast<MergerNode*>(node.get());
-                        ImGui::BeginHorizontal("merger_+_buttton");
+                        ImGui::BeginHorizontal("add_input_+_buttton");
                         ImGui::Spring(1.0f, 0.0f);
                         if (ImGui::Button("+"))
                         {
-                            node->ins.emplace_back(std::make_unique<Pin>(GetNextId(), ax::NodeEditor::PinKind::Input, merger_node, merger_node->item));
+                            node->ins.emplace_back(std::make_unique<Pin>(
+                                GetNextId(),
+                                ax::NodeEditor::PinKind::Input,
+                                node.get(),
+                                node->IsMerger() ? static_cast<MergerNode*>(node.get())->item : nullptr) // Merger or Sink
+                            );
                         }
                         ImGui::Spring(1.0f, 0.0f);
                         ImGui::EndHorizontal();
-                        if (merger_removed_input_idx.has_value())
+                        if (removed_input_idx.has_value())
                         {
-                            const int idx = merger_removed_input_idx.value();
+                            const int idx = removed_input_idx.value();
                             if (node->ins[sorted_pin_indices[idx]]->link != nullptr)
                             {
                                 DeleteLink(node->ins[sorted_pin_indices[idx]]->link->id);
                             }
                             node->ins.erase(node->ins.begin() + sorted_pin_indices[idx]);
-                            FractionalNumber sum_inputs;
-                            for (const auto& p : node->ins)
+                            if (node->IsMerger()) // Sink doesn't have any output to update
                             {
-                                sum_inputs += p->current_rate;
+                                FractionalNumber sum_inputs;
+                                for (const auto& p : node->ins)
+                                {
+                                    sum_inputs += p->current_rate;
+                                }
+                                updated_pins_new_rates.push_back({ node->outs[0].get(), sum_inputs });
                             }
-                            updated_pins_new_rates.push_back({ node->outs[0].get(), sum_inputs });
                         }
                     }
                     ImGui::Spring(1.0f, 0.0f);
@@ -2056,7 +2157,7 @@ void App::RenderNodes()
                     // Set where the link will connect to (right center)
                     ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_PivotAlignment, ImVec2(1.0f, 0.5f));
                     ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_PivotSize, ImVec2(0, 0));
-                    std::optional<int> splitter_removed_input_idx = std::nullopt;
+                    std::optional<int> removed_output_idx = std::nullopt;
                     sort_pin_indices(node->outs);
                     for (int idx = 0; idx < node->outs.size(); ++idx)
                     {
@@ -2095,7 +2196,7 @@ void App::RenderNodes()
                                 if (ImGui::Button("x"))
                                 {
                                     // We can't remove it directly as we are currently looping through the pins
-                                    splitter_removed_input_idx = idx;
+                                    removed_output_idx = idx;
                                 }
                                 ImGui::EndDisabled();
                             }
@@ -2132,7 +2233,7 @@ void App::RenderNodes()
                     if (node->IsCustomSplitter() || node->IsGameSplitter())
                     {
                         OrganizerNode* org_node = static_cast<OrganizerNode*>(node.get());
-                        ImGui::BeginHorizontal("splitter_+_buttton");
+                        ImGui::BeginHorizontal("add_output_+_buttton");
                         ImGui::Spring(1.0f, 0.0f);
                         if (ImGui::Button("+"))
                         {
@@ -2147,9 +2248,9 @@ void App::RenderNodes()
                         }
                         ImGui::Spring(1.0f, 0.0f);
                         ImGui::EndHorizontal();
-                        if (splitter_removed_input_idx.has_value())
+                        if (removed_output_idx.has_value())
                         {
-                            const int idx = splitter_removed_input_idx.value();
+                            const int idx = removed_output_idx.value();
                             if (node->outs[sorted_pin_indices[idx]]->link != nullptr)
                             {
                                 DeleteLink(node->outs[sorted_pin_indices[idx]]->link->id);
@@ -2296,6 +2397,26 @@ void App::RenderNodes()
                     }
                     ImGui::Spring(1.0f);
                 }
+                else if (node->IsSink())
+                {
+                    ImGui::Spring(1.0f);
+                    FractionalNumber sum_sink;
+                    for (const auto& i : node->ins)
+                    {
+                        if (i->item != nullptr)
+                        {
+                            sum_sink += i->current_rate * i->item->sink_value;
+                        }
+                    }
+                    sum_sink.RenderInputText("##points", true, false, 0.0f);
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                    {
+                        frame_tooltips.push_back(sum_sink.GetStringFraction());
+                    }
+                    ImGui::Spring(0.0f);
+                    ImGui::TextUnformatted("points");
+                    ImGui::Spring(1.0f);
+                }
             }
             ImGui::EndHorizontal();
         }
@@ -2313,7 +2434,24 @@ void App::RenderLinks()
 {
     for (const auto& link : links)
     {
-        ax::NodeEditor::Link(link->id, link->start_id, link->end_id, link->start->current_rate == link->end->current_rate ? ImColor(0.0f, 1.0f, 0.0f) : ImColor(1.0f, 0.0f, 0.0f));
+        ImColor link_color;
+        if (link->start->current_rate != link->end->current_rate)
+        {
+            link_color = ImColor(1.0f, 0.0f, 0.0f); // Red
+        }
+        else if (link->end->node->IsSink() && (
+            link->start->item == nullptr || link->end->item == nullptr ||
+            link->start->item->sink_value == 0 || link->end->item->sink_value == 0)
+        )
+        {
+            link_color = ImColor(1.0f, 0.5f, 0.0f); // Orange
+        }
+        else
+        {
+            link_color = ImColor(0.0f, 1.0f, 0.0f); // Green
+        }
+
+        ax::NodeEditor::Link(link->id, link->start_id, link->end_id, link_color);
         if (link->flow.has_value())
         {
             ax::NodeEditor::Flow(link->id, link->flow.value());
@@ -2348,7 +2486,7 @@ void App::DragLink()
                 else if (ax::NodeEditor::AcceptNewItem(ImColor(128, 255, 128), 4.0f))
                 {
                     // If we are dragging from a default initialized 0 pin of an organizer node, pull value instead of pushing it
-                    if (start_pin->node->IsOrganizer() && start_pin->current_rate.GetNumerator() == 0)
+                    if ((start_pin->node->IsOrganizer() || start_pin->node->IsSink()) && start_pin->current_rate.GetNumerator() == 0)
                     {
                         CreateLink(end_pin, start_pin);
                     }
@@ -2446,6 +2584,7 @@ void App::AddNewNode()
         Merger,
         CustomSplitter,
         GameSplitter,
+        Sink,
         FIRST_REAL_RECIPE_INDEX,
     };
 
@@ -2471,6 +2610,10 @@ void App::AddNewNode()
         if (ImGui::IsItemHovered())
         {
             ImGui::SetTooltip("%s", "Splitter with equals output rates");
+        }
+        if (ImGui::MenuItem("Sink"))
+        {
+            recipe_index = RecipeSelectionIndex::Sink;
         }
         ImGui::Separator();
         // Stores the recipe index and a "match score" to sort them in the display
@@ -2615,6 +2758,9 @@ void App::AddNewNode()
             case RecipeSelectionIndex::GameSplitter:
                 nodes.emplace_back(std::make_unique<GameSplitterNode>(GetNextId(), std::bind(&App::GetNextId, this)));
                 break;
+            case RecipeSelectionIndex::Sink:
+                nodes.emplace_back(std::make_unique<SinkNode>(GetNextId(), std::bind(&App::GetNextId, this)));
+                break;
             default:
                 nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipes[recipe_index - RecipeSelectionIndex::FIRST_REAL_RECIPE_INDEX].get(), std::bind(&App::GetNextId, this)));
                 break;
@@ -2635,7 +2781,7 @@ void App::AddNewNode()
                 if (pin_index != -1)
                 {
                     // If we are dragging from a default initialized 0 pin of an organizer node, pull value instead of pushing it
-                    if (new_node_pin->node->IsOrganizer() && new_node_pin->current_rate.GetNumerator() == 0)
+                    if ((new_node_pin->node->IsOrganizer() || new_node_pin->node->IsSink()) && new_node_pin->current_rate.GetNumerator() == 0)
                     {
                         CreateLink(pins[pin_index].get(), new_node_pin);
                     }

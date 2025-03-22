@@ -125,611 +125,763 @@
     "items": [
         {
             "name": "Uranium Waste",
-            "icon": "icons/IconDesc_NuclearWaste_64.png"
+            "icon": "icons/IconDesc_NuclearWaste_64.png",
+            "sink": 0
         },
         {
             "name": "Plutonium Waste",
-            "icon": "icons/IconDesc_PlutoniumWaste_64.png"
+            "icon": "icons/IconDesc_PlutoniumWaste_64.png",
+            "sink": 0
         },
         {
             "name": "Concrete",
-            "icon": "icons/IconDesc_Concrete_64.png"
+            "icon": "icons/IconDesc_Concrete_64.png",
+            "sink": 12
         },
         {
             "name": "Silica",
-            "icon": "icons/IconDesc_Silica_64.png"
+            "icon": "icons/IconDesc_Silica_64.png",
+            "sink": 20
         },
         {
             "name": "Iron Plate",
-            "icon": "icons/IconDesc_IronPlates_64.png"
+            "icon": "icons/IconDesc_IronPlates_64.png",
+            "sink": 6
         },
         {
             "name": "Steel Beam",
-            "icon": "icons/IconDesc_SteelBeam_64.png"
+            "icon": "icons/IconDesc_SteelBeam_64.png",
+            "sink": 64
         },
         {
             "name": "Aluminum Ingot",
-            "icon": "icons/IconDesc_AluminiumIngot_64.png"
+            "icon": "icons/IconDesc_AluminiumIngot_64.png",
+            "sink": 131
         },
         {
             "name": "Battery",
-            "icon": "icons/IconDesc_Battery_64.png"
+            "icon": "icons/IconDesc_Battery_64.png",
+            "sink": 465
         },
         {
             "name": "Packaged Fuel",
-            "icon": "icons/IconDesc_Fuel_64.png"
+            "icon": "icons/IconDesc_Fuel_64.png",
+            "sink": 270
         },
         {
             "name": "Packaged Ionized Fuel",
-            "icon": "icons/IconDesc_IonizedRocketFuel_64.png"
+            "icon": "icons/IconDesc_IonizedRocketFuel_64.png",
+            "sink": 5246
         },
         {
             "name": "Packaged Rocket Fuel",
-            "icon": "icons/IconDesc_PackagedRocketFuel_256.png"
+            "icon": "icons/IconDesc_PackagedRocketFuel_256.png",
+            "sink": 1028
         },
         {
             "name": "Packaged Turbofuel",
-            "icon": "icons/IconDesc_TurboFuel_64.png"
+            "icon": "icons/IconDesc_TurboFuel_64.png",
+            "sink": 570
         },
         {
             "name": "Iodine-Infused Filter",
-            "icon": "icons/IconDesc_HazmatFilter_64.png"
+            "icon": "icons/IconDesc_HazmatFilter_64.png",
+            "sink": 2274
         },
         {
             "name": "Compacted Coal",
-            "icon": "icons/IconDesc_CompactedCoal_64.png"
+            "icon": "icons/IconDesc_CompactedCoal_64.png",
+            "sink": 28
         },
         {
             "name": "Packaged Heavy Oil Residue",
-            "icon": "icons/OilResidue_64.png"
+            "icon": "icons/OilResidue_64.png",
+            "sink": 180
         },
         {
             "name": "Petroleum Coke",
-            "icon": "icons/IconDesc_PetroleumCoke_64.png"
+            "icon": "icons/IconDesc_PetroleumCoke_64.png",
+            "sink": 20
         },
         {
             "name": "Packaged Oil",
-            "icon": "icons/Oil_64.png"
+            "icon": "icons/Oil_64.png",
+            "sink": 180
         },
         {
             "name": "Iron Rod",
-            "icon": "icons/IconDesc_IronRods_64.png"
+            "icon": "icons/IconDesc_IronRods_64.png",
+            "sink": 4
         },
         {
             "name": "Wire",
-            "icon": "icons/IconDesc_Wire_64.png"
+            "icon": "icons/IconDesc_Wire_64.png",
+            "sink": 6
         },
         {
             "name": "Cable",
-            "icon": "icons/IconDesc_Cables_64.png"
+            "icon": "icons/IconDesc_Cables_64.png",
+            "sink": 24
         },
         {
             "name": "Iron Ingot",
-            "icon": "icons/IconDesc_IronIngot_64.png"
+            "icon": "icons/IconDesc_IronIngot_64.png",
+            "sink": 2
         },
         {
             "name": "Reinforced Iron Plate",
-            "icon": "icons/IconDesc_ReinforcedIronPlates_64.png"
+            "icon": "icons/IconDesc_ReinforcedIronPlates_64.png",
+            "sink": 120
         },
         {
             "name": "Rotor",
-            "icon": "icons/IconDesc_Rotor_64.png"
+            "icon": "icons/IconDesc_Rotor_64.png",
+            "sink": 140
         },
         {
             "name": "Fuel",
-            "icon": "icons/IconDesc_LiquidFuel_Pipe_64.png"
+            "icon": "icons/IconDesc_LiquidFuel_Pipe_64.png",
+            "sink": 0
         },
         {
             "name": "Rocket Fuel",
-            "icon": "icons/IconDesc_RocketFuelPipe_64.png"
+            "icon": "icons/IconDesc_RocketFuelPipe_64.png",
+            "sink": 0
         },
         {
             "name": "Copper Sheet",
-            "icon": "icons/IconDesc_CopperSheet_64.png"
+            "icon": "icons/IconDesc_CopperSheet_64.png",
+            "sink": 24
         },
         {
             "name": "Modular Frame",
-            "icon": "icons/IconDesc_ModularFrame_64.png"
+            "icon": "icons/IconDesc_ModularFrame_64.png",
+            "sink": 408
         },
         {
             "name": "Screw",
-            "icon": "icons/IconDesc_IronScrews_64.png"
+            "icon": "icons/IconDesc_IronScrews_64.png",
+            "sink": 2
         },
         {
             "name": "Nitric Acid",
-            "icon": "icons/IconDesc_NitricAcid_64.png"
+            "icon": "icons/IconDesc_NitricAcid_64.png",
+            "sink": 0
         },
         {
             "name": "Turbofuel",
-            "icon": "icons/IconDesc_LiquidTurboFuel_Pipe_64.png"
+            "icon": "icons/IconDesc_LiquidTurboFuel_Pipe_64.png",
+            "sink": 0
         },
         {
             "name": "Empty Fluid Tank",
-            "icon": "icons/IconDesc_PressureTank_64.png"
+            "icon": "icons/IconDesc_PressureTank_64.png",
+            "sink": 170
         },
         {
             "name": "Crystal Oscillator",
-            "icon": "icons/IconDesc_CrystalOscillator_64.png"
+            "icon": "icons/IconDesc_CrystalOscillator_64.png",
+            "sink": 3072
         },
         {
             "name": "Motor",
-            "icon": "icons/IconDesc_Engine_64.png"
+            "icon": "icons/IconDesc_Engine_64.png",
+            "sink": 1520
         },
         {
             "name": "Dark Matter Crystal",
-            "icon": "icons/IconDesc_TimeCrystal_64.png"
+            "icon": "icons/IconDesc_TimeCrystal_64.png",
+            "sink": 1780
         },
         {
             "name": "Ionized Fuel",
-            "icon": "icons/IconDesc_IonizedFuel_64.png"
+            "icon": "icons/IconDesc_IonizedFuel_64.png",
+            "sink": 0
         },
         {
             "name": "Supercomputer",
-            "icon": "icons/IconDesc_QuantumComputer_64.png"
+            "icon": "icons/IconDesc_QuantumComputer_64.png",
+            "sink": 97352
         },
         {
             "name": "Cooling System",
-            "icon": "icons/IconDesc_CoolingSystem_64.png"
+            "icon": "icons/IconDesc_CoolingSystem_64.png",
+            "sink": 12006
         },
         {
             "name": "Ficsite Trigon",
-            "icon": "icons/IconDesc_FicsiteMesh_64.png"
+            "icon": "icons/IconDesc_FicsiteMesh_64.png",
+            "sink": 1291
         },
         {
             "name": "Turbo Motor",
-            "icon": "icons/IconDesc_TurboMotor_64.png"
+            "icon": "icons/IconDesc_TurboMotor_64.png",
+            "sink": 240496
         },
         {
             "name": "Time Crystal",
-            "icon": "icons/IconDesc_ExoticMatter_64.png"
+            "icon": "icons/IconDesc_ExoticMatter_64.png",
+            "sink": 960
         },
         {
             "name": "Dark Matter Residue",
-            "icon": "icons/IconDesc_DarkEnergy_64.png"
+            "icon": "icons/IconDesc_DarkEnergy_64.png",
+            "sink": 0
         },
         {
             "name": "Reanimated SAM",
-            "icon": "icons/IconDesc_ReanimatedSam_64.png"
+            "icon": "icons/IconDesc_ReanimatedSam_64.png",
+            "sink": 160
         },
         {
             "name": "Excited Photonic Matter",
-            "icon": "icons/IconDesc_QuantumEnergy_64.png"
+            "icon": "icons/IconDesc_QuantumEnergy_64.png",
+            "sink": 0
         },
         {
             "name": "Diamonds",
-            "icon": "icons/IconDesc_Diamonds_64.png"
+            "icon": "icons/IconDesc_Diamonds_64.png",
+            "sink": 240
         },
         {
             "name": "Alclad Aluminum Sheet",
-            "icon": "icons/IconDesc_AluminiumSheet_64.png"
+            "icon": "icons/IconDesc_AluminiumSheet_64.png",
+            "sink": 266
         },
         {
             "name": "Superposition Oscillator",
-            "icon": "icons/IconDesc_SuperPositionOscillator_64.png"
+            "icon": "icons/IconDesc_SuperPositionOscillator_64.png",
+            "sink": 37292
         },
         {
             "name": "Neural-Quantum Processor",
-            "icon": "icons/IconDesc_TemporalProcessor_64.png"
+            "icon": "icons/IconDesc_TemporalProcessor_64.png",
+            "sink": 248034
         },
         {
             "name": "AI Expansion Server",
-            "icon": "icons/IconDesc_AIExpension_64.png"
+            "icon": "icons/IconDesc_AIExpension_64.png",
+            "sink": 597652
         },
         {
             "name": "Magnetic Field Generator",
-            "icon": "icons/IconDesc_MagneticFieldGenerator_64.png"
+            "icon": "icons/IconDesc_MagneticFieldGenerator_64.png",
+            "sink": 11000
         },
         {
             "name": "SAM Fluctuator",
-            "icon": "icons/IconDesc_SamFluctuator_64.png"
+            "icon": "icons/IconDesc_SamFluctuator_64.png",
+            "sink": 1968
         },
         {
             "name": "Steel Pipe",
-            "icon": "icons/IconDesc_SteelPipe_64.png"
+            "icon": "icons/IconDesc_SteelPipe_64.png",
+            "sink": 24
         },
         {
             "name": "Fused Modular Frame",
-            "icon": "icons/IconDesc_FusedModularFrame_64.png"
+            "icon": "icons/IconDesc_FusedModularFrame_64.png",
+            "sink": 62840
         },
         {
             "name": "Radio Control Unit",
-            "icon": "icons/IconDesc_RadioControlUnit_64.png"
+            "icon": "icons/IconDesc_RadioControlUnit_64.png",
+            "sink": 32352
         },
         {
             "name": "Ficsite Ingot",
-            "icon": "icons/IconDesc_FicsiteIngot_64.png"
+            "icon": "icons/IconDesc_FicsiteIngot_64.png",
+            "sink": 1936
         },
         {
             "name": "Biochemical Sculptor",
-            "icon": "icons/IconDesc_BiochemicalSculptor_64.png"
+            "icon": "icons/IconDesc_BiochemicalSculptor_64.png",
+            "sink": 301778
         },
         {
             "name": "Assembly Director System",
-            "icon": "icons/IconDesc_AssemblyDirectorSystem_64.png"
+            "icon": "icons/IconDesc_AssemblyDirectorSystem_64.png",
+            "sink": 500176
         },
         {
             "name": "Caterium Ingot",
-            "icon": "icons/IconDesc_CateriumIngot_64.png"
+            "icon": "icons/IconDesc_CateriumIngot_64.png",
+            "sink": 42
         },
         {
             "name": "Empty Canister",
-            "icon": "icons/IconDesc_EmptyCannister_64.png"
+            "icon": "icons/IconDesc_EmptyCannister_64.png",
+            "sink": 60
         },
         {
             "name": "Circuit Board",
-            "icon": "icons/IconDesc_CircuitBoard_64.png"
+            "icon": "icons/IconDesc_CircuitBoard_64.png",
+            "sink": 696
         },
         {
             "name": "Plastic",
-            "icon": "icons/IconDesc_Plastic_64.png"
+            "icon": "icons/IconDesc_Plastic_64.png",
+            "sink": 75
         },
         {
             "name": "Encased Industrial Beam",
-            "icon": "icons/IconDesc_EncasedSteelBeam_64.png"
+            "icon": "icons/IconDesc_EncasedSteelBeam_64.png",
+            "sink": 528
         },
         {
             "name": "Rubber",
-            "icon": "icons/IconDesc_Rubber_64.png"
+            "icon": "icons/IconDesc_Rubber_64.png",
+            "sink": 60
         },
         {
             "name": "Polymer Resin",
-            "icon": "icons/IconDesc_PolymerResin_64.png"
+            "icon": "icons/IconDesc_PolymerResin_64.png",
+            "sink": 12
         },
         {
             "name": "Heavy Oil Residue",
-            "icon": "icons/IconDesc_LiquidHeavyOilResidue_Pipe_64.png"
+            "icon": "icons/IconDesc_LiquidHeavyOilResidue_Pipe_64.png",
+            "sink": 0
         },
         {
             "name": "Quartz Crystal",
-            "icon": "icons/IconDesc_QuartzResource_64.png"
+            "icon": "icons/IconDesc_QuartzResource_64.png",
+            "sink": 50
         },
         {
             "name": "Steel Ingot",
-            "icon": "icons/IconDesc_SteelIngot_64.png"
+            "icon": "icons/IconDesc_SteelIngot_64.png",
+            "sink": 8
         },
         {
             "name": "Versatile Framework",
-            "icon": "icons/IconDesc_SpelevatorPart_2_256.png"
+            "icon": "icons/IconDesc_SpelevatorPart_2_256.png",
+            "sink": 1176
         },
         {
             "name": "Packaged Water",
-            "icon": "icons/IconDesc_PackagedWater_64.png"
+            "icon": "icons/IconDesc_PackagedWater_64.png",
+            "sink": 130
         },
         {
             "name": "Copper Ingot",
-            "icon": "icons/IconDesc_CopperIngot_64.png"
+            "icon": "icons/IconDesc_CopperIngot_64.png",
+            "sink": 6
         },
         {
             "name": "Aluminum Scrap",
-            "icon": "icons/IconDesc_AluminiumScrap_64.png"
+            "icon": "icons/IconDesc_AluminiumScrap_64.png",
+            "sink": 27
         },
         {
             "name": "Aluminum Casing",
-            "icon": "icons/IconDesc_AluminiumCasing_64.png"
+            "icon": "icons/IconDesc_AluminiumCasing_64.png",
+            "sink": 393
         },
         {
             "name": "Alumina Solution",
-            "icon": "icons/LiquidAlumina_Pipe_64.png"
+            "icon": "icons/LiquidAlumina_Pipe_64.png",
+            "sink": 0
         },
         {
             "name": "Computer",
-            "icon": "icons/IconDesc_Computer_64.png"
+            "icon": "icons/IconDesc_Computer_64.png",
+            "sink": 8352
         },
         {
             "name": "Heavy Modular Frame",
-            "icon": "icons/IconDesc_ModularFrameHeavy_64.png"
+            "icon": "icons/IconDesc_ModularFrameHeavy_64.png",
+            "sink": 10800
         },
         {
             "name": "Smart Plating",
-            "icon": "icons/IconDesc_SpelevatorPart_1_256.png"
+            "icon": "icons/IconDesc_SpelevatorPart_1_256.png",
+            "sink": 520
         },
         {
             "name": "High-Speed Connector",
-            "icon": "icons/IconDesc_HighSpeedConnector_64.png"
+            "icon": "icons/IconDesc_HighSpeedConnector_64.png",
+            "sink": 3776
         },
         {
             "name": "Automated Wiring",
-            "icon": "icons/SpelevatorPart_3_256.png"
+            "icon": "icons/SpelevatorPart_3_256.png",
+            "sink": 1440
         },
         {
             "name": "Stator",
-            "icon": "icons/IconDesc_Stator_64.png"
+            "icon": "icons/IconDesc_Stator_64.png",
+            "sink": 240
         },
         {
             "name": "AI Limiter",
-            "icon": "icons/IconDesc_AILimiter_64.png"
+            "icon": "icons/IconDesc_AILimiter_64.png",
+            "sink": 920
         },
         {
             "name": "Quickwire",
-            "icon": "icons/IconDesc_Quickwire_64.png"
+            "icon": "icons/IconDesc_Quickwire_64.png",
+            "sink": 17
         },
         {
             "name": "Modular Engine",
-            "icon": "icons/IconDesc_SpelevatorPart_4_256.png"
+            "icon": "icons/IconDesc_SpelevatorPart_4_256.png",
+            "sink": 9960
         },
         {
             "name": "Adaptive Control Unit",
-            "icon": "icons/IconDesc_SpelevatorPart_5_256.png"
+            "icon": "icons/IconDesc_SpelevatorPart_5_256.png",
+            "sink": 76368
         },
         {
             "name": "Pressure Conversion Cube",
-            "icon": "icons/IconDesc_ConversionCube_64.png"
+            "icon": "icons/IconDesc_ConversionCube_64.png",
+            "sink": 255088
         },
         {
             "name": "Encased Plutonium Cell",
-            "icon": "icons/IconDesc_EncasedPlutoniumCell_64.png"
+            "icon": "icons/IconDesc_EncasedPlutoniumCell_64.png",
+            "sink": 0
         },
         {
             "name": "Plutonium Pellet",
-            "icon": "icons/IconDesc_PlutoniumPellet_64.png"
+            "icon": "icons/IconDesc_PlutoniumPellet_64.png",
+            "sink": 0
         },
         {
             "name": "Non-Fissile Uranium",
-            "icon": "icons/IconDesc_NonFissileUranium_64.png"
+            "icon": "icons/IconDesc_NonFissileUranium_64.png",
+            "sink": 0
         },
         {
             "name": "Sulfuric Acid",
-            "icon": "icons/IconDesc_LiquidSulfuricAcid_Pipe_64.png"
+            "icon": "icons/IconDesc_LiquidSulfuricAcid_Pipe_64.png",
+            "sink": 0
         },
         {
             "name": "Copper Powder",
-            "icon": "icons/IconDesc_CopperDust_64.png"
+            "icon": "icons/IconDesc_CopperDust_64.png",
+            "sink": 72
         },
         {
             "name": "Heat Sink",
-            "icon": "icons/IconDesc_Heatsink_64.png"
+            "icon": "icons/IconDesc_Heatsink_64.png",
+            "sink": 2804
         },
         {
             "name": "Electromagnetic Control Rod",
-            "icon": "icons/IconDesc_ElectromagneticControlRod_64.png"
+            "icon": "icons/IconDesc_ElectromagneticControlRod_64.png",
+            "sink": 2560
         },
         {
             "name": "Nuclear Pasta",
-            "icon": "icons/IconDesc_NuclearPasta_256.png"
+            "icon": "icons/IconDesc_NuclearPasta_256.png",
+            "sink": 538976
         },
         {
             "name": "Encased Uranium Cell",
-            "icon": "icons/IconDesc_NuclearCell_64.png"
+            "icon": "icons/IconDesc_NuclearCell_64.png",
+            "sink": 147
         },
         {
             "name": "Dissolved Silica",
-            "icon": "icons/IconDesc_DissolvedSilica_64.png"
+            "icon": "icons/IconDesc_DissolvedSilica_64.png",
+            "sink": 0
         },
         {
             "name": "Thermal Propulsion Rocket",
-            "icon": "icons/IconDesc_ThermalPropulsionRocket_64.png"
+            "icon": "icons/IconDesc_ThermalPropulsionRocket_64.png",
+            "sink": 728508
         },
         {
             "name": "Black Powder",
-            "icon": "icons/IconDesc_Gunpowder_64.png"
+            "icon": "icons/IconDesc_Gunpowder_64.png",
+            "sink": 14
         },
         {
             "name": "Ficsonium",
-            "icon": "icons/IconDesc_FicsoniumCell_64.png"
+            "icon": "icons/IconDesc_FicsoniumCell_64.png",
+            "sink": 0
         },
         {
             "name": "Singularity Cell",
-            "icon": "icons/IconDesc_SingularityCell_64.png"
+            "icon": "icons/IconDesc_SingularityCell_64.png",
+            "sink": 114675
         },
         {
             "name": "Ballistic Warp Drive",
-            "icon": "icons/IconDesc_BallisticWarpDrive_64.png"
+            "icon": "icons/IconDesc_BallisticWarpDrive_64.png",
+            "sink": 2895334
         },
         {
             "name": "Gas Filter",
-            "icon": "icons/IconDesc_GasMaskFilter_64.png"
+            "icon": "icons/IconDesc_GasMaskFilter_64.png",
+            "sink": 608
         },
         {
             "name": "Alien Protein",
-            "icon": "icons/IconDesc_AlienProtein_64.png"
+            "icon": "icons/IconDesc_AlienProtein_64.png",
+            "sink": 0
         },
         {
             "name": "Blue Power Slug",
-            "icon": "icons/PowerSlugGreen_64.png"
+            "icon": "icons/PowerSlugGreen_64.png",
+            "sink": 0
         },
         {
             "name": "Alien DNA Capsule",
-            "icon": "icons/IconDesc_AlienDNA_64.png"
+            "icon": "icons/IconDesc_AlienDNA_64.png",
+            "sink": 0
         },
         {
             "name": "Purple Power Slug",
-            "icon": "icons/PowerSlugPurple_64.png"
+            "icon": "icons/PowerSlugPurple_64.png",
+            "sink": 0
         },
         {
             "name": "Yellow Power Slug",
-            "icon": "icons/PowerSlugYellow_64.png"
+            "icon": "icons/PowerSlugYellow_64.png",
+            "sink": 0
         },
         {
             "name": "Smokeless Powder",
-            "icon": "icons/IconDesc_GunpowderMk2_64.png"
+            "icon": "icons/IconDesc_GunpowderMk2_64.png",
+            "sink": 58
         },
         {
             "name": "Uranium Fuel Rod",
-            "icon": "icons/IconDesc_NuclearFuelRod_64.png"
+            "icon": "icons/IconDesc_NuclearFuelRod_64.png",
+            "sink": 43468
         },
         {
             "name": "Plutonium Fuel Rod",
-            "icon": "icons/IconDesc_PlutoniumFuelRod_64.png"
+            "icon": "icons/IconDesc_PlutoniumFuelRod_64.png",
+            "sink": 153184
         },
         {
             "name": "Ficsonium Fuel Rod",
-            "icon": "icons/IconDesc_FicsoniumFuelRod_64.png"
+            "icon": "icons/IconDesc_FicsoniumFuelRod_64.png",
+            "sink": 0
         },
         {
             "name": "Explosive Rebar",
-            "icon": "icons/IconDesc_ExpRebar_64.png"
+            "icon": "icons/IconDesc_ExpRebar_64.png",
+            "sink": 360
         },
         {
             "name": "Stun Rebar",
-            "icon": "icons/IconDesc_StunRebar_64.png"
+            "icon": "icons/IconDesc_StunRebar_64.png",
+            "sink": 186
         },
         {
             "name": "Homing Rifle Ammo",
-            "icon": "icons/IconDesc_HomingRifle_64.png"
+            "icon": "icons/IconDesc_HomingRifle_64.png",
+            "sink": 855
         },
         {
             "name": "Cluster Nobelisk",
-            "icon": "icons/IconDesc_Cluster_64.png"
+            "icon": "icons/IconDesc_Cluster_64.png",
+            "sink": 1376
         },
         {
             "name": "Nobelisk",
-            "icon": "icons/IconDesc_Explosive_64.png"
+            "icon": "icons/IconDesc_Explosive_64.png",
+            "sink": 152
         },
         {
             "name": "Gas Nobelisk",
-            "icon": "icons/IconDesc_Gas_64.png"
+            "icon": "icons/IconDesc_Gas_64.png",
+            "sink": 544
         },
         {
             "name": "Nuke Nobelisk",
-            "icon": "icons/IconDesc_Nuke_64.png"
+            "icon": "icons/IconDesc_Nuke_64.png",
+            "sink": 19600
         },
         {
             "name": "Pulse Nobelisk",
-            "icon": "icons/IconDesc_Shock_64.png"
+            "icon": "icons/IconDesc_Shock_64.png",
+            "sink": 1533
         },
         {
             "name": "Iron Rebar",
-            "icon": "icons/IconDesc_Rebar_64.png"
+            "icon": "icons/IconDesc_Rebar_64.png",
+            "sink": 8
         },
         {
             "name": "Portable Miner",
-            "icon": "icons/IconDesc_PortableMiner_64.png"
+            "icon": "icons/IconDesc_PortableMiner_64.png",
+            "sink": 56
         },
         {
             "name": "Shatter Rebar",
-            "icon": "icons/IconDesc_ScatterRebar_64.png"
+            "icon": "icons/IconDesc_ScatterRebar_64.png",
+            "sink": 332
         },
         {
             "name": "Turbo Rifle Ammo",
-            "icon": "icons/IconDesc_TurboRifle_64.png"
+            "icon": "icons/IconDesc_TurboRifle_64.png",
+            "sink": 120
         },
         {
             "name": "Rifle Ammo",
-            "icon": "icons/IconDesc_Rifle_64.png"
+            "icon": "icons/IconDesc_Rifle_64.png",
+            "sink": 25
         },
         {
             "name": "Iron Ore",
-            "icon": "icons/IconDesc_iron_new_256.png"
+            "icon": "icons/IconDesc_iron_new_256.png",
+            "sink": 1
         },
         {
             "name": "Coal",
-            "icon": "icons/IconDesc_CoalOre_64.png"
+            "icon": "icons/IconDesc_CoalOre_64.png",
+            "sink": 3
         },
         {
             "name": "Water",
-            "icon": "icons/LiquidWater_Pipe_64.png"
+            "icon": "icons/LiquidWater_Pipe_64.png",
+            "sink": 0
         },
         {
             "name": "Nitrogen Gas",
-            "icon": "icons/IconDesc_NitrogenGas_64.png"
+            "icon": "icons/IconDesc_NitrogenGas_64.png",
+            "sink": 0
         },
         {
             "name": "Sulfur",
-            "icon": "icons/Sulfur_256.png"
+            "icon": "icons/Sulfur_256.png",
+            "sink": 11
         },
         {
             "name": "SAM",
-            "icon": "icons/IconDesc_SameOre_256.png"
+            "icon": "icons/IconDesc_SameOre_256.png",
+            "sink": 20
         },
         {
             "name": "Bauxite",
-            "icon": "icons/IconDesc_Bauxite_256.png"
+            "icon": "icons/IconDesc_Bauxite_256.png",
+            "sink": 8
         },
         {
             "name": "Caterium Ore",
-            "icon": "icons/IconDesc_CateriumOre_64.png"
+            "icon": "icons/IconDesc_CateriumOre_64.png",
+            "sink": 7
         },
         {
             "name": "Copper Ore",
-            "icon": "icons/IconDesc_copper_new_256.png"
+            "icon": "icons/IconDesc_copper_new_256.png",
+            "sink": 3
         },
         {
             "name": "Raw Quartz",
-            "icon": "icons/IconDesc_QuartzCrystal_256.png"
+            "icon": "icons/IconDesc_QuartzCrystal_256.png",
+            "sink": 15
         },
         {
             "name": "Limestone",
-            "icon": "icons/Stone_256.png"
+            "icon": "icons/Stone_256.png",
+            "sink": 2
         },
         {
             "name": "Uranium",
-            "icon": "icons/IconDesc_UraniumOre_64.png"
+            "icon": "icons/IconDesc_UraniumOre_64.png",
+            "sink": 35
         },
         {
             "name": "Crude Oil",
-            "icon": "icons/LiquidOil_Pipe_256.png"
+            "icon": "icons/LiquidOil_Pipe_256.png",
+            "sink": 0
         },
         {
             "name": "Solid Biofuel",
-            "icon": "icons/IconDesc_SolidBiofuel_64.png"
+            "icon": "icons/IconDesc_SolidBiofuel_64.png",
+            "sink": 48
         },
         {
             "name": "Packaged Liquid Biofuel",
-            "icon": "icons/IconDesc_LiquidBiofuel_64.png"
+            "icon": "icons/IconDesc_LiquidBiofuel_64.png",
+            "sink": 370
         },
         {
             "name": "Biomass",
-            "icon": "icons/IconDesc_Biomass_Final_64.png"
+            "icon": "icons/IconDesc_Biomass_Final_64.png",
+            "sink": 12
         },
         {
             "name": "Leaves",
-            "icon": "icons/IconDesc_Leaves_256.png"
+            "icon": "icons/IconDesc_Leaves_256.png",
+            "sink": 3
         },
         {
             "name": "Mycelia",
-            "icon": "icons/IconDesc_Mycelia_64.png"
+            "icon": "icons/IconDesc_Mycelia_64.png",
+            "sink": 10
         },
         {
             "name": "Wood",
-            "icon": "icons/IconDesc_Wood_64.png"
+            "icon": "icons/IconDesc_Wood_64.png",
+            "sink": 30
         },
         {
             "name": "Liquid Biofuel",
-            "icon": "icons/IconDesc_LiquidBiofuel_Pipe_64.png"
+            "icon": "icons/IconDesc_LiquidBiofuel_Pipe_64.png",
+            "sink": 0
         },
         {
             "name": "Packaged Alumina Solution",
-            "icon": "icons/IconDesc_PackagedAluminaSolution_64.png"
+            "icon": "icons/IconDesc_PackagedAluminaSolution_64.png",
+            "sink": 160
         },
         {
             "name": "Packaged Nitrogen Gas",
-            "icon": "icons/IconDesc_PackagedNitrogen_64.png"
+            "icon": "icons/IconDesc_PackagedNitrogen_64.png",
+            "sink": 312
         },
         {
             "name": "Packaged Nitric Acid",
-            "icon": "icons/IconDesc_PackagedNitricAcid_64.png"
+            "icon": "icons/IconDesc_PackagedNitricAcid_64.png",
+            "sink": 412
         },
         {
             "name": "Packaged Sulfuric Acid",
-            "icon": "icons/IconDesc_PckagedSulphuricAcid_64.png"
+            "icon": "icons/IconDesc_PckagedSulphuricAcid_64.png",
+            "sink": 152
         },
         {
             "name": "Fabric",
-            "icon": "icons/IconDesc_Fabric_64.png"
+            "icon": "icons/IconDesc_Fabric_64.png",
+            "sink": 140
         },
         {
             "name": "Hog Remains",
-            "icon": "icons/IconDesc_HogPart_64.png"
+            "icon": "icons/IconDesc_HogPart_64.png",
+            "sink": 0
         },
         {
             "name": "Spitter Remains",
-            "icon": "icons/IconDesc_SpitterPart_64.png"
+            "icon": "icons/IconDesc_SpitterPart_64.png",
+            "sink": 0
         },
         {
             "name": "Stinger Remains",
-            "icon": "icons/IconDesc_StingerPart_64.png"
+            "icon": "icons/IconDesc_StingerPart_64.png",
+            "sink": 0
         },
         {
             "name": "Hatcher Remains",
-            "icon": "icons/IconDesc_HatcherPart_64.png"
+            "icon": "icons/IconDesc_HatcherPart_64.png",
+            "sink": 0
         },
         {
             "name": "Power Shard",
-            "icon": "icons/PowerShard_64.png"
+            "icon": "icons/PowerShard_64.png",
+            "sink": 0
         },
         {
             "name": "Alien Power Matrix",
-            "icon": "icons/IconDesc_AlienPowerMatrix_64.png"
+            "icon": "icons/IconDesc_AlienPowerMatrix_64.png",
+            "sink": 210
         }
     ],
     "recipes": [
