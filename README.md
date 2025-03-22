@@ -32,18 +32,6 @@ Inside a node, in/out pins order is irrelevant. However, being able to reorder t
 </details>
 
 <details>
-<summary>Multi-pins merger/splitter</summary>
-
-Currently, merger and splitter nodes are limited to two in/out pins only, forcing to chain them. Having a button or an option to add (remove?) pins would simplify some graphs. I'm not sure yet what would be a "good" UX for that. It also requires to rethink a bit the propagation algorithm as it currently assumes there are always only two in/out pins.
-</details>
-
-<details>
-<summary>Better cycle support</summary>
-
-Currently production cycles (such as recycled plastic/rubber) are still quite buggy and sometimes require users to manually update rates to balance things out. I am not sure there is a "perfect" solution here, but improving support for circular productions would definitely be a good thing.
-</details>
-
-<details>
 <summary>Color modifiers</summary>
 
 Adding the ability to change colors for links/nodes would definitely help having better organized graphs.
