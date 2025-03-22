@@ -15,7 +15,6 @@
 #endif
 
 #if defined(__EMSCRIPTEN__)
-#include <imgui_internal.h>
 #include <emscripten.h>
 #include <emscripten/html5.h> // emscripten_set_beforeunload_callback
 #else
@@ -35,65 +34,6 @@ bool Render(SDL_Window* window, App* app)
     while (SDL_PollEvent(&event))
     {
         ImGui_ImplSDL2_ProcessEvent(&event);
-#if false // defined(__EMSCRIPTEN__)
-        // Hack to manually add input chars because numpad keys don't seem to trigger SDL_EVENT::SDL_TEXTINPUT with emscripten (??)
-        // see similar issue here https://github.com/pthom/hello_imgui/issues/114
-        // It may be a windows only issue though, so this hack *may* break stuff for other OS ?
-        if (event.type == SDL_KEYDOWN)
-        {
-            char c = 0;
-            switch (event.key.keysym.sym)
-            {
-            case SDLK_KP_0:
-                c = '0';
-                break;
-            case SDLK_KP_1:
-            case SDLK_KP_2:
-            case SDLK_KP_3:
-            case SDLK_KP_4:
-            case SDLK_KP_5:
-            case SDLK_KP_6:
-            case SDLK_KP_7:
-            case SDLK_KP_8:
-            case SDLK_KP_9:
-                c = '1' + static_cast<char>(event.key.keysym.sym - SDLK_KP_1);
-                break;
-            case SDLK_KP_PERIOD:
-                c = '.';
-                break;
-            case SDLK_KP_DIVIDE:
-                c = '/';
-                break;
-            case SDLK_KP_MULTIPLY:
-                c = '*';
-                break;
-            case SDLK_KP_MINUS:
-                c = '-';
-                break;
-            case SDLK_KP_PLUS:
-                c = '+';
-                break;
-            default:
-                break;
-            }
-            if (c != 0)
-            {
-                bool already_added = false;
-                for (const auto& e : ImGui::GetIO().Ctx->InputEventsQueue)
-                {
-                    if (e.Type == ImGuiInputEventType_Text && e.Text.Char == c)
-                    {
-                        already_added = true;
-                        break;
-                    }
-                }
-                if (!already_added)
-                {
-                    ImGui::GetIO().AddInputCharactersUTF8(&c);
-                }
-            }
-        }
-#endif
         if (event.type == SDL_QUIT ||
             (event.type == SDL_WINDOWEVENT &&
                 event.window.event == SDL_WINDOWEVENT_CLOSE &&
@@ -101,7 +41,6 @@ bool Render(SDL_Window* window, App* app)
             )
         )
         {
-
 #if defined(__EMSCRIPTEN__)
             emscripten_cancel_main_loop();
 #endif
