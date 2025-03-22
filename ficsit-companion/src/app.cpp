@@ -589,6 +589,12 @@ void App::UpdateNodesRate()
         std::unordered_set<const Pin*> relevant_pins = updated_from_left;
         relevant_pins.insert(updated_from_right.begin(), updated_from_right.end());
 
+        // Reset all previous flow
+        for (auto& l : links)
+        {
+            l->flow = std::nullopt;
+        }
+
         all_pins_new_rates.clear();
         current_updated_pin_index = 0;
         while (true)
@@ -638,11 +644,11 @@ void App::UpdateNodesRate()
                     all_pins_new_rates[p.get()] = p->base_rate * node_new_rate;
                     if (p->link != nullptr)
                     {
-                        if (p->current_rate != p->base_rate * node_new_rate)
+                        Pin* linked_pin = p->link->start;
+                        if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != p->base_rate * node_new_rate)
                         {
-                            p->link->flow = p->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
+                            linked_pin->link->flow = ax::NodeEditor::FlowDirection::Backward;
                         }
-                        Pin* linked_pin = p->direction == ax::NodeEditor::PinKind::Output ? p->link->end : p->link->start;
                         if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                         {
                             all_pins_new_rates[linked_pin] = p->base_rate * node_new_rate;
@@ -666,11 +672,11 @@ void App::UpdateNodesRate()
                     all_pins_new_rates[p.get()] = new_pin_rate;
                     if (p->link != nullptr)
                     {
-                        if (p->current_rate != new_pin_rate)
+                        Pin* linked_pin = p->link->end;
+                        if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != new_pin_rate)
                         {
-                            p->link->flow = p->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
+                            linked_pin->link->flow = ax::NodeEditor::FlowDirection::Forward;
                         }
-                        Pin* linked_pin = p->direction == ax::NodeEditor::PinKind::Output ? p->link->end : p->link->start;
                         if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                         {
                             all_pins_new_rates[linked_pin] = new_pin_rate;
@@ -730,11 +736,11 @@ void App::UpdateNodesRate()
                                 all_pins_new_rates[p] = 0;
                                 if (p->link != nullptr)
                                 {
-                                    if (p->current_rate != 0)
-                                    {
-                                        p->link->flow = p->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
-                                    }
                                     Pin* linked_pin = p->direction == ax::NodeEditor::PinKind::Output ? p->link->end : p->link->start;
+                                    if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != 0)
+                                    {
+                                        linked_pin->link->flow = linked_pin->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
+                                    }
                                     if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                                     {
                                         all_pins_new_rates[linked_pin] = 0;
@@ -755,11 +761,11 @@ void App::UpdateNodesRate()
                                 all_pins_new_rates[p] = new_rate;
                                 if (p->link != nullptr)
                                 {
-                                    if (p->current_rate != new_rate)
-                                    {
-                                        p->link->flow = p->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
-                                    }
                                     Pin* linked_pin = p->direction == ax::NodeEditor::PinKind::Output ? p->link->end : p->link->start;
+                                    if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != new_rate)
+                                    {
+                                        linked_pin->link->flow = linked_pin->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
+                                    }
                                     if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                                     {
                                         all_pins_new_rates[linked_pin] = new_rate;
@@ -800,11 +806,11 @@ void App::UpdateNodesRate()
                         all_pins_new_rates[single_pin[0].get()] = sum_multi_pin;
                         if (single_pin[0]->link != nullptr)
                         {
-                            if (single_pin[0]->current_rate != sum_multi_pin)
-                            {
-                                single_pin[0]->link->flow = single_pin[0]->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
-                            }
                             Pin* linked_pin = single_pin[0]->direction == ax::NodeEditor::PinKind::Output ? single_pin[0]->link->end : single_pin[0]->link->start;
+                            if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != sum_multi_pin)
+                            {
+                                linked_pin->link->flow = linked_pin->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
+                            }
                             if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                             {
                                 all_pins_new_rates[linked_pin] = sum_multi_pin;
@@ -818,11 +824,11 @@ void App::UpdateNodesRate()
                 // Also update linked pin if there is one
                 if (updated_pin->link != nullptr)
                 {
-                    if (updated_pin->current_rate != all_pins_new_rates[updated_pin])
-                    {
-                        updated_pin->link->flow = updated_pin->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
-                    }
                     Pin* linked_pin = updated_pin->direction == ax::NodeEditor::PinKind::Output ? updated_pin->link->end : updated_pin->link->start;
+                    if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != all_pins_new_rates[updated_pin])
+                    {
+                        linked_pin->link->flow = linked_pin->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
+                    }
                     if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                     {
                         all_pins_new_rates[linked_pin] = all_pins_new_rates[updated_pin];
@@ -843,11 +849,11 @@ void App::UpdateNodesRate()
                         all_pins_new_rates[p.get()] = out_pin_rate;
                         if (p->link != nullptr)
                         {
-                            if (p->current_rate != out_pin_rate)
-                            {
-                                p->link->flow = ax::NodeEditor::FlowDirection::Backward;
-                            }
                             Pin* linked_pin = p->link->end;
+                            if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != out_pin_rate)
+                            {
+                                linked_pin->link->flow = ax::NodeEditor::FlowDirection::Backward;
+                            }
                             if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                             {
                                 all_pins_new_rates[linked_pin] = out_pin_rate;
@@ -857,11 +863,11 @@ void App::UpdateNodesRate()
                     }
                     if (updated_pin->link != nullptr)
                     {
-                        if (updated_pin->current_rate != single_pin_rate)
-                        {
-                            updated_pin->link->flow = ax::NodeEditor::FlowDirection::Forward;
-                        }
                         Pin* linked_pin = updated_pin->link->start;
+                        if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != single_pin_rate)
+                        {
+                            linked_pin->link->flow = ax::NodeEditor::FlowDirection::Forward;
+                        }
                         if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                         {
                             all_pins_new_rates[linked_pin] = single_pin_rate;
@@ -878,11 +884,11 @@ void App::UpdateNodesRate()
                         all_pins_new_rates[p.get()] = new_rate_out_pins;
                         if (p->link != nullptr)
                         {
-                            if (p->current_rate != new_rate_out_pins)
-                            {
-                                p->link->flow = ax::NodeEditor::FlowDirection::Backward;
-                            }
                             Pin* linked_pin = p->link->end;
+                            if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != new_rate_out_pins)
+                            {
+                                linked_pin->link->flow = ax::NodeEditor::FlowDirection::Forward;
+                            }
                             if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                             {
                                 all_pins_new_rates[linked_pin] = new_rate_out_pins;
@@ -894,11 +900,11 @@ void App::UpdateNodesRate()
                     all_pins_new_rates[updated_pin->node->ins[0].get()] = new_rate_out_pins * updated_pin->node->outs.size();
                     if (updated_pin->node->ins[0]->link != nullptr)
                     {
-                        if (updated_pin->node->ins[0]->current_rate != new_rate_out_pins * updated_pin->node->outs.size())
-                        {
-                            updated_pin->node->ins[0]->link->flow = ax::NodeEditor::FlowDirection::Forward;
-                        }
                         Pin* linked_pin = updated_pin->node->ins[0]->link->start;
+                        if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != new_rate_out_pins * updated_pin->node->outs.size())
+                        {
+                            linked_pin->link->flow = ax::NodeEditor::FlowDirection::Backward;
+                        }
                         if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                         {
                             all_pins_new_rates[linked_pin] = new_rate_out_pins * updated_pin->node->outs.size();
@@ -913,9 +919,9 @@ void App::UpdateNodesRate()
                 if (updated_pin->link != nullptr)
                 {
                     Pin* linked_pin = updated_pin->link->start;
-                    if (updated_pin->current_rate != all_pins_new_rates.at(updated_pin))
+                    if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != all_pins_new_rates.at(updated_pin))
                     {
-                        updated_pin->link->flow = ax::NodeEditor::FlowDirection::Backward;
+                        linked_pin->link->flow = ax::NodeEditor::FlowDirection::Backward;
                     }
                     if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
                     {
@@ -2455,7 +2461,7 @@ void App::RenderLinks()
         if (link->flow.has_value())
         {
             ax::NodeEditor::Flow(link->id, link->flow.value());
-            link->flow = std::optional<ax::NodeEditor::FlowDirection>();
+            link->flow = std::nullopt;
         }
     }
 }
