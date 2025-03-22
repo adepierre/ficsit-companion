@@ -102,7 +102,7 @@ struct GroupNode : public PoweredNode
     GroupNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator,
         const Json::Value& serialized);
     virtual Kind GetKind() const override;
-    virtual bool IsGroup() const;
+    virtual bool IsGroup() const override;
     virtual Json::Value Serialize() const override;
     virtual void UpdateRate(const FractionalNumber& new_rate) override;
     virtual bool HasVariablePower() const override;
