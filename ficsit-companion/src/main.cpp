@@ -15,6 +15,7 @@
 #endif
 
 #if defined(__EMSCRIPTEN__)
+#include <imgui_internal.h>
 #include <emscripten.h>
 #include <emscripten/html5.h> // emscripten_set_beforeunload_callback
 #else
@@ -40,14 +41,12 @@ bool Render(SDL_Window* window, App* app)
         // It may be a windows only issue though, so this hack *may* break stuff for other OS ?
         if (event.type == SDL_KEYDOWN)
         {
+            char c = 0;
             switch (event.key.keysym.sym)
             {
             case SDLK_KP_0:
-            {
-                const char c = '0';
-                ImGui::GetIO().AddInputCharactersUTF8(&c);
+                c = '0';
                 break;
-            }
             case SDLK_KP_1:
             case SDLK_KP_2:
             case SDLK_KP_3:
@@ -57,43 +56,41 @@ bool Render(SDL_Window* window, App* app)
             case SDLK_KP_7:
             case SDLK_KP_8:
             case SDLK_KP_9:
-            {
-                const char c = '1' + static_cast<char>(event.key.keysym.sym - SDLK_KP_1);
-                ImGui::GetIO().AddInputCharactersUTF8(&c);
+                c = '1' + static_cast<char>(event.key.keysym.sym - SDLK_KP_1);
                 break;
-            }
             case SDLK_KP_PERIOD:
-            {
-                const char c = '.';
-                ImGui::GetIO().AddInputCharactersUTF8(&c);
+                c = '.';
                 break;
-            }
             case SDLK_KP_DIVIDE:
-            {
-                const char c = '/';
-                ImGui::GetIO().AddInputCharactersUTF8(&c);
+                c = '/';
                 break;
-            }
             case SDLK_KP_MULTIPLY:
-            {
-                const char c = '*';
-                ImGui::GetIO().AddInputCharactersUTF8(&c);
+                c = '*';
                 break;
-            }
             case SDLK_KP_MINUS:
-            {
-                const char c = '-';
-                ImGui::GetIO().AddInputCharactersUTF8(&c);
+                c = '-';
                 break;
-            }
             case SDLK_KP_PLUS:
-            {
-                const char c = '+';
-                ImGui::GetIO().AddInputCharactersUTF8(&c);
+                c = '+';
                 break;
-            }
             default:
                 break;
+            }
+            if (c != 0)
+            {
+                bool already_added = false;
+                for (const auto& e : ImGui::GetIO().Ctx->InputEventsQueue)
+                {
+                    if (e.Type == ImGuiInputEventType_Text && e.Text.Char == c)
+                    {
+                        already_added = true;
+                        break;
+                    }
+                }
+                if (!already_added)
+                {
+                    ImGui::GetIO().AddInputCharactersUTF8(&c);
+                }
             }
         }
 #endif
