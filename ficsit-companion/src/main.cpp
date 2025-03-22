@@ -35,7 +35,7 @@ bool Render(SDL_Window* window, App* app)
     while (SDL_PollEvent(&event))
     {
         ImGui_ImplSDL2_ProcessEvent(&event);
-#if defined(__EMSCRIPTEN__)
+#if false // defined(__EMSCRIPTEN__)
         // Hack to manually add input chars because numpad keys don't seem to trigger SDL_EVENT::SDL_TEXTINPUT with emscripten (??)
         // see similar issue here https://github.com/pthom/hello_imgui/issues/114
         // It may be a windows only issue though, so this hack *may* break stuff for other OS ?
