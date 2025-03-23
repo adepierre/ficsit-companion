@@ -138,7 +138,7 @@ Json::Value PoweredNode::Serialize() const
 }
 
 CraftNode::CraftNode(const ax::NodeEditor::NodeId id, const Recipe* recipe, const std::function<unsigned long long int()>& id_generator) :
-    PoweredNode(id), num_somersloop(0)
+    PoweredNode(id), num_somersloop(0), built(false)
 {
     ChangeRecipe(recipe, id_generator);
 }
@@ -160,7 +160,7 @@ CraftNode::CraftNode(const ax::NodeEditor::NodeId id, const std::function<unsign
     }
     else
     {
-        throw std::runtime_error("Unknown recip when loading craft node");
+        throw std::runtime_error("Unknown recipe when loading craft node");
     }
 
     num_somersloop = FractionalNumber(serialized["num_somersloop"].get<long long int>());
@@ -173,6 +173,7 @@ CraftNode::CraftNode(const ax::NodeEditor::NodeId id, const std::function<unsign
     {
         p->current_rate = p->base_rate * current_rate * (1 + num_somersloop * recipe->building->somersloop_mult);
     }
+    built = serialized["built"].get<bool>();
 }
 
 CraftNode::~CraftNode()
@@ -191,6 +192,7 @@ Json::Value CraftNode::Serialize() const
 
     node["recipe"] = recipe->name;
     node["num_somersloop"] = num_somersloop.GetNumerator();
+    node["built"] = built;
 
     return node;
 }
@@ -509,6 +511,22 @@ void GroupNode::PropagateRateToSubnodes()
     }
 }
 
+void GroupNode::SetBuiltState(const bool b)
+{
+    for (size_t i = 0; i < nodes.size(); ++i)
+    {
+        if (nodes[i]->IsCraft())
+        {
+            static_cast<CraftNode*>(nodes[i].get())->built = b;
+        }
+        else if (nodes[i]->IsGroup())
+        {
+            static_cast<GroupNode*>(nodes[i].get())->SetBuiltState(b);
+        }
+    }
+    UpdateDetails();
+}
+
 void GroupNode::CreateInsOuts(const std::function<unsigned long long int()>& id_generator)
 {
     inputs.clear();
@@ -601,6 +619,7 @@ void GroupNode::CreateInsOuts(const std::function<unsigned long long int()>& id_
 void GroupNode::UpdateDetails()
 {
     total_machines = {};
+    built_machines = {};
     detailed_machines = {};
     detailed_power_same_clock = {};
     detailed_power_last_underclock = {};
@@ -611,6 +630,7 @@ void GroupNode::UpdateDetails()
         {
             const CraftNode* node = static_cast<const CraftNode*>(n.get());
             total_machines[node->recipe->building->name] += node->current_rate;
+            built_machines[node->recipe->building->name] += node->built ? node->current_rate : 0;
             detailed_machines[node->recipe->building->name][node->recipe] += node->current_rate;
             detailed_power_same_clock[node->recipe] += node->same_clock_power;
             detailed_power_last_underclock[node->recipe] += node->last_underclock_power;
@@ -621,6 +641,10 @@ void GroupNode::UpdateDetails()
             for (const auto& [k, v] : node->total_machines)
             {
                 total_machines[k] += v;
+            }
+            for (const auto& [k, v] : node->built_machines)
+            {
+                built_machines[k] += v;
             }
             for (const auto& [k, v] : node->detailed_machines)
             {

@@ -12,6 +12,7 @@
 #include <SDL_opengl.h>
 #endif
 
+#include "node.hpp"
 #include "recipe.hpp"
 #include "utils.hpp"
 
@@ -141,10 +142,38 @@ bool UpdateSave(Json::Value& save, const int to)
     {
         for (auto& n : save["nodes"].get_array())
         {
+            // We could have filtered on craft node but wasn't implemented at the time
+            // doesn't really matter, extra fields for other node types will be ignored
             n["num_somersloop"] = 0;
         }
 
         save["save_version"] = 3;
+    }
+
+    if (save["save_version"].get<int>() == to)
+    {
+        return true;
+    }
+
+    // From 3 to 4, add built flag to craft nodes
+    if (save["save_version"].get<int>() == 3)
+    {
+        std::function<void(Json::Array&)> update_nodes_built = [&update_nodes_built](Json::Array& nodes) {
+            for (auto& n : nodes)
+            {
+                if (n["kind"].get_number<int>() == static_cast<int>(Node::Kind::Craft))
+                {
+                    n["built"] = false;
+                }
+                else if (n["kind"].get_number<int>() == static_cast<int>(Node::Kind::Group))
+                {
+                    update_nodes_built(n["nodes"].get_array());
+                }
+            }
+        };
+        update_nodes_built(save["nodes"].get_array());
+
+        save["save_version"] = 4;
     }
 
     if (save["save_version"].get<int>() == to)

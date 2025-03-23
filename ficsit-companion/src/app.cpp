@@ -157,7 +157,7 @@ void App::LoadSettings()
 #else
     settings.hide_spoilers = false;
 #endif
-    settings.hide_somersloop = json.contains("hide_somersloop") && json["hide_somersloop"].get<bool>(); // default true
+    settings.hide_somersloop = json.contains("hide_somersloop") && json["hide_somersloop"].get<bool>(); // default false
     settings.unlocked_alts = {};
 
     for (const auto& r : Data::Recipes())
@@ -167,6 +167,8 @@ void App::LoadSettings()
             settings.unlocked_alts[r.get()] = json.contains("unlocked_alts") && json["unlocked_alts"].contains(r->name.substr(1)) && json["unlocked_alts"][r->name.substr(1)].get<bool>();
         }
     }
+
+    settings.hide_build_progress = !json.contains("hide_build_progress") || json["hide_build_progress"].get<bool>(); // default true
 
     if (!content.has_value())
     {
@@ -189,6 +191,8 @@ void App::SaveSettings() const
         unlocked[r->name.substr(1)] = b;
     }
     serialized["unlocked_alts"] = unlocked;
+
+    serialized["hide_build_progress"] = settings.hide_build_progress;
 
     SaveFile(settings_file.data(), serialized.Dump());
 }
@@ -1259,6 +1263,7 @@ void App::Render()
     ax::NodeEditor::SetCurrentEditor(context);
     ax::NodeEditor::PushStyleColor(ax::NodeEditor::StyleColor_Flow, ImColor(1.0f, 1.0f, 0.0f));
     ax::NodeEditor::PushStyleColor(ax::NodeEditor::StyleColor_FlowMarker, ImColor(1.0f, 1.0f, 0.0f));
+    ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_SelectedNodeBorderWidth, 5.0f);
 
     ImGui::BeginChild("#left_panel", ImVec2(0.2f * ImGui::GetWindowSize().x, 0.0f), false, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoNavInputs);
     RenderLeftPanel();
@@ -1297,6 +1302,7 @@ void App::Render()
     CustomKeyControl();
 
     ax::NodeEditor::End();
+    ax::NodeEditor::PopStyleVar();
     ax::NodeEditor::PopStyleColor();
     ax::NodeEditor::PopStyleColor();
 
@@ -1578,6 +1584,33 @@ void App::RenderLeftPanel()
             "If set, the power per node will be calculated assuming all machines are set at the same clock value\n"
             "Otherwise, it will be calculated with machines at 100% and one last machine underclocked");
     }
+    if (ImGui::Checkbox("Hide build progress", &settings.hide_build_progress))
+    {
+        SaveSettings();
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("%s", "If set, build checkmark on craft nodes and overall progress bars won't be displayed");
+    }
+    if (!settings.hide_build_progress)
+    {
+        ImGui::SameLine();
+        if (ImGui::Button("Reset progress"))
+        {
+            for (auto& n : nodes)
+            {
+                if (n->IsCraft())
+                {
+                    static_cast<CraftNode*>(n.get())->built = false;
+                }
+                else if (n->IsGroup())
+                {
+                    static_cast<GroupNode*>(n.get())->SetBuiltState(false);
+                }
+            }
+        }
+    }
+
 
     if (ImGui::Button("Unlock all alt recipes"))
     {
@@ -1612,6 +1645,9 @@ void App::RenderLeftPanel()
     std::map<const Item*, FractionalNumber, ItemPtrCompare> outputs;
     std::map<const Item*, FractionalNumber, ItemPtrCompare> intermediates;
     std::map<std::string, FractionalNumber> total_machines;
+    FractionalNumber all_machines;
+    std::map<std::string, FractionalNumber> built_machines;
+    FractionalNumber all_built_machines;
     std::map<std::string, std::map<const Recipe*, FractionalNumber, RecipePtrCompare>> detailed_machines;
     FractionalNumber total_sink_points;
     std::map<const Item*, FractionalNumber> detailed_sink_points;
@@ -1635,7 +1671,10 @@ void App::RenderLeftPanel()
 
             const CraftNode* node = static_cast<const CraftNode*>(n.get());
             total_machines[node->recipe->building->name] += node->current_rate;
+            all_machines += node->current_rate;
             detailed_machines[node->recipe->building->name][node->recipe] += node->current_rate;
+            built_machines[node->recipe->building->name] += node->built ? node->current_rate : 0;
+            all_built_machines += node->built ? node->current_rate : 0;
             total_power += settings.power_equal_clocks ? node->same_clock_power : node->last_underclock_power;
             detailed_power[node->recipe] += settings.power_equal_clocks ? node->same_clock_power : node->last_underclock_power;
             has_variable_power |= node->recipe->building->variable_power;
@@ -1658,6 +1697,12 @@ void App::RenderLeftPanel()
             for (const auto& [k, v] : node->total_machines)
             {
                 total_machines[k] += v;
+                all_machines += v;
+            }
+            for (const auto& [k, v] : node->built_machines)
+            {
+                built_machines[k] += v;
+                all_built_machines += v;
             }
             for (const auto& [k, v] : node->detailed_machines)
             {
@@ -1698,6 +1743,46 @@ void App::RenderLeftPanel()
         {
             min_number_machines[machine] += static_cast<int>(std::ceil(n.GetValue()));
         }
+    }
+
+    if (!settings.hide_build_progress)
+    {
+        ImGui::SeparatorText("Build Progress");
+
+        // Progress bar color
+        ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_PlotHistogram, ImVec4(0, 0.5, 0, 1));
+        // No visible color change when hovered/click
+        ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_HeaderActive, ImVec4(0, 0, 0, 0));
+        const bool display_build_details = ImGui::TreeNodeEx("##build_progress", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanAvailWidth);
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+
+        // Displayed over the TreeNodeEx element (same line)
+        ImGui::SameLine();
+        ImGui::ProgressBar(all_machines.GetNumerator() == 0 ? 0.0f : static_cast<float>((all_built_machines / all_machines).GetValue()));
+        float max_machine_name_width = 0.0f;
+        for (auto& [machine, f] : built_machines)
+        {
+            max_machine_name_width = std::max(max_machine_name_width, ImGui::CalcTextSize(machine.c_str()).x);
+        }
+        // Detailed list of recipes if the tree node is open
+        if (display_build_details)
+        {
+            ImGui::Indent();
+            for (auto& [machine, f] : built_machines)
+            {
+                ImGui::TextUnformatted(machine.c_str());
+                ImGui::SameLine();
+                ImGui::Dummy(ImVec2(max_machine_name_width - ImGui::CalcTextSize(machine.c_str()).x, 0.0f));
+                ImGui::SameLine();
+                ImGui::ProgressBar((f / total_machines[machine]).GetValue());
+            }
+
+            ImGui::Unindent();
+            ImGui::TreePop();
+        }
+        ImGui::PopStyleColor();
     }
 
     ImGui::SeparatorText(has_variable_power ? "Average Power Consumption" : "Power Consumption");
@@ -1996,6 +2081,14 @@ void App::RenderNodes()
             ax::NodeEditor::PushStyleColor(ax::NodeEditor::StyleColor_NodeBorder, ImColor(255, 0, 0));
             node_pushed_style += 1;
         }
+        if (!settings.hide_build_progress && (
+            (node->IsCraft() && static_cast<CraftNode*>(node.get())->built) ||
+            (node->IsGroup() && static_cast<GroupNode*>(node.get())->built_machines == static_cast<GroupNode*>(node.get())->total_machines)
+        ))
+        {
+            ax::NodeEditor::PushStyleColor(ax::NodeEditor::StyleColor_NodeBorder, ImColor(0, 255, 0));
+            node_pushed_style += 1;
+        }
         ax::NodeEditor::BeginNode(node->id);
         ImGui::PushID(node->id.AsPointer());
         ImGui::BeginVertical("node");
@@ -2005,7 +2098,18 @@ void App::RenderNodes()
                 switch (node->GetKind())
                 {
                 case Node::Kind::Craft:
-                    ImGui::TextUnformatted(static_cast<CraftNode*>(node.get())->recipe->display_name.c_str());
+                {
+                    CraftNode* craft_node = static_cast<CraftNode*>(node.get());
+                    ImGui::Spring(1.0f);
+                    ImGui::TextUnformatted(craft_node->recipe->display_name.c_str());
+                    ImGui::Spring(1.0f);
+                    if (!settings.hide_build_progress)
+                    {
+                        ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+                        ImGui::Checkbox("##craft_built", &craft_node->built);
+                        ImGui::PopStyleVar();
+                    }
+                }
                     break;
                 case Node::Kind::Merger:
                     ImGui::TextUnformatted("Merger");
@@ -2021,11 +2125,23 @@ void App::RenderNodes()
                     break;
                 case Node::Kind::Group:
                 {
+                    GroupNode* group_node = static_cast<GroupNode*>(node.get());
+                    ImGui::Spring(1.0f);
                     ImGui::TextUnformatted("Group");
                     ImGui::Spring(0.0f);
-                    std::string& name = static_cast<GroupNode*>(node.get())->name;
-                    ImGui::SetNextItemWidth(std::max(ImGui::CalcTextSize(name.c_str()).x, ImGui::CalcTextSize("Name...").x) + ImGui::GetStyle().FramePadding.x * 4.0f);
-                    ImGui::InputTextWithHint("##name", "Name...", &name);
+                    ImGui::SetNextItemWidth(std::max(ImGui::CalcTextSize(group_node->name.c_str()).x, ImGui::CalcTextSize("Name...").x) + ImGui::GetStyle().FramePadding.x * 4.0f);
+                    ImGui::InputTextWithHint("##name", "Name...", &group_node->name);
+                    ImGui::Spring(1.0f);
+                    if (!settings.hide_build_progress)
+                    {
+                        ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+                        bool is_built = group_node->built_machines == group_node->total_machines;
+                        if (ImGui::Checkbox("##group_built", &is_built))
+                        {
+                            group_node->SetBuiltState(is_built);
+                        }
+                        ImGui::PopStyleVar();
+                    }
                     break;
                 }
                 }

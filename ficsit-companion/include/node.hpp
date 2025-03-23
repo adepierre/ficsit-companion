@@ -93,6 +93,8 @@ struct CraftNode : public PoweredNode
     const Recipe* recipe;
     /// @brief Technically it could be just an int, but FractionalNumber already has all string operations
     FractionalNumber num_somersloop;
+    /// @brief Custom boolean that can be used to track progress on factory building
+    bool built;
 };
 
 struct GroupNode : public PoweredNode
@@ -108,6 +110,7 @@ struct GroupNode : public PoweredNode
     virtual bool HasVariablePower() const override;
     virtual void ComputePowerUsage() override;
     void PropagateRateToSubnodes();
+    void SetBuiltState(const bool b);
 
 private:
     void CreateInsOuts(const std::function<unsigned long long int()>& id_generator);
@@ -124,6 +127,7 @@ public:
     /// @brief Cached value to avoid looping through all the nodes everytime
     bool variable_power;
     std::map<std::string, FractionalNumber> total_machines;
+    std::map<std::string, FractionalNumber> built_machines;
     std::map<std::string, std::map<const Recipe*, FractionalNumber>> detailed_machines;
     std::map<const Recipe*, FractionalNumber> detailed_power_same_clock;
     std::map<const Recipe*, FractionalNumber> detailed_power_last_underclock;
