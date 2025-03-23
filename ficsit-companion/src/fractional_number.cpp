@@ -6,66 +6,189 @@
 
 #include <iomanip>
 #include <numeric>
-#include <regex>
 #include <sstream>
+#include <stack>
 #include <stdexcept>
+#include <unordered_map>
 
 FractionalNumber::FractionalNumber(const long long int n, const long long int d) : numerator(n), denominator(d)
 {
     Simplify();
 }
 
-// Convert a string representation to an integer. Return the integer and a power of 10 multiplier
-// "40"      --> (40,     0)
-// "34.5"    --> (345,    1)
-// "4.12345" --> (412345, 5)
-// "-6.25"   --> (-625,   2)
-std::pair<long long int, int> StringToInt(const std::string& s)
-{
-    const size_t point_index = s.find('.');
-    if (point_index == std::string::npos)
-    {
-        return { std::stoll(s), 0 };
-    }
-
-    const int is_negative = s[0] == '-' ? 1 : 0; // Explicit bool to int conversion cause I don't like leaving the implicit one. Compiler will optimize it anyway
-    const long long int int_part = std::stoll(s.substr(0, point_index));
-    const long long int decimal_part = std::stoll(s.substr(point_index + 1));
-
-    long long int multiplier = 1;
-    for (size_t i = 0; i < s.size() - point_index - 1 - is_negative; ++i)
-    {
-        multiplier *= 10;
-    }
-
-    return { int_part * multiplier + decimal_part, static_cast<int>(s.size() - point_index - 1 - is_negative) };
-}
-
 FractionalNumber::FractionalNumber(const std::string& s)
 {
-    const std::regex pattern("(-?\\d+(?:\\.\\d+)?)(?:\\s*/\\s*(-?\\d+(?:\\.\\d+)?))?");
-    std::smatch matches;
+    static const std::unordered_map<char, int> precedence = {
+        { '+', 1 },
+        { '-', 1 },
+        { '*', 2 },
+        { '/', 2 },
+    };
 
-    if (!std::regex_match(s, matches, pattern))
+    std::vector<std::string> postfix;
+    std::stack<char> operators;
+
+    // Basically an implementation of the Shunting yard algorithm straight from the pseudocode at https://wikipedia.org/wiki/Shunting_yard_algorithm
+    for (size_t i = 0; i < s.size(); ++i)
     {
-        throw std::domain_error("Invalid input string");
+        const char c = s[i];
+
+        // Skip spaces
+        if (std::isspace(c))
+        {
+            continue;
+        }
+
+        // if it's a number
+        if (std::isdigit(c))
+        {
+            const size_t start = i;
+            while (i < s.size() && (std::isdigit(s[i]) || s[i] == '.'))
+            {
+                i += 1;
+            }
+            // Go back to the last digit
+            i -= 1;
+            // put it into the output queue
+            postfix.push_back(s.substr(start, i - start + 1));
+        }
+        // if it's an operator o1
+        else if (c == '+' || c == '-' || c == '*' || c == '/')
+        {
+            // while there is an operator o2 at the top of the operator stack which is not a left parenthesis,
+            // and o2 has greater precedence than o1 (or the same precedence as we only deal with right associative operators)
+            while (!operators.empty() && operators.top() != '(' && precedence.at(operators.top()) >= precedence.at(c))
+            {
+                // pop o2 from the operator stack into the output queue
+                postfix.push_back(std::string(1, operators.top()));
+                operators.pop();
+            }
+            // push o1 onto the operator stack
+            operators.push(c);
+        }
+        // if it's a left parenthesis
+        else if (c == '(')
+        {
+            // push it onto the operator stack
+            operators.push(c);
+        }
+        // if it's a right parenthesis
+        else if (c == ')')
+        {
+            // while the operator at the top of the operator stack is not a left parenthesis
+            // If the stack runs out without finding a left parenthesis, then there are mismatched parentheses.
+            while (!operators.empty() && operators.top() != '(')
+            {
+                // pop the operator from the operator stack into the output queue
+                postfix.push_back(std::string(1, operators.top()));
+                operators.pop();
+            }
+            // assert there is a left parenthesis at the top of the operator stack
+            if (operators.empty() || operators.top() != '(')
+            {
+                throw std::domain_error("Mismatched parentheses");
+            }
+            // pop the left parenthesis from the operator stack and discard it
+            operators.pop();
+        }
     }
 
-    auto [numerator_int, numerator_mult] = StringToInt(matches[1]);
-    auto [denominator_int, denominator_mult] = matches[2].matched ? StringToInt(matches[2]) : std::make_pair(1LL, 0);
-
-    for (int i = numerator_mult; i < std::max(numerator_mult, denominator_mult); ++i)
+    // After the while loop, pop the remaining items from the operator stack into the output queue
+    // while there are tokens on the operator stack
+    while (!operators.empty())
     {
-        numerator_int *= 10;
-    }
-    for (int i = denominator_mult; i < std::max(numerator_mult, denominator_mult); ++i)
-    {
-        denominator_int *= 10;
+        // assert the operator on top of the stack is not a (left) parenthesis
+        if (operators.top() == '(')
+        {
+            throw std::domain_error("Mismatched parentheses");
+        }
+        // pop the operator from the operator stack onto the output queue
+        postfix.push_back(std::string(1, operators.top()));
+        operators.pop();
     }
 
-    numerator = numerator_int;
-    denominator = denominator_int;
-    Simplify();
+    std::stack<FractionalNumber> values;
+
+    // Loop through the postfix tokens
+    for (const auto& token : postfix)
+    {
+        // If it's a value, convert it to a fractional number
+        if (!token.empty() && (std::isdigit(token[0]) || token[0] == '.'))
+        {
+            long long int numerator = 0;
+            long long int denominator = 0;
+            const size_t decimal_index = token.find('.');
+            if (decimal_index == std::string::npos)
+            {
+                numerator = std::stoll(token);
+                denominator = 1;
+            }
+            else
+            {
+                if (decimal_index == 0)
+                {
+                    numerator = 0;
+                }
+                else
+                {
+                    numerator = std::stoll(token.substr(0, decimal_index));
+                }
+                const long long int decimal = std::stoll(token.substr(decimal_index + 1));
+                denominator = 1;
+                for (size_t i = 0; i < token.size() - decimal_index - 1; ++i)
+                {
+                    numerator *= 10;
+                    denominator *= 10;
+                }
+                numerator += decimal;
+            }
+            values.push(FractionalNumber(numerator, denominator));
+        }
+        // If it's an operator, apply it
+        else
+        {
+            if (values.size() < 2)
+            {
+                throw std::domain_error("Invalid expression");
+            }
+            const FractionalNumber b = values.top();
+            values.pop();
+            const FractionalNumber a = values.top();
+            values.pop();
+            switch (token[0])
+            {
+            case '+':
+                values.push(a + b);
+                break;
+            case '-':
+                values.push(a - b);
+                break;
+            case '*':
+                values.push(a * b);
+                break;
+            case '/':
+                if (b.GetNumerator() == 0)
+                {
+                    throw std::domain_error("Division by zero");
+                }
+                values.push(a / b);
+                break;
+            default:
+                throw std::domain_error("Invalid operator");
+                break;
+            }
+        }
+    }
+
+    if (values.size() != 1)
+    {
+        throw std::domain_error("Invalid expression");
+    }
+
+    numerator = values.top().GetNumerator();
+    denominator = values.top().GetDenominator();
+    // Fraction is already simplified, we just need to update value
+    UpdateValue();
 }
 
 long long int FractionalNumber::GetNumerator() const
