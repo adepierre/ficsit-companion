@@ -86,7 +86,7 @@ FractionalNumber::FractionalNumber(const std::string& s)
             // assert there is a left parenthesis at the top of the operator stack
             if (operators.empty() || operators.top() != '(')
             {
-                throw std::domain_error("Mismatched parentheses");
+                throw std::invalid_argument("Mismatched parentheses");
             }
             // pop the left parenthesis from the operator stack and discard it
             operators.pop();
@@ -100,7 +100,7 @@ FractionalNumber::FractionalNumber(const std::string& s)
         // assert the operator on top of the stack is not a (left) parenthesis
         if (operators.top() == '(')
         {
-            throw std::domain_error("Mismatched parentheses");
+            throw std::invalid_argument("Mismatched parentheses");
         }
         // pop the operator from the operator stack onto the output queue
         postfix.push_back(std::string(1, operators.top()));
@@ -149,7 +149,7 @@ FractionalNumber::FractionalNumber(const std::string& s)
         {
             if (values.size() < 2)
             {
-                throw std::domain_error("Invalid expression");
+                throw std::invalid_argument("Invalid expression");
             }
             const FractionalNumber b = values.top();
             values.pop();
@@ -169,12 +169,12 @@ FractionalNumber::FractionalNumber(const std::string& s)
             case '/':
                 if (b.GetNumerator() == 0)
                 {
-                    throw std::domain_error("Division by zero");
+                    throw std::invalid_argument("Division by zero");
                 }
                 values.push(a / b);
                 break;
             default:
-                throw std::domain_error("Invalid operator");
+                throw std::invalid_argument("Invalid operator");
                 break;
             }
         }
@@ -182,7 +182,7 @@ FractionalNumber::FractionalNumber(const std::string& s)
 
     if (values.size() != 1)
     {
-        throw std::domain_error("Invalid expression");
+        throw std::invalid_argument("Invalid expression");
     }
 
     numerator = values.top().GetNumerator();

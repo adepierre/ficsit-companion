@@ -2208,7 +2208,7 @@ void App::RenderNodes()
                                 {
                                     updated_pins_new_rates.push_back({ p.get(), p->current_rate.GetStringFloat() });
                                 }
-                                catch (const std::domain_error&)
+                                catch (const std::invalid_argument&)
                                 {
                                     p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
                                 }
@@ -2302,7 +2302,7 @@ void App::RenderNodes()
                                 {
                                     updated_pins_new_rates.push_back({ p.get(), p->current_rate.GetStringFloat() });
                                 }
-                                catch (const std::domain_error&)
+                                catch (const std::invalid_argument&)
                                 {
                                     p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
                                 }
@@ -2433,7 +2433,7 @@ void App::RenderNodes()
                             }
                         }
                         // Rollback to previous value if the user input is not a valid fractional number
-                        catch (const std::domain_error&)
+                        catch (const std::invalid_argument&)
                         {
                             powered_node->UpdateRate(FractionalNumber(powered_node->current_rate.GetNumerator(), powered_node->current_rate.GetDenominator()));
                         }
@@ -2475,7 +2475,7 @@ void App::RenderNodes()
                                     // Only integer somersloop allowed
                                     if (new_num_somersloop.GetDenominator() != 1)
                                     {
-                                        throw std::domain_error("somersloop num can only be whole integers");
+                                        throw std::invalid_argument("somersloop num can only be whole integers");
                                     }
                                     // Check we don't try to boost more than 2x
                                     // We know numerator is > 0 as otherwise somersloop input is not displayed, so it's ok to invert the fraction
@@ -2490,7 +2490,7 @@ void App::RenderNodes()
                                         updated_pins_new_rates.push_back({ p.get(), p->current_rate });
                                     }
                                 }
-                                catch (const std::domain_error&)
+                                catch (const std::invalid_argument&)
                                 {
                                     craft_node->num_somersloop = FractionalNumber(craft_node->num_somersloop.GetNumerator(), 1);
                                 }
