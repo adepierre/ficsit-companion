@@ -495,14 +495,14 @@ void GroupNode::PropagateRateToSubnodes()
                     outputs[k] += v;
                 }
             }
-            else if (nodes[i]->IsSink())
+        }
+        else if (nodes[i]->IsSink())
+        {
+            for (auto& p : nodes[i]->ins)
             {
-                for (auto& p : nodes[i]->ins)
+                if (p->item != nullptr)
                 {
-                    if (p->item != nullptr)
-                    {
-                        inputs[p->item] += p->current_rate * current_rate;
-                    }
+                    inputs[p->item] += p->current_rate * current_rate;
                 }
             }
         }
