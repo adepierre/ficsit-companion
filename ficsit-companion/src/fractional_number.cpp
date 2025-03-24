@@ -244,7 +244,7 @@ void FractionalNumber::RenderInputText(const char* label, const bool disabled, c
 
     ImGui::BeginDisabled(disabled);
     ImGui::SetNextItemWidth(width);
-    ImGui::InputText(label, &float_value, disabled ? ImGuiInputTextFlags_ReadOnly : ImGuiInputTextFlags_CharsDecimal);
+    ImGui::InputText(label, &float_value, disabled ? ImGuiInputTextFlags_ReadOnly : ImGuiInputTextFlags_None);
     ImGui::EndDisabled();
     if (fraction_tooltip)
     {
@@ -301,7 +301,7 @@ bool FractionalNumber::operator>(const FractionalNumber& other) const
 
 void FractionalNumber::Simplify()
 {
-    const long long int gcd = numerator == 0 ? denominator : std::gcd(numerator, denominator);
+    const long long int gcd = numerator == 0 ? denominator : (std::gcd(numerator, denominator) * (denominator < 0 ? -1LL : 1LL));
     numerator /= gcd;
     denominator /= gcd;
     UpdateValue();
