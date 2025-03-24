@@ -324,7 +324,7 @@ void App::Deserialize(const std::string& s)
             continue;
         }
 
-        CreateLink(start_node->outs[start_pin_index].get(), end_node->ins[end_pin_index].get());
+        CreateLink(start_node->outs[start_pin_index].get(), end_node->ins[end_pin_index].get(), false);
     }
 }
 
@@ -362,7 +362,7 @@ Pin* App::FindPin(ax::NodeEditor::PinId id) const
     return nullptr;
 }
 
-void App::CreateLink(Pin* start, Pin* end)
+void App::CreateLink(Pin* start, Pin* end, const bool trigger_update)
 {
     links.emplace_back(std::make_unique<Link>(GetNextId(),
         // Make sure start is always an output and end an input
@@ -389,9 +389,9 @@ void App::CreateLink(Pin* start, Pin* end)
     {
         real_end->item = (start->direction == ax::NodeEditor::PinKind::Output ? start : end)->item;
     }
-    if (start->current_rate != end->current_rate)
+    if (trigger_update && start->current_rate != end->current_rate)
     {
-        updated_pins_new_rates.push_back({ start, start->current_rate });
+        UpdateNodesRate(start, start->current_rate);
     }
 }
 
@@ -452,95 +452,72 @@ void App::DeleteNode(const ax::NodeEditor::NodeId id)
     }
 }
 
-void App::UpdateNodesRate()
+bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& constraint_value)
 {
-    if (updated_pins_new_rates.size() == 0)
+    std::unordered_set<const Pin*> relevant_pins;
+
+    // Current queue of pins that had their new rate set and need to propagate it
+    std::queue<const Pin*> pins_to_propagate;
+    pins_to_propagate.push(constraint_pin);
+    // We need to process the link here to prevent infinite loop
+    // in which each end triggers an update of the other one
+    if (constraint_pin->link != nullptr)
     {
-        return;
+        pins_to_propagate.push(constraint_pin->direction == ax::NodeEditor::PinKind::Input ? constraint_pin->link->start : constraint_pin->link->end);
     }
 
-    // New rate for each pin involved in the current graph update
-    std::unordered_map<const Pin*, FractionalNumber> all_pins_new_rates;
-
-    auto new_rate_default_to_current_rate = [&](const Pin* p) {
-        const auto it = all_pins_new_rates.find(p);
-        if (it != all_pins_new_rates.end())
-        {
-            return it->second;
-        }
-        return p->current_rate;
-    };
-
-    bool balanced = false;
-    while (!balanced)
+    // First pass, collect all pins involved in this graph operation (reducing variables for ununsed pins in CustomSplitter and Merger)
+    while (!pins_to_propagate.empty())
     {
-        // All pins updated while going from left to right
-        std::unordered_set<const Pin*> updated_from_left;
-        // All pins updated while going from right to left
-        std::unordered_set<const Pin*> updated_from_right;
-        // (having only one set instead of two messes things up when the graph
-        // contains some loop like recycle plastic/rubber)
+        const Pin* updated_pin = pins_to_propagate.front();
+        pins_to_propagate.pop();
 
-        // Current queue of pins that had their new rate set and need to propagate it
-        std::queue<const Pin*> pins_to_propagate;
+        relevant_pins.insert(updated_pin);
 
-        // Propagate to find all pins involved in the current graph update
-        // (ignoring their rate for now)
-        size_t current_updated_pin_index = 0;
-        while (true)
+        switch (updated_pin->node->GetKind())
         {
-            // If we don't have any pin to propagate, push the next
-            // updated one (manually changed, or forced during a
-            // previous iteration of the outter while loop)
-            if (pins_to_propagate.empty())
+        case Node::Kind::Craft:
+        case Node::Kind::Group:
+        case Node::Kind::GameSplitter:
+            // Craft/Group/GameSplitter, any pin update triggers an update of all pins
+        {
+            for (const auto& p : updated_pin->node->ins)
             {
-                if (current_updated_pin_index == updated_pins_new_rates.size())
+                // Update the other inputs
+                if (p.get() != updated_pin && relevant_pins.find(p.get()) == relevant_pins.end())
                 {
-                    break;
-                }
-                const Pin* pin = updated_pins_new_rates[current_updated_pin_index].first;
-                pins_to_propagate.push(pin);
-                // We need to manually process the link here to prevent reupdating
-                // this pin (but in the reverse left/right) from its linked one
-                if (pin->link != nullptr)
-                {
-                    pins_to_propagate.push(pin->direction == ax::NodeEditor::PinKind::Input ? pin->link->start : pin->link->end);
-                }
-                current_updated_pin_index += 1;
-            }
-
-            const Pin* current_pin = pins_to_propagate.front();
-            pins_to_propagate.pop();
-
-            (current_pin->direction == ax::NodeEditor::PinKind::Input ? updated_from_left : updated_from_right).insert(current_pin);
-
-            // Update parent node from this pin
-            switch (current_pin->node->GetKind())
-            {
-            case Node::Kind::Craft:
-            case Node::Kind::Group:
-            case Node::Kind::GameSplitter:
-            {
-                std::unordered_set<const Pin*>& updated_for_inputs = current_pin->direction == ax::NodeEditor::PinKind::Input ? updated_from_right : updated_from_left;
-                std::unordered_set<const Pin*>& updated_for_outputs = current_pin->direction == ax::NodeEditor::PinKind::Input ? updated_from_left : updated_from_right;
-                for (const auto& p : current_pin->node->ins)
-                {
-                    // Update the other inputs from right/left (depending on the type of the current pin)
-                    if (p.get() != current_pin && updated_for_inputs.find(p.get()) == updated_for_inputs.end())
+                    relevant_pins.insert(p.get());
+                    if (p->link != nullptr)
                     {
-                        updated_for_inputs.insert(p.get());
-                        if (p->link != nullptr)
-                        {
-                            pins_to_propagate.push(p->link->start);
-                        }
+                        pins_to_propagate.push(p->link->start);
                     }
                 }
-                for (const auto& p : current_pin->node->outs)
+            }
+            for (const auto& p : updated_pin->node->outs)
+            {
+                // Update the other outputs
+                if (p.get() != updated_pin && relevant_pins.find(p.get()) == relevant_pins.end())
                 {
-                    // Update outputs from left/right (depending on the type of the current pin)
-                    if (p.get() != current_pin && updated_for_outputs.find(p.get()) == updated_for_outputs.end())
+                    relevant_pins.insert(p.get());
+                    if (p->link != nullptr)
                     {
-                        updated_for_outputs.insert(p.get());
+                        pins_to_propagate.push(p->link->end);
+                    }
+                }
+            }
+        }
+        break;
+        case Node::Kind::CustomSplitter:
+        case Node::Kind::Merger:
+            // CustomSplitter/Merger, a pin only triggers an update of the opposite side pins
+            if (updated_pin->direction == ax::NodeEditor::PinKind::Input)
+            {
+                for (const auto& p : updated_pin->node->outs)
+                {
+                    // Update all outputs
+                    if (relevant_pins.find(p.get()) == relevant_pins.end())
+                    {
+                        relevant_pins.insert(p.get());
                         if (p->link != nullptr)
                         {
                             pins_to_propagate.push(p->link->end);
@@ -548,491 +525,358 @@ void App::UpdateNodesRate()
                     }
                 }
             }
-                break;
-            case Node::Kind::CustomSplitter:
-            case Node::Kind::Merger:
-                if (current_pin->direction == ax::NodeEditor::PinKind::Input)
-                {
-                    for (const auto& p : current_pin->node->outs)
-                    {
-                        // Update all outputs from left
-                        if (updated_from_left.find(p.get()) == updated_from_left.end())
-                        {
-                            updated_from_left.insert(p.get());
-                            if (p->link != nullptr)
-                            {
-                                pins_to_propagate.push(p->link->end);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    for (const auto& p : current_pin->node->ins)
-                    {
-                        // Update all inputs from right
-                        if (updated_from_right.find(p.get()) == updated_from_right.end())
-                        {
-                            updated_from_right.insert(p.get());
-                            if (p->link != nullptr)
-                            {
-                                pins_to_propagate.push(p->link->start);
-                            }
-                        }
-                    }
-                }
-                break;
-            case Node::Kind::Sink:
-                // Nothing to propagate
-                break;
-            }
-        }
-
-
-        // Merge all pins that are potentially involved in the current graph update
-        std::unordered_set<const Pin*> relevant_pins = updated_from_left;
-        relevant_pins.insert(updated_from_right.begin(), updated_from_right.end());
-
-        // Reset all previous flow
-        for (auto& l : links)
-        {
-            l->flow = std::nullopt;
-        }
-
-        all_pins_new_rates.clear();
-        current_updated_pin_index = 0;
-        while (true)
-        {
-            // If we don't have any pin to propagate, push the next
-            // updated one (manually changed, or forced during a
-            // previous iteration of the outter while loop)
-            if (pins_to_propagate.empty())
+            else
             {
-                if (current_updated_pin_index == updated_pins_new_rates.size())
-                {
-                    break;
-                }
-                const auto& [p, r] = updated_pins_new_rates[current_updated_pin_index];
-                pins_to_propagate.push(p);
-                all_pins_new_rates[p] = r;
-                current_updated_pin_index += 1;
-            }
-
-            const Pin* updated_pin = pins_to_propagate.front();
-            pins_to_propagate.pop();
-
-            switch (const Node::Kind kind = updated_pin->node->GetKind())
-            {
-            case Node::Kind::Craft:
-            case Node::Kind::Group:
-            {
-                FractionalNumber node_new_rate;
-                if (kind == Node::Kind::Craft)
-                {
-                    CraftNode* node = static_cast<CraftNode*>(updated_pin->node);
-                    node_new_rate = all_pins_new_rates.at(updated_pin) / (
-                        updated_pin->direction == ax::NodeEditor::PinKind::Output ?
-                            updated_pin->base_rate * (1 + node->num_somersloop * node->recipe->building->somersloop_mult) :
-                            updated_pin->base_rate
-                    );
-                }
-                else // Group
-                {
-                    GroupNode* node = static_cast<GroupNode*>(updated_pin->node);
-                    node_new_rate = all_pins_new_rates.at(updated_pin) / updated_pin->base_rate;
-                }
-
-                // Update new rates of all inputs pins (and linked pins if exists). Propagate from the linked pins
                 for (const auto& p : updated_pin->node->ins)
                 {
-                    all_pins_new_rates[p.get()] = p->base_rate * node_new_rate;
-                    if (p->link != nullptr)
+                    // Update all inputs
+                    if (relevant_pins.find(p.get()) == relevant_pins.end())
                     {
-                        Pin* linked_pin = p->link->start;
-                        if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != p->base_rate * node_new_rate)
-                        {
-                            linked_pin->link->flow = ax::NodeEditor::FlowDirection::Backward;
-                        }
-                        if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
-                        {
-                            all_pins_new_rates[linked_pin] = p->base_rate * node_new_rate;
-                            pins_to_propagate.push(linked_pin);
-                        }
-                    }
-                }
-                // Update new rates of all outputs pins (and linked pins if exists). Propagate from the linked pins
-                for (const auto& p : updated_pin->node->outs)
-                {
-                    FractionalNumber new_pin_rate;
-                    if (kind == Node::Kind::Craft)
-                    {
-                        CraftNode* node = static_cast<CraftNode*>(updated_pin->node);
-                        new_pin_rate = p->base_rate * node_new_rate * (1 + (node->num_somersloop * node->recipe->building->somersloop_mult));
-                    }
-                    else // Group
-                    {
-                        new_pin_rate = p->base_rate * node_new_rate;
-                    }
-                    all_pins_new_rates[p.get()] = new_pin_rate;
-                    if (p->link != nullptr)
-                    {
-                        Pin* linked_pin = p->link->end;
-                        if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != new_pin_rate)
-                        {
-                            linked_pin->link->flow = ax::NodeEditor::FlowDirection::Forward;
-                        }
-                        if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
-                        {
-                            all_pins_new_rates[linked_pin] = new_pin_rate;
-                            pins_to_propagate.push(linked_pin);
-                        }
-                    }
-                }
-            }
-                break;
-            case Node::Kind::CustomSplitter:
-            case Node::Kind::Merger:
-            {
-                const std::vector<std::unique_ptr<Pin>>& single_pin = kind == Node::Kind::CustomSplitter ? updated_pin->node->ins : updated_pin->node->outs;
-                const std::vector<std::unique_ptr<Pin>>& multi_pin = kind == Node::Kind::CustomSplitter ? updated_pin->node->outs : updated_pin->node->ins;
-
-                // If single pin side is updated, update all multi pin side pins that have not already been updated
-                if ((kind == Node::Kind::CustomSplitter && updated_pin->direction == ax::NodeEditor::PinKind::Input) ||
-                    (kind == Node::Kind::Merger   && updated_pin->direction == ax::NodeEditor::PinKind::Output))
-                {
-                    FractionalNumber old_sum_to_update;
-                    FractionalNumber sum_ignored_or_already_updated;
-                    std::vector<const Pin*> pins_to_update;
-                    // Sum all multipin side, and separate relevant from non-relevant ones
-                    for (const auto& p : multi_pin)
-                    {
-                        const auto it = relevant_pins.find(p.get());
-                        // Pins not updated by this graph operation
-                        if (it == relevant_pins.end())
-                        {
-                            sum_ignored_or_already_updated += p->current_rate;
-                        }
-                        else
-                        {
-                            const auto it2 = all_pins_new_rates.find(*it);
-                            // Already updated
-                            if (it2 != all_pins_new_rates.end())
-                            {
-                                sum_ignored_or_already_updated += it2->second;
-                            }
-                            else
-                            {
-                                pins_to_update.push_back(p.get());
-                                old_sum_to_update += p->current_rate;
-                            }
-                        }
-                    }
-
-                    // Update all multi pin side pins keeping the same ratio for each one
-                    if (pins_to_update.size() != 0)
-                    {
-                        const FractionalNumber new_rate_single_pin = all_pins_new_rates.at(updated_pin);
-                        // Node is already unbalanced, set all pins to update to 0
-                        if (new_rate_single_pin < sum_ignored_or_already_updated)
-                        {
-                            for (const auto p : pins_to_update)
-                            {
-                                all_pins_new_rates[p] = 0;
-                                if (p->link != nullptr)
-                                {
-                                    Pin* linked_pin = p->direction == ax::NodeEditor::PinKind::Output ? p->link->end : p->link->start;
-                                    if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != 0)
-                                    {
-                                        linked_pin->link->flow = linked_pin->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
-                                    }
-                                    if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
-                                    {
-                                        all_pins_new_rates[linked_pin] = 0;
-                                        pins_to_propagate.push(linked_pin);
-                                    }
-                                }
-                            }
-                        }
-                        // Otherwise, we need to split the remaining amount between all pins that needs updating, while keeping ratio
-                        else
-                        {
-                            const FractionalNumber new_sum_updated = new_rate_single_pin - sum_ignored_or_already_updated;
-                            for (const auto p : pins_to_update)
-                            {
-                                const FractionalNumber new_rate = old_sum_to_update.GetNumerator() == 0 ?
-                                    new_sum_updated / pins_to_update.size() : // If the old sum was 0, just split evenly
-                                    new_sum_updated * p->current_rate / old_sum_to_update;
-                                all_pins_new_rates[p] = new_rate;
-                                if (p->link != nullptr)
-                                {
-                                    Pin* linked_pin = p->direction == ax::NodeEditor::PinKind::Output ? p->link->end : p->link->start;
-                                    if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != new_rate)
-                                    {
-                                        linked_pin->link->flow = linked_pin->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
-                                    }
-                                    if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
-                                    {
-                                        all_pins_new_rates[linked_pin] = new_rate;
-                                        pins_to_propagate.push(linked_pin);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                else // One of the multi-pin side is updated
-                {
-                    // Check if all the relevant pins for this graph update in the multi pin side have been updated
-                    bool all_updated = true;
-                    FractionalNumber sum_multi_pin;
-                    for (const auto& p : multi_pin)
-                    {
-                        const bool is_relevant = relevant_pins.find(p.get()) != relevant_pins.end();
-                        if (is_relevant)
-                        {
-                            const auto it = all_pins_new_rates.find(p.get());
-                            all_updated = it != all_pins_new_rates.end();
-                            sum_multi_pin += all_updated ? it->second : 0;
-                        }
-                        else
-                        {
-                            sum_multi_pin += p->current_rate;
-                        }
-                        if (!all_updated)
-                        {
-                            break;
-                        }
-                    }
-
-                    // If so, we can now update the single pin side with the sum
-                    if (all_updated)
-                    {
-                        all_pins_new_rates[single_pin[0].get()] = sum_multi_pin;
-                        if (single_pin[0]->link != nullptr)
-                        {
-                            Pin* linked_pin = single_pin[0]->direction == ax::NodeEditor::PinKind::Output ? single_pin[0]->link->end : single_pin[0]->link->start;
-                            if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != sum_multi_pin)
-                            {
-                                linked_pin->link->flow = linked_pin->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
-                            }
-                            if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
-                            {
-                                all_pins_new_rates[linked_pin] = sum_multi_pin;
-                                pins_to_propagate.push(linked_pin);
-                            }
-                        }
-                    }
-                    // Otherwise we wait for the others and do nothing here
-                }
-
-                // Also update linked pin if there is one
-                if (updated_pin->link != nullptr)
-                {
-                    Pin* linked_pin = updated_pin->direction == ax::NodeEditor::PinKind::Output ? updated_pin->link->end : updated_pin->link->start;
-                    if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != all_pins_new_rates[updated_pin])
-                    {
-                        linked_pin->link->flow = linked_pin->direction == ax::NodeEditor::PinKind::Output ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
-                    }
-                    if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
-                    {
-                        all_pins_new_rates[linked_pin] = all_pins_new_rates[updated_pin];
-                        pins_to_propagate.push(linked_pin);
-                    }
-                }
-            }
-                break;
-            case Node::Kind::GameSplitter:
-            {
-                // If single pin side is updated, update all multi pin side
-                if (updated_pin->direction == ax::NodeEditor::PinKind::Input)
-                {
-                    const FractionalNumber single_pin_rate = all_pins_new_rates.at(updated_pin);
-                    const FractionalNumber out_pin_rate = single_pin_rate / updated_pin->node->outs.size();
-                    for (const auto& p : updated_pin->node->outs)
-                    {
-                        all_pins_new_rates[p.get()] = out_pin_rate;
+                        relevant_pins.insert(p.get());
                         if (p->link != nullptr)
                         {
-                            Pin* linked_pin = p->link->end;
-                            if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != out_pin_rate)
-                            {
-                                linked_pin->link->flow = ax::NodeEditor::FlowDirection::Backward;
-                            }
-                            if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
-                            {
-                                all_pins_new_rates[linked_pin] = out_pin_rate;
-                                pins_to_propagate.push(linked_pin);
-                            }
-                        }
-                    }
-                    if (updated_pin->link != nullptr)
-                    {
-                        Pin* linked_pin = updated_pin->link->start;
-                        if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != single_pin_rate)
-                        {
-                            linked_pin->link->flow = ax::NodeEditor::FlowDirection::Forward;
-                        }
-                        if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
-                        {
-                            all_pins_new_rates[linked_pin] = single_pin_rate;
-                            pins_to_propagate.push(linked_pin);
-                        }
-                    }
-                }
-                else // One of the multi-pin side is updated
-                {
-                    // Update all other output pins
-                    const FractionalNumber new_rate_out_pins = all_pins_new_rates.at(updated_pin);
-                    for (const auto& p : updated_pin->node->outs)
-                    {
-                        all_pins_new_rates[p.get()] = new_rate_out_pins;
-                        if (p->link != nullptr)
-                        {
-                            Pin* linked_pin = p->link->end;
-                            if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != new_rate_out_pins)
-                            {
-                                linked_pin->link->flow = ax::NodeEditor::FlowDirection::Forward;
-                            }
-                            if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
-                            {
-                                all_pins_new_rates[linked_pin] = new_rate_out_pins;
-                                pins_to_propagate.push(linked_pin);
-                            }
-                        }
-                    }
-                    // Update input pin
-                    all_pins_new_rates[updated_pin->node->ins[0].get()] = new_rate_out_pins * updated_pin->node->outs.size();
-                    if (updated_pin->node->ins[0]->link != nullptr)
-                    {
-                        Pin* linked_pin = updated_pin->node->ins[0]->link->start;
-                        if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != new_rate_out_pins * updated_pin->node->outs.size())
-                        {
-                            linked_pin->link->flow = ax::NodeEditor::FlowDirection::Backward;
-                        }
-                        if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
-                        {
-                            all_pins_new_rates[linked_pin] = new_rate_out_pins * updated_pin->node->outs.size();
-                            pins_to_propagate.push(linked_pin);
+                            pins_to_propagate.push(p->link->start);
                         }
                     }
                 }
             }
-                break;
-            case Node::Kind::Sink:
-                // Nothing to update on the other inputs, just update the linked pin if there's one
-                if (updated_pin->link != nullptr)
-                {
-                    Pin* linked_pin = updated_pin->link->start;
-                    if (!linked_pin->link->flow.has_value() && linked_pin->current_rate != all_pins_new_rates.at(updated_pin))
-                    {
-                        linked_pin->link->flow = ax::NodeEditor::FlowDirection::Backward;
-                    }
-                    if (all_pins_new_rates.find(linked_pin) == all_pins_new_rates.end())
-                    {
-                        all_pins_new_rates[linked_pin] = all_pins_new_rates.at(updated_pin);
-                        pins_to_propagate.push(linked_pin);
-                    }
-                }
-                break;
-            }
+            break;
+        case Node::Kind::Sink:
+            // Sink, an update doesn't trigger an update on any other pin of this node
+            break;
         }
+    }
 
-        // Loop through all nodes looking for unbalanced splitter/merger affected by this change
-        // this can happen due to cycle loops (e.g. recycled plastic/rubber). For each such node,
-        // we need to also propagate up/downstream the other "non-updated" pins (which become
-        // updated ones due to this adjustment). This will cause "more" update than strictly
-        // required, but without that we'd have to detect each potential cycle and solve some
-        // kind of equations based on in/out and I don't know how to do that.
-        balanced = true;
-        for (const auto& n : nodes)
+    // Create the equations and variables linked to this graph operation
+    // we want to solve equations_coefficients * x = constants
+    std::vector<std::vector<FractionalNumber>> equations_coefficients;
+    std::vector<FractionalNumber> constants;
+
+    size_t num_variables = 0;
+    // For each updated pin, the associated variable with a ratio
+    // The ratio allows us to use only one variable/equation per craft node
+    std::unordered_map<const Pin*, std::pair<size_t, FractionalNumber>> associated_variable_index;
+
+    auto create_variable = [&](const Pin* pin) {
+        // Pin already associated to a variable
+        if (associated_variable_index.find(pin) != associated_variable_index.end())
         {
-            if (!n->IsCustomSplitter() && !n->IsMerger())
+            return;
+        }
+        // No variable yet for this pin, create a new one
+        switch (pin->node->GetKind())
+        {
+        // Craft/Group/GameSplitter, only one variable for all the pins
+        case Node::Kind::Craft:
+        case Node::Kind::Group:
+        case Node::Kind::GameSplitter:
+            for (auto& p : pin->node->ins)
             {
-                continue;
-            }
-
-            const std::vector<std::unique_ptr<Pin>>& single_pin = n->GetKind() == Node::Kind::CustomSplitter ? n->ins : n->outs;
-            const std::vector<std::unique_ptr<Pin>>& multi_pin = n->GetKind() == Node::Kind::CustomSplitter ? n->outs : n->ins;
-            const auto it_single_pin = relevant_pins.find(single_pin[0].get());
-            // If the single pin of this node is not relevant, we can skip it entirely
-            if (it_single_pin == relevant_pins.end())
-            {
-                continue;
-            }
-
-            FractionalNumber sum_relevant;
-            FractionalNumber sum_non_relevant;
-            std::vector<const Pin*> non_relevant_pins;
-            // Sum all multipin side, and separate relevant from non-relevant ones
-            for (const auto& p : multi_pin)
-            {
-                const auto it = all_pins_new_rates.find(p.get());
-                if (it == all_pins_new_rates.end())
+                // For craft/group, the ratio is the base rate of the pin
+                if (pin->node->IsPowered())
                 {
-                    non_relevant_pins.push_back(p.get());
-                    sum_non_relevant += p->current_rate;
+                    associated_variable_index.insert({ p.get(), { num_variables, p->base_rate } });
                 }
+                // For GameSplitter, the variable is the rate of the input
                 else
                 {
-                    sum_relevant += it->second;
+                    associated_variable_index.insert({ p.get(), { num_variables, 1 } });
                 }
             }
-
-            // If this node is already fully updated
-            if (non_relevant_pins.size() == 0)
+            for (auto& p : pin->node->outs)
             {
-                continue;
-            }
-
-            // Unbalanced node or link, add the non-updated pin(s) to the list of pins to update,
-            // with a new rate to keep the same ratio they had in the current merge/split
-            if (sum_relevant + sum_non_relevant != new_rate_default_to_current_rate(single_pin[0].get()) ||
-                (single_pin[0]->link != nullptr && new_rate_default_to_current_rate(single_pin[0]->link->start) != new_rate_default_to_current_rate(single_pin[0]->link->end))
-            )
-            {
-                const FractionalNumber sum_relevant_old = single_pin[0]->current_rate - sum_non_relevant;
-                FractionalNumber new_sum_non_relevant;
-                if (sum_relevant_old.GetNumerator() == 0)
+                // For group, the ratio is the base rate of the pin
+                if (pin->node->IsGroup())
                 {
-                    if (sum_non_relevant.GetNumerator() == 0)
+                    associated_variable_index.insert({ p.get(), { num_variables, p->base_rate } });
+                }
+                // For craft, we need to deal with somersloop
+                else if (pin->node->IsCraft())
+                {
+                    const CraftNode* craft_node = static_cast<CraftNode*>(p->node);
+                    associated_variable_index.insert({ p.get(), { num_variables, p->base_rate * (1 + (craft_node->num_somersloop * craft_node->recipe->building->somersloop_mult)) } });
+                }
+                // For GameSplitter, the variable is the rate of the input divided by the number of outs
+                else
+                {
+                    associated_variable_index.insert({ p.get(), { num_variables, FractionalNumber(1, pin->node->outs.size()) } });
+                }
+            }
+            break;
+        // For Merger, CustomSplitter and Sink, we need one variable per pin
+        case Node::Kind::CustomSplitter:
+        case Node::Kind::Merger:
+        case Node::Kind::Sink:
+            associated_variable_index.insert({ pin, { num_variables, 1 } });
+            break;
+        }
+        // Add a column to each existing equation
+        for (auto& v : equations_coefficients)
+        {
+            v.push_back(0);
+        }
+        // Increase the variable index
+        num_variables += 1;
+    };
+
+
+    // Reset all links flow
+    for (auto& l : links)
+    {
+        l->flow = std::nullopt;
+    }
+
+    // Used for Merger/CustomSplitter to remember which pins already have a constraint
+    // preventing double constraining an Organizer node
+    std::unordered_set<const Pin*> processed_pins;
+    // Used to prevent double processing the same link
+    std::unordered_set<const Link*> processed_links;
+
+    auto process_link = [&](const Pin* p) {
+        if (p->link == nullptr || processed_links.find(p->link) != processed_links.end())
+        {
+            return;
+        }
+        processed_links.insert(p->link);
+        // Make sure we have variables for both ends
+        create_variable(p->link->start);
+        create_variable(p->link->end);
+        // Add an equation for equality
+        const auto& start_variable = associated_variable_index.at(p->link->start);
+        const auto& end_variable = associated_variable_index.at(p->link->end);
+        std::vector<FractionalNumber> equation(num_variables);
+        // X - Y = 0
+        equation[start_variable.first] = -1 * start_variable.second;
+        equation[end_variable.first] = end_variable.second;
+        equations_coefficients.push_back(equation);
+        constants.push_back(0);
+        pins_to_propagate.push(p->direction == ax::NodeEditor::PinKind::Input ? p->link->start : p->link->end);
+        processed_pins.insert(p->link->start);
+        processed_pins.insert(p->link->end);
+        if (!p->link->flow.has_value())
+        {
+            p->link->flow = p->direction == ax::NodeEditor::PinKind::Input ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
+        }
+    };
+
+    pins_to_propagate.push(constraint_pin);
+    // Add the equation for the user updated value
+    create_variable(constraint_pin);
+    // R = constraint
+    equations_coefficients.push_back({ associated_variable_index.at(constraint_pin).second });
+    constants.push_back(constraint_value);
+    // We need to process the link here to prevent infinite loop
+    // in which each end triggers an update of the other one
+    process_link(constraint_pin);
+
+    // Second pass, create the equations to solve the graph update
+    while (!pins_to_propagate.empty())
+    {
+        const Pin* updated_pin = pins_to_propagate.front();
+        pins_to_propagate.pop();
+
+        switch (const Node::Kind kind = updated_pin->node->GetKind(); kind)
+        {
+        case Node::Kind::Craft:
+        case Node::Kind::Group:
+        case Node::Kind::GameSplitter:
+            // For Craft/Group/GameSplitter, we just need to propagate to any connected pin
+            for (const auto& p : updated_pin->node->ins)
+            {
+                process_link(p.get());
+            }
+            for (const auto& p : updated_pin->node->outs)
+            {
+                process_link(p.get());
+            }
+            break;
+        case Node::Kind::Merger:
+        case Node::Kind::CustomSplitter:
+        {
+            // For Merger/CustomSplitter, it's a bit more tricky depending on who's being updated
+            const Pin* single_pin = kind == Node::Kind::CustomSplitter ? updated_pin->node->ins[0].get() : updated_pin->node->outs[0].get();
+            const std::vector<std::unique_ptr<Pin>>& multi_pin = kind == Node::Kind::CustomSplitter ? updated_pin->node->outs : updated_pin->node->ins;
+
+            // If single pin side is updated, all the other pins should be updated
+            if ((kind == Node::Kind::CustomSplitter && updated_pin->direction == ax::NodeEditor::PinKind::Input) ||
+                (kind == Node::Kind::Merger && updated_pin->direction == ax::NodeEditor::PinKind::Output))
+            {
+                // Find all the already constrained variables
+                std::vector<size_t> already_constrained;
+                FractionalNumber old_sum_already_constrained;
+                for (const auto& p : multi_pin)
+                {
+                    if (processed_pins.find(p.get()) != processed_pins.end())
                     {
-                        new_sum_non_relevant = sum_relevant;
+                        already_constrained.push_back(associated_variable_index.at(p.get()).first);
+                        old_sum_already_constrained += p->current_rate;
                     }
-                    // We can't keep the same ratio if the updated pins went from 0 to non-zero
-                    // Try to add a new constraint on the single pin instead if it doesn't already have one
-                    else if (std::find_if(
-                        updated_pins_new_rates.begin(),
-                        updated_pins_new_rates.end(),
-                        [&](const std::pair<const Pin*, FractionalNumber>& p) {
-                            return p.first == single_pin[0].get();
-                        }) == updated_pins_new_rates.end())
-                    {
-                        updated_pins_new_rates.push_back({ single_pin[0].get(), sum_relevant + sum_non_relevant });
-                        balanced = false;
-                        break;
-                    }
-                    // Can't really do anything, just leave the node unbalanced and hope the user will see it
-                    else
+                }
+
+                const auto& [single_pin_variable_index, single_pin_variable_rate] = associated_variable_index.at(single_pin);
+                // Create ratio equality equations for the pins without already a constraint
+                for (const auto& p : multi_pin)
+                {
+                    if (processed_pins.find(p.get()) != processed_pins.end())
                     {
                         continue;
                     }
+                    create_variable(p.get());
+                    equations_coefficients.push_back(std::vector<FractionalNumber>(num_variables));
+                    const FractionalNumber multiplier =
+                        single_pin->current_rate == 0 ?
+                            // If old sum was 0, just split evenly: (S - A) / (N - a.size()) = P
+                            FractionalNumber(1, 1) / (multi_pin.size() - already_constrained.size()) :
+                            // Else, keep ratio: old_R / (old_S - old_A) * (S - A) = P
+                            p->current_rate / (single_pin->current_rate - old_sum_already_constrained);
+                    equations_coefficients.back()[single_pin_variable_index] = multiplier;
+                    for (const auto i : already_constrained)
+                    {
+                        equations_coefficients.back()[i] = -1 * multiplier;
+                    }
+                    equations_coefficients.back()[associated_variable_index.at(p.get()).first] = -1;
+                    constants.push_back(0);
+                    process_link(p.get());
                 }
-                else
+            }
+            // If one of the multi-pin side is updated
+            else
+            {
+                // Mark this pin as already processed (it will prevent a double constraint in case
+                // we update the same node later from the single pin side)
+                processed_pins.insert(updated_pin);
+                // If single pin side doesn't have a variable yet, add the sum constraint equation
+                if (associated_variable_index.find(single_pin) == associated_variable_index.end())
                 {
-                    new_sum_non_relevant = sum_non_relevant * sum_relevant / sum_relevant_old;
+                    create_variable(single_pin);
+                    equations_coefficients.push_back(std::vector<FractionalNumber>(num_variables));
+                    equations_coefficients.back()[associated_variable_index.at(single_pin).first] = 1;
+                    FractionalNumber sum_constant;
+                    for (const auto& p : multi_pin)
+                    {
+                        // Not ignored
+                        if (relevant_pins.find(p.get()) != relevant_pins.end())
+                        {
+                            create_variable(p.get());
+                            equations_coefficients.back()[associated_variable_index.at(p.get()).first] = -1;
+                        }
+                        else
+                        {
+                            sum_constant += p->current_rate;
+                        }
+                    }
+                    constants.push_back(sum_constant);
+                    process_link(single_pin);
                 }
+                // Otherwise nothing to do
+            }
+        }
+            break;
+        case Node::Kind::Sink:
+            // Nothing to do
+            break;
+        }
+    }
 
-                for (auto p : non_relevant_pins)
-                {
-                    updated_pins_new_rates.push_back({
-                        p,
-                        // If the old sum was 0, just split 1/N for each pin, else keep the same ratio
-                        sum_non_relevant.GetNumerator() == 0 ? (new_sum_non_relevant / non_relevant_pins.size()) : (new_sum_non_relevant * p->current_rate / sum_non_relevant)
-                    });
-                }
+    // Solve the equations using gaussian elimination
+    // Check sizes are ok
+    if (num_variables == 0 || constants.size() != num_variables)
+    {
+        throw std::runtime_error("Wrong number of equations");
+    }
+    for (const auto& row : equations_coefficients)
+    {
+        if (row.size() != num_variables)
+        {
+            throw std::runtime_error("Missing a variable in equation");
+        }
+    }
 
-                balanced = false;
-                break;
+    // Create augmented matrix [equations_coefficients|constants]
+    std::vector<std::vector<FractionalNumber>> matrix(num_variables, std::vector<FractionalNumber>(num_variables + 1));
+    for (size_t i = 0; i < num_variables; ++i)
+    {
+        std::copy_n(equations_coefficients[i].begin(), num_variables, matrix[i].begin());
+        matrix[i][num_variables] = constants[i];
+    }
+
+    size_t h = 0;
+    size_t k = 0;
+    // Gaussian elimination loop
+    while (h < num_variables && k < num_variables)
+    {
+        // Find k-th pivot
+        size_t i_max = h;
+        // Max double == max fraction
+        double v_max = std::abs(matrix[h][k].GetValue());
+        for (size_t i = h + 1; i < num_variables; ++i)
+        {
+            const double abs_val = std::abs(matrix[i][k].GetValue());
+            if (abs_val > v_max)
+            {
+                v_max = abs_val;
+                i_max = i;
+            }
+        }
+
+        // If pivot column is zero
+        if (matrix[i_max][k].GetNumerator() == 0)
+        {
+            k += 1;
+            continue;
+        }
+
+        // Swap rows if necessary
+        if (i_max != h)
+        {
+            std::swap(matrix[h], matrix[i_max]);
+        }
+
+        // Eliminate below pivot
+        for (size_t i = h + 1; i < num_variables; ++i)
+        {
+            const FractionalNumber factor = matrix[i][k] / matrix[h][k]; // We checked that matrix[h==i_max][k] != 0 above
+            // Set pivot element to 0
+            matrix[i][k] = 0;
+            // Update remaining elements in row
+            for (size_t j = k + 1; j <= num_variables; ++j)
+            {
+                matrix[i][j] -= matrix[h][j] * factor;
+            }
+        }
+        h += 1;
+        k += 1;
+    }
+
+    // Check for singular matrix
+    if (h < num_variables && matrix[h][h] == 0)
+    {
+        return false; // Singular matrix, no solution
+    }
+
+    // Back substitution
+    std::vector<FractionalNumber> solution(num_variables);
+    for (int i = num_variables - 1; i >= 0; --i)
+    {
+        FractionalNumber sum = 0;
+        for (size_t j = i + 1; j < num_variables; ++j)
+        {
+            sum += matrix[i][j] * solution[j];
+        }
+        solution[i] = (matrix[i][num_variables] - sum) / matrix[i][i]; // matrix[i][i] should always be != 0 as we checked it was not a singular matrix above
+    }
+
+    // TODO: check for negative solution
+
+    // For each link check if flow should be kept
+    for (auto& l : links)
+    {
+        const auto it = associated_variable_index.find(l->start);
+        if (it != associated_variable_index.end())
+        {
+            if (l->start->current_rate == solution[it->second.first] * it->second.second)
+            {
+                l->flow = std::nullopt;
             }
         }
     }
@@ -1042,13 +886,14 @@ void App::UpdateNodesRate()
     {
         for (const auto& p : n->ins)
         {
-            const auto it = all_pins_new_rates.find(p.get());
-            if (it != all_pins_new_rates.end())
+            const auto it = associated_variable_index.find(p.get());
+            if (it != associated_variable_index.end())
             {
-                p->current_rate = it->second;
+                const FractionalNumber new_rate = solution[it->second.first] * it->second.second;
+                p->current_rate = new_rate;
                 if (n->IsPowered())
                 {
-                    const FractionalNumber new_node_rate = it->second / p->base_rate;
+                    const FractionalNumber new_node_rate = new_rate / p->base_rate;
                     PoweredNode* powered_node = static_cast<PoweredNode*>(n.get());
                     if (new_node_rate != powered_node->current_rate)
                     {
@@ -1059,15 +904,33 @@ void App::UpdateNodesRate()
         }
         for (const auto& p : n->outs)
         {
-            const auto it = all_pins_new_rates.find(p.get());
-            if (it != all_pins_new_rates.end())
+            const auto it = associated_variable_index.find(p.get());
+            if (it != associated_variable_index.end())
             {
-                p->current_rate = it->second;
+                const FractionalNumber new_rate = solution[it->second.first] * it->second.second;
+                p->current_rate = new_rate;
+                // Somersloop thing
+                if (n->IsCraft())
+                {
+                    CraftNode* craft_node = static_cast<CraftNode*>(n.get());
+                    const FractionalNumber new_node_rate = new_rate / (p->base_rate * (1 + craft_node->num_somersloop * craft_node->recipe->building->somersloop_mult));
+                    if (new_node_rate != craft_node->current_rate)
+                    {
+                        craft_node->UpdateRate(new_node_rate);
+                    }
+                }
+                else if (n->IsGroup())
+                {
+                    const FractionalNumber new_node_rate = new_rate / p->base_rate;
+                    PoweredNode* powered_node = static_cast<PoweredNode*>(n.get());
+                    if (new_node_rate != powered_node->current_rate)
+                    {
+                        powered_node->UpdateRate(new_node_rate);
+                    }
+                }
             }
         }
     }
-
-    updated_pins_new_rates.clear();
 
     // Make sure all powered nodes are still valid regarding their recipe
     // (should always be true but just in case)
@@ -1081,6 +944,8 @@ void App::UpdateNodesRate()
         PoweredNode* node = static_cast<PoweredNode*>(n.get());
         node->UpdateRate(node->current_rate);
     }
+
+    return true;
 }
 
 void App::NudgeNodes()
@@ -1246,7 +1111,8 @@ void App::UngroupSelectedNode()
     {
         CreateLink(
             nodes[num_node_before_add + l["start"]["node"].get<int>()]->outs[l["start"]["pin"].get<int>()].get(),
-            nodes[num_node_before_add + l["end"]["node"].get<int>()]->ins[l["end"]["pin"].get<int>()].get()
+            nodes[num_node_before_add + l["end"]["node"].get<int>()]->ins[l["end"]["pin"].get<int>()].get(),
+            false
         );
     }
 
@@ -1297,8 +1163,6 @@ void App::Render()
     RenderLinks();
 
     AddNewNode();
-
-    UpdateNodesRate();
     CustomKeyControl();
 
     ax::NodeEditor::End();
@@ -2206,11 +2070,21 @@ void App::RenderNodes()
                             {
                                 try
                                 {
-                                    updated_pins_new_rates.push_back({ p.get(), p->current_rate.GetStringFloat() });
+                                    if (!UpdateNodesRate(p.get(), p->current_rate.GetStringFloat()))
+                                    {
+                                        p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
+                                    }
                                 }
+                                // User entered an invalid string
                                 catch (const std::invalid_argument&)
                                 {
                                     p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
+                                }
+                                // Wrong equations during update process
+                                catch (const std::runtime_error&)
+                                {
+                                    p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
+                                    fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
                                 }
                             }
                             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -2264,7 +2138,23 @@ void App::RenderNodes()
                                 {
                                     sum_inputs += p->current_rate;
                                 }
-                                updated_pins_new_rates.push_back({ node->outs[0].get(), sum_inputs });
+                                const FractionalNumber old_output = node->outs.at(0).get()->current_rate;
+                                // We need to set the current rate to the new sum, otherwise balancing would
+                                // be performed on the old ratios (including the deleted pin)
+                                node->outs.at(0).get()->current_rate = sum_inputs;
+                                try
+                                {
+                                    if (!UpdateNodesRate(node->outs[0].get(), sum_inputs))
+                                    {
+                                        node->outs[0].get()->current_rate = old_output;
+                                    }
+                                }
+                                // Wrong equations during update process
+                                catch (const std::runtime_error&)
+                                {
+                                    node->outs[0].get()->current_rate = old_output;
+                                    fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
+                                }
                             }
                         }
                     }
@@ -2300,11 +2190,22 @@ void App::RenderNodes()
                             {
                                 try
                                 {
-                                    updated_pins_new_rates.push_back({ p.get(), p->current_rate.GetStringFloat() });
+                                    if (!UpdateNodesRate(p.get(), p->current_rate.GetStringFloat()))
+                                    {
+                                        // Revert to previous value
+                                        p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
+                                    }
                                 }
+                                // User entered an invalid string
                                 catch (const std::invalid_argument&)
                                 {
                                     p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
+                                }
+                                // Wrong equations during update process
+                                catch (const std::runtime_error&)
+                                {
+                                    p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
+                                    fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
                                 }
                             }
                             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -2362,9 +2263,17 @@ void App::RenderNodes()
                             org_node->outs.emplace_back(std::make_unique<Pin>(GetNextId(), ax::NodeEditor::PinKind::Output, org_node, org_node->item));
                             if (node->IsGameSplitter())
                             {
-                                for (const auto& p : node->outs)
+                                try
                                 {
-                                    updated_pins_new_rates.push_back({ p.get(), node->ins[0]->current_rate / node->outs.size() });
+                                    if (!UpdateNodesRate(node->ins[0].get(), node->ins[0]->current_rate))
+                                    {
+                                        // Not sure what to do if it fails? Recreate the deleted pin?
+                                    }
+                                }
+                                // Wrong equations during update process
+                                catch (const std::runtime_error&)
+                                {
+                                    fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
                                 }
                             }
                         }
@@ -2385,13 +2294,36 @@ void App::RenderNodes()
                                 {
                                     sum_outputs += p->current_rate;
                                 }
-                                updated_pins_new_rates.push_back({ node->ins[0].get(), sum_outputs });
+                                const FractionalNumber old_input = node->ins.at(0).get()->current_rate;
+                                // We need to set the current rate to the new sum, otherwise balancing would
+                                // be performed on the old ratios (including the deleted pin)
+                                node->ins.at(0).get()->current_rate = sum_outputs;
+                                try
+                                {
+                                    if (!UpdateNodesRate(node->ins[0].get(), sum_outputs))
+                                    {
+                                        node->ins.at(0).get()->current_rate = old_input;
+                                    }
+                                }
+                                // Wrong equations during update process
+                                catch (const std::runtime_error&)
+                                {
+                                    fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
+                                }
                             }
                             else // GameSplitter
                             {
-                                for (const auto& p : node->outs)
+                                try
                                 {
-                                    updated_pins_new_rates.push_back({ p.get(), node->ins[0]->current_rate / node->outs.size() });
+                                    if (!UpdateNodesRate(node->ins[0].get(), node->ins[0]->current_rate))
+                                    {
+                                        // Not sure what to do if it fails? Recreate the deleted pin?
+                                    }
+                                }
+                                // Wrong equations during update process
+                                catch (const std::runtime_error&)
+                                {
+                                    fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
                                 }
                             }
                         }
@@ -2419,23 +2351,28 @@ void App::RenderNodes()
                     powered_node->current_rate.RenderInputText("##rate", false, false, rate_width);
                     if (ImGui::IsItemDeactivatedAfterEdit())
                     {
-                        // Try updating the rate with the new string value
+                        const FractionalNumber old_rate = FractionalNumber(powered_node->current_rate.GetNumerator(), powered_node->current_rate.GetDenominator());
                         try
                         {
-                            powered_node->UpdateRate(FractionalNumber(powered_node->current_rate.GetStringFloat()));
-                            for (auto& p : powered_node->ins)
+                            powered_node->UpdateRate(powered_node->current_rate.GetStringFloat());
+                            // Update from inputs if there is one, else from output
+                            if ((powered_node->ins.size() > 0 && !UpdateNodesRate(powered_node->ins[0].get(), powered_node->ins[0]->current_rate)) ||
+                                (powered_node->outs.size() > 0 && !UpdateNodesRate(powered_node->outs[0].get(), powered_node->outs[0]->current_rate))
+                            )
                             {
-                                updated_pins_new_rates.push_back({ p.get(), p->current_rate });
-                            }
-                            for (auto& p : powered_node->outs)
-                            {
-                                updated_pins_new_rates.push_back({ p.get(), p->current_rate });
+                                powered_node->UpdateRate(old_rate);
                             }
                         }
-                        // Rollback to previous value if the user input is not a valid fractional number
+                        // User entered an invalid string, reset node rate
                         catch (const std::invalid_argument&)
                         {
-                            powered_node->UpdateRate(FractionalNumber(powered_node->current_rate.GetNumerator(), powered_node->current_rate.GetDenominator()));
+                            powered_node->UpdateRate(old_rate);
+                        }
+                        // Wrong equations during update process
+                        catch (const std::runtime_error&)
+                        {
+                            powered_node->UpdateRate(old_rate);
+                            fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
                         }
                     }
                     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -2469,6 +2406,7 @@ void App::RenderNodes()
                             ImGui::InputText("##somersloop", &craft_node->num_somersloop.GetStringFraction(), ImGuiInputTextFlags_CharsDecimal);
                             if (ImGui::IsItemDeactivatedAfterEdit())
                             {
+                                const FractionalNumber old_num_somersloop = FractionalNumber(craft_node->num_somersloop.GetNumerator(), craft_node->num_somersloop.GetDenominator());
                                 try
                                 {
                                     FractionalNumber new_num_somersloop = FractionalNumber(craft_node->num_somersloop.GetStringFraction());
@@ -2485,14 +2423,26 @@ void App::RenderNodes()
                                     }
                                     craft_node->num_somersloop = new_num_somersloop;
                                     craft_node->UpdateRate(craft_node->current_rate);
-                                    for (auto& p : craft_node->outs)
+                                    if ((craft_node->ins.size() > 0 && !UpdateNodesRate(craft_node->ins[0].get(), craft_node->ins[0]->current_rate)) ||
+                                        (craft_node->outs.size() > 0 && !UpdateNodesRate(craft_node->outs[0].get(), craft_node->outs[0]->current_rate))
+                                    )
                                     {
-                                        updated_pins_new_rates.push_back({ p.get(), p->current_rate });
+                                        craft_node->num_somersloop = old_num_somersloop;
+                                        craft_node->UpdateRate(craft_node->current_rate);
                                     }
                                 }
+                                // User entered an invalid string for somersloop, reset node rate
                                 catch (const std::invalid_argument&)
                                 {
-                                    craft_node->num_somersloop = FractionalNumber(craft_node->num_somersloop.GetNumerator(), 1);
+                                    craft_node->num_somersloop = old_num_somersloop;
+                                    craft_node->UpdateRate(craft_node->current_rate);
+                                }
+                                // Wrong equations during update process
+                                catch (const std::runtime_error&)
+                                {
+                                    craft_node->num_somersloop = old_num_somersloop;
+                                    craft_node->UpdateRate(craft_node->current_rate);
+                                    fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
                                 }
                             }
                             ImGui::Spring(0.0f);
@@ -2610,11 +2560,11 @@ void App::DragLink()
                     // If we are dragging from a default initialized 0 pin of an organizer node, pull value instead of pushing it
                     if ((start_pin->node->IsOrganizer() || start_pin->node->IsSink()) && start_pin->current_rate.GetNumerator() == 0)
                     {
-                        CreateLink(end_pin, start_pin);
+                        CreateLink(end_pin, start_pin, true);
                     }
                     else
                     {
-                        CreateLink(start_pin, end_pin);
+                        CreateLink(start_pin, end_pin, true);
                     }
                 }
             }
@@ -2905,11 +2855,11 @@ void App::AddNewNode()
                     // If we are dragging from a default initialized 0 pin of an organizer node, pull value instead of pushing it
                     if ((new_node_pin->node->IsOrganizer() || new_node_pin->node->IsSink()) && new_node_pin->current_rate.GetNumerator() == 0)
                     {
-                        CreateLink(pins[pin_index].get(), new_node_pin);
+                        CreateLink(pins[pin_index].get(), new_node_pin, true);
                     }
                     else
                     {
-                        CreateLink(new_node_pin, pins[pin_index].get());
+                        CreateLink(new_node_pin, pins[pin_index].get(), true);
                     }
                 }
             }

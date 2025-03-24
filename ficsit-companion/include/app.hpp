@@ -56,7 +56,8 @@ private:
     /// @brief Create a link between two pins, they can be in any order
     /// @param start First link Pin
     /// @param end Second link Pin
-    void CreateLink(Pin* start, Pin* end);
+    /// @param trigger_update If true, will trigger an update of the graph from start pin
+    void CreateLink(Pin* start, Pin* end, const bool trigger_update);
 
     /// @brief Delete a Link from this App, will also delete it from the graph view
     /// @param id Link id
@@ -66,8 +67,8 @@ private:
     /// @param id Node id
     void DeleteNode(const ax::NodeEditor::NodeId id);
 
-    /// @brief Propagate rates updates from updating_pins through the graph
-    void UpdateNodesRate();
+    /// @brief Propagate rates updates from pin through the graph
+    bool UpdateNodesRate(const Pin* pin, const FractionalNumber& new_rate);
 
     /// @brief Check for Arrow key inputs and nudge selected nodes if required
     void NudgeNodes();
@@ -151,12 +152,7 @@ private:
     std::string recipe_filter;
     std::vector<std::string> frame_tooltips;
 
-    /// @brief All pins which had their value changed and need to propagate updates
-    /// Stored as a vector rather than a map to preserve order
-    std::vector<std::pair<const Pin*, FractionalNumber>> updated_pins_new_rates;
-
     unsigned int somersloop_texture_id;
 
     std::chrono::steady_clock::time_point last_time_interacted;
-
 };
