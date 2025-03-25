@@ -126,8 +126,8 @@ private:
         /// @brief If true, will display power info with equal clocks on all machines in a node
         /// If false, it will compute the power for N machines at 100% + an underclocked machine
         bool power_equal_clocks = true;
-        /// @brief If true, build progress bar and checkbox on craft nodes will not be displayed
-        bool hide_build_progress = false;
+        /// @brief If true, build progress bar and checkbox on craft nodes will be displayed
+        bool show_build_progress = false;
     } settings;
 
     /// @brief All nodes currently in the graph view

@@ -172,7 +172,7 @@ void App::LoadSettings()
         }
     }
 
-    settings.hide_build_progress = !json.contains("hide_build_progress") || json["hide_build_progress"].get<bool>(); // default true
+    settings.show_build_progress = json.contains("show_build_progress") && json["show_build_progress"].get<bool>(); // default false
 
     if (!content.has_value())
     {
@@ -196,7 +196,7 @@ void App::SaveSettings() const
     }
     serialized["unlocked_alts"] = unlocked;
 
-    serialized["hide_build_progress"] = settings.hide_build_progress;
+    serialized["show_build_progress"] = settings.show_build_progress;
 
     SaveFile(settings_file.data(), serialized.Dump());
 }
@@ -1593,85 +1593,8 @@ void App::RenderLeftPanel()
         ImGui::SetTooltip("%s", "Load current production chain");
     }
 
-    ImGui::SeparatorText("Settings");
-    // Display all settings here
-    if (ImGui::Checkbox("Hide somersloop amplifier", &settings.hide_somersloop))
-    {
-        SaveSettings();
-    }
-#ifdef WITH_SPOILERS
-    if (ImGui::Checkbox("Hide 1.0 new advanced recipes", &settings.hide_spoilers))
-    {
-        SaveSettings();
-    }
-#endif
-    if (ImGui::Checkbox("Compute power with equal clocks", &settings.power_equal_clocks))
-    {
-        SaveSettings();
-    }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-    {
-        ImGui::SetTooltip("%s",
-            "If set, the power per node will be calculated assuming all machines are set at the same clock value\n"
-            "Otherwise, it will be calculated with machines at 100% and one last machine underclocked");
-    }
-    if (ImGui::Checkbox("Hide build progress", &settings.hide_build_progress))
-    {
-        SaveSettings();
-    }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-    {
-        ImGui::SetTooltip("%s", "If set, build checkmark on craft nodes and overall progress bars won't be displayed");
-    }
-    if (!settings.hide_build_progress)
-    {
-        ImGui::SameLine();
-        if (ImGui::Button("Reset progress"))
-        {
-            for (auto& n : nodes)
-            {
-                if (n->IsCraft())
-                {
-                    static_cast<CraftNode*>(n.get())->built = false;
-                }
-                else if (n->IsGroup())
-                {
-                    static_cast<GroupNode*>(n.get())->SetBuiltState(false);
-                }
-            }
-        }
-    }
 
-
-    if (ImGui::Button("Unlock all alt recipes"))
-    {
-        settings.unlocked_alts = {};
-        for (const auto& r : Data::Recipes())
-        {
-            if (r->alternate)
-            {
-                settings.unlocked_alts[r.get()] = true;
-            }
-        }
-        SaveSettings();
-    }
-    if (ImGui::GetContentRegionAvail().x - ImGui::GetItemRectSize().x > ImGui::CalcTextSize("Reset alt recipes").x + ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x)
-    {
-        ImGui::SameLine();
-    }
-    if (ImGui::Button("Reset alt recipes"))
-    {
-        settings.unlocked_alts = {};
-        for (const auto& r : Data::Recipes())
-        {
-            if (r->alternate)
-            {
-                settings.unlocked_alts[r.get()] = false;
-            }
-        }
-        SaveSettings();
-    }
-
+    // Gather all statistics for the left panel
     std::map<const Item*, FractionalNumber, ItemPtrCompare> inputs;
     std::map<const Item*, FractionalNumber, ItemPtrCompare> outputs;
     std::map<const Item*, FractionalNumber, ItemPtrCompare> intermediates;
@@ -1776,7 +1699,87 @@ void App::RenderLeftPanel()
         }
     }
 
-    if (!settings.hide_build_progress)
+
+    ImGui::SeparatorText("Settings");
+    // Display all settings here
+    if (ImGui::Checkbox("Hide somersloop amplifier", &settings.hide_somersloop))
+    {
+        SaveSettings();
+    }
+#ifdef WITH_SPOILERS
+    if (ImGui::Checkbox("Hide 1.0 new advanced recipes", &settings.hide_spoilers))
+    {
+        SaveSettings();
+    }
+#endif
+    if (ImGui::Checkbox("Compute power with equal clocks", &settings.power_equal_clocks))
+    {
+        SaveSettings();
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("%s",
+            "If set, the power per node will be calculated assuming all machines are set at the same clock value\n"
+            "Otherwise, it will be calculated with machines at 100% and one last machine underclocked");
+    }
+    if (ImGui::Checkbox("Show build progress", &settings.show_build_progress))
+    {
+        SaveSettings();
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("%s", "If set, build checkmark on craft nodes and overall progress bars won't be displayed");
+    }
+    if (settings.show_build_progress && all_machines.GetNumerator() != 0 && (all_built_machines / all_machines).GetNumerator() != 0)
+    {
+        ImGui::SameLine();
+        if (ImGui::Button("Reset progress"))
+        {
+            for (auto& n : nodes)
+            {
+                if (n->IsCraft())
+                {
+                    static_cast<CraftNode*>(n.get())->built = false;
+                }
+                else if (n->IsGroup())
+                {
+                    static_cast<GroupNode*>(n.get())->SetBuiltState(false);
+                }
+            }
+        }
+    }
+
+
+    if (ImGui::Button("Unlock all alt recipes"))
+    {
+        settings.unlocked_alts = {};
+        for (const auto& r : Data::Recipes())
+        {
+            if (r->alternate)
+            {
+                settings.unlocked_alts[r.get()] = true;
+            }
+        }
+        SaveSettings();
+    }
+    if (ImGui::GetContentRegionAvail().x - ImGui::GetItemRectSize().x > ImGui::CalcTextSize("Reset alt recipes").x + ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x)
+    {
+        ImGui::SameLine();
+    }
+    if (ImGui::Button("Reset alt recipes"))
+    {
+        settings.unlocked_alts = {};
+        for (const auto& r : Data::Recipes())
+        {
+            if (r->alternate)
+            {
+                settings.unlocked_alts[r.get()] = false;
+            }
+        }
+        SaveSettings();
+    }
+
+    if (settings.show_build_progress)
     {
         ImGui::SeparatorText("Build Progress");
 
@@ -2058,7 +2061,7 @@ void App::RenderNodes()
             const Link* l2 = p2->link;
 
             const bool p1_is_above = l1 != nullptr && (p1->direction == ax::NodeEditor::PinKind::Input ? l1->start : l1->end)->node->pos.y < p1->node->pos.y;
-            const bool p2_is_above = l2 != nullptr && (p2->direction == ax::NodeEditor::PinKind::Input ? l2->start : l2->end)->node->pos.y < p1->node->pos.y;
+            const bool p2_is_above = l2 != nullptr && (p2->direction == ax::NodeEditor::PinKind::Input ? l2->start : l2->end)->node->pos.y < p2->node->pos.y;
 
             // Both are linked and above
             if (p1_is_above && p2_is_above)
@@ -2112,7 +2115,7 @@ void App::RenderNodes()
             ax::NodeEditor::PushStyleColor(ax::NodeEditor::StyleColor_NodeBorder, ImColor(255, 0, 0));
             node_pushed_style += 1;
         }
-        if (!settings.hide_build_progress && (
+        if (settings.show_build_progress && (
             (node->IsCraft() && static_cast<CraftNode*>(node.get())->built) ||
             (node->IsGroup() && static_cast<GroupNode*>(node.get())->built_machines == static_cast<GroupNode*>(node.get())->total_machines)
         ))
@@ -2134,7 +2137,7 @@ void App::RenderNodes()
                     ImGui::Spring(1.0f);
                     ImGui::TextUnformatted(craft_node->recipe->display_name.c_str());
                     ImGui::Spring(1.0f);
-                    if (!settings.hide_build_progress)
+                    if (settings.show_build_progress)
                     {
                         ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, ImVec2(0, 0));
                         ImGui::Checkbox("##craft_built", &craft_node->built);
@@ -2163,7 +2166,7 @@ void App::RenderNodes()
                     ImGui::SetNextItemWidth(std::max(ImGui::CalcTextSize(group_node->name.c_str()).x, ImGui::CalcTextSize("Name...").x) + ImGui::GetStyle().FramePadding.x * 4.0f);
                     ImGui::InputTextWithHint("##name", "Name...", &group_node->name);
                     ImGui::Spring(1.0f);
-                    if (!settings.hide_build_progress)
+                    if (settings.show_build_progress)
                     {
                         ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, ImVec2(0, 0));
                         bool is_built = group_node->built_machines == group_node->total_machines;
