@@ -590,7 +590,7 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
                             relevant_pins.insert(p.get());
                             if (p->link != nullptr)
                             {
-                                pins_to_propagate.push(p->link->end);
+                                pins_to_propagate.push(p->link->start);
                             }
                         }
                     }
