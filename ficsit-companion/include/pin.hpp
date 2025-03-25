@@ -24,4 +24,5 @@ struct Pin
     Link* link;
 
     FractionalNumber current_rate;
+    bool error;
 };

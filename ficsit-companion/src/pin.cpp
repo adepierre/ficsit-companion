@@ -4,7 +4,7 @@
 
 Pin::Pin(const ax::NodeEditor::PinId id, const ax::NodeEditor::PinKind direction,
     Node* node, const Item* item, const FractionalNumber& base_rate) :
-    id(id), direction(direction), node(node), link(nullptr), item(item), base_rate(base_rate), current_rate(0, 1)
+    id(id), direction(direction), node(node), link(nullptr), item(item), base_rate(base_rate), current_rate(0, 1), error(false)
 {
     if (node->GetKind() == Node::Kind::Craft)
     {

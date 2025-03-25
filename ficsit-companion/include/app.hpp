@@ -155,4 +155,6 @@ private:
     unsigned int somersloop_texture_id;
 
     std::chrono::steady_clock::time_point last_time_interacted;
+
+    float error_time;
 };
