@@ -26,6 +26,8 @@
 #include <stdexcept>
 #include <unordered_set>
 
+static const ImVec4 lock_purple = ImVec4(0.32f, 0.16f, 0.35f, 0.54f);
+
 // #define WITH_SPOILERS
 
 /// @brief Save text file (either on disk for desktop version or in localStorage for web version)
@@ -366,12 +368,37 @@ Pin* App::FindPin(ax::NodeEditor::PinId id) const
 
 void App::CreateLink(Pin* start, Pin* end, const bool trigger_update)
 {
-    links.emplace_back(std::make_unique<Link>(GetNextId(),
-        // Make sure start is always an output and end an input
-        start->direction == ax::NodeEditor::PinKind::Output ? start : end,
-        end->direction == ax::NodeEditor::PinKind::Input ? end : start));
+    // Make sure start is always an output and end an input
+    Pin* real_end = end->direction == ax::NodeEditor::PinKind::Input ? end : start;
+    Pin* real_start = start->direction == ax::NodeEditor::PinKind::Output ? start : end;
+    links.emplace_back(std::make_unique<Link>(GetNextId(), real_start, real_end));
     start->link = links.back().get();
     end->link = links.back().get();
+    if (trigger_update && start->current_rate != end->current_rate)
+    {
+        try
+        {
+            if (!UpdateNodesRate(start, start->current_rate))
+            {
+                DeleteLink(links.back()->id);
+                return;
+            }
+        }
+        catch (const std::runtime_error&)
+        {
+            DeleteLink(links.back()->id);
+            fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
+            error_time = ax::NodeEditor::GetStyle().FlowDuration;
+            return;
+        }
+    }
+    // Set lock state
+    if (start->GetLocked() || end->GetLocked())
+    {
+        start->SetLocked(true);
+        end->SetLocked(true);
+    }
+    // Set items for organizer nodes
     if (start->node->IsOrganizer())
     {
         if (OrganizerNode* organizer_node = static_cast<OrganizerNode*>(start->node); organizer_node->item == nullptr)
@@ -386,14 +413,9 @@ void App::CreateLink(Pin* start, Pin* end, const bool trigger_update)
             organizer_node->ChangeItem(start->item);
         }
     }
-    Pin* real_end = end->direction == ax::NodeEditor::PinKind::Input ? end : start;
     if (real_end->node->IsSink())
     {
-        real_end->item = (start->direction == ax::NodeEditor::PinKind::Output ? start : end)->item;
-    }
-    if (trigger_update && start->current_rate != end->current_rate)
-    {
-        UpdateNodesRate(start, start->current_rate);
+        real_end->item = real_start->item;
     }
 }
 
@@ -544,13 +566,13 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
                 // This pin is a multi-pin side and is updated by something else than the single pin of this node
                 multi_pin_constrained.insert(updated_pin);
             }
-            // CustomSplitter/Merger, a pin only triggers an update of the opposite side pins
+            // CustomSplitter/Merger, a pin only triggers an update of the opposite side pins, except if the single pin is locked
             if (updated_pin->direction == ax::NodeEditor::PinKind::Input)
             {
+                // Update all unlocked outputs
                 for (const auto& p : updated_pin->node->outs)
                 {
-                    // Update all outputs
-                    if (relevant_pins.find(p.get()) == relevant_pins.end())
+                    if (!p->GetLocked() && relevant_pins.find(p.get()) == relevant_pins.end())
                     {
                         relevant_pins.insert(p.get());
                         if (p->link != nullptr)
@@ -559,18 +581,46 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
                         }
                     }
                 }
+                if (updated_pin->node->GetKind() == Node::Kind::Merger && updated_pin->node->outs[0]->GetLocked())
+                {
+                    for (const auto& p : updated_pin->node->ins)
+                    {
+                        if (updated_pin != p.get() && !p->GetLocked() && relevant_pins.find(p.get()) == relevant_pins.end())
+                        {
+                            relevant_pins.insert(p.get());
+                            if (p->link != nullptr)
+                            {
+                                pins_to_propagate.push(p->link->end);
+                            }
+                        }
+                    }
+                }
             }
             else
             {
+                // Update all unlocked inputs
                 for (const auto& p : updated_pin->node->ins)
                 {
-                    // Update all inputs
-                    if (relevant_pins.find(p.get()) == relevant_pins.end())
+                    if (!p->GetLocked() && relevant_pins.find(p.get()) == relevant_pins.end())
                     {
                         relevant_pins.insert(p.get());
                         if (p->link != nullptr)
                         {
                             pins_to_propagate.push(p->link->start);
+                        }
+                    }
+                }
+                if (updated_pin->node->GetKind() == Node::Kind::CustomSplitter && updated_pin->node->ins[0]->GetLocked())
+                {
+                    for (const auto& p : updated_pin->node->outs)
+                    {
+                        if (updated_pin != p.get() && !p->GetLocked() && relevant_pins.find(p.get()) == relevant_pins.end())
+                        {
+                            relevant_pins.insert(p.get());
+                            if (p->link != nullptr)
+                            {
+                                pins_to_propagate.push(p->link->end);
+                            }
                         }
                     }
                 }
@@ -721,51 +771,104 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
             const Pin* single_pin = kind == Node::Kind::CustomSplitter ? updated_pin->node->ins[0].get() : updated_pin->node->outs[0].get();
             const std::vector<std::unique_ptr<Pin>>& multi_pin = kind == Node::Kind::CustomSplitter ? updated_pin->node->outs : updated_pin->node->ins;
 
-            // If single pin side is updated, all the other pins should be updated
+            // If single pin side is updated or locked, all the unlocked other pins should be updated
             if ((kind == Node::Kind::CustomSplitter && updated_pin->direction == ax::NodeEditor::PinKind::Input) ||
-                (kind == Node::Kind::Merger && updated_pin->direction == ax::NodeEditor::PinKind::Output))
+                (kind == Node::Kind::Merger && updated_pin->direction == ax::NodeEditor::PinKind::Output) ||
+                single_pin->GetLocked()
+            )
             {
                 // These are all the multi-pin side that will be updated through their link,
                 // so they don't necessarily keep their ratio
                 std::vector<size_t> already_constrained;
-                FractionalNumber old_sum_already_constrained;
+                FractionalNumber old_sum_not_constrained;
+                FractionalNumber sum_locked;
+                size_t num_unlocked_not_constraint = 0;
                 for (const auto& p : multi_pin)
                 {
                     if (multi_pin_constrained.find(p.get()) != multi_pin_constrained.end())
                     {
                         create_variable(p.get());
                         already_constrained.push_back(associated_variable_index.at(p.get()).first);
-                        old_sum_already_constrained += p->current_rate;
+                    }
+                    else if (!p->GetLocked())
+                    {
+                        old_sum_not_constrained += p->current_rate;
+                        num_unlocked_not_constraint += 1;
+                    }
+                    else
+                    {
+                        sum_locked += p->current_rate;
                     }
                 }
 
-                const auto& [single_pin_variable_index, single_pin_variable_rate] = associated_variable_index.at(single_pin);
-                // Create ratio equality equations for the pins that don't have their own constraint
+                // If single pin is unlocked, we know it already has a variable as it's the updated pin
+                const size_t single_pin_variable_index = single_pin->GetLocked() ? 0 : associated_variable_index.at(single_pin).first;
+
+                // As we can't "overflow" what's left in the other unlocked not constraint pins
+                // we must add a constraint input == sum output
+                if (num_unlocked_not_constraint == 0)
+                {
+                    equations_coefficients.push_back(std::vector<FractionalNumber>(num_variables));
+                    constants.push_back(sum_locked);
+                    if (!single_pin->GetLocked())
+                    {
+                        equations_coefficients.back()[single_pin_variable_index] = 1;
+                    }
+                    else
+                    {
+                        constants.back() -= single_pin->current_rate;
+                    }
+                    for (const auto& p : multi_pin)
+                    {
+                        if (multi_pin_constrained.find(p.get()) != multi_pin_constrained.end())
+                        {
+                            equations_coefficients.back()[associated_variable_index.at(p.get()).first] = -1;
+                        }
+                    }
+                }
+
+
+                // Create ratio equality equations for the unlocked pins that don't have their own constraint
+                // (no-op if num_unlocked_not_constraint == 0)
                 for (const auto& p : multi_pin)
                 {
                     if (multi_pin_constrained.find(p.get()) != multi_pin_constrained.end())
                     {
                         continue;
                     }
+                    if (p->GetLocked())
+                    {
+                        continue;
+                    }
                     create_variable(p.get());
                     equations_coefficients.push_back(std::vector<FractionalNumber>(num_variables));
                     const FractionalNumber multiplier =
-                        (single_pin->current_rate - old_sum_already_constrained == 0) ?
-                            // If old sum was 0, just split evenly: (S - A) / (N - a.size()) = P
-                            FractionalNumber(1, multi_pin.size() - already_constrained.size()) :
-                            // Else, keep ratio: old_R / (old_S - old_A) * (S - A) = P
-                            p->current_rate / (single_pin->current_rate - old_sum_already_constrained);
-                    equations_coefficients.back()[single_pin_variable_index] = multiplier;
+                        old_sum_not_constrained == 0 ?
+                            // If old sum was 0, just split evenly: (S - A) / N = P
+                            FractionalNumber(1, num_unlocked_not_constraint) :
+                            // Else, keep ratio: old_R / sum old_R * (S - A) = P
+                            p->current_rate / old_sum_not_constrained;
+                    if (!single_pin->GetLocked())
+                    {
+                        equations_coefficients.back()[single_pin_variable_index] = -1 * multiplier;
+                    }
                     for (const auto i : already_constrained)
                     {
-                        equations_coefficients.back()[i] = -1 * multiplier;
+                        equations_coefficients.back()[i] = multiplier;
                     }
-                    equations_coefficients.back()[associated_variable_index.at(p.get()).first] = -1;
-                    constants.push_back(0);
+                    equations_coefficients.back()[associated_variable_index.at(p.get()).first] = 1;
+                    if (single_pin->GetLocked())
+                    {
+                        constants.push_back(multiplier * (single_pin->current_rate - sum_locked));
+                    }
+                    else
+                    {
+                        constants.push_back(-1 * multiplier * sum_locked);
+                    }
                     process_link(p.get());
                 }
             }
-            // If one of the multi-pin side is updated
+            // If one of the multi-pin side is updated and single pin isn't locked
             else
             {
                 // If single pin side doesn't have a variable yet, add the sum constraint equation
@@ -803,9 +906,13 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
     // Solve the equations using gaussian elimination
     const size_t num_equations = equations_coefficients.size();
     // Check sizes are ok
-    if (num_variables == 0 || constants.size() != num_equations)
+    if (num_variables == 0)
     {
-        throw std::runtime_error("Wrong number of variables/constants");
+        throw std::runtime_error("Wrong number of variables");
+    }
+    if (constants.size() != num_equations)
+    {
+        throw std::runtime_error("Wrong number of constants");
     }
     if (num_equations < num_variables)
     {
@@ -2125,7 +2232,15 @@ void App::RenderNodes()
                                 ImGui::EndDisabled();
                             }
                             ImGui::Spring(0.0f);
-                            p->current_rate.RenderInputText("##rate", false, false, rate_width);
+                            if (p->GetLocked())
+                            {
+                                ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
+                            }
+                            p->current_rate.RenderInputText("##rate", p->GetLocked(), false, rate_width);
+                            if (p->GetLocked())
+                            {
+                                ImGui::PopStyleColor();
+                            }
                             if (ImGui::IsItemDeactivatedAfterEdit())
                             {
                                 try
@@ -2185,6 +2300,10 @@ void App::RenderNodes()
                                 node.get(),
                                 node->IsMerger() ? static_cast<MergerNode*>(node.get())->item : nullptr) // Merger or Sink
                             );
+                            if (node->IsMerger() && node->outs.at(0)->GetLocked())
+                            {
+                                node->ins.back()->SetLocked(true);
+                            }
                         }
                         ImGui::Spring(1.0f, 0.0f);
                         ImGui::EndHorizontal();
@@ -2196,12 +2315,14 @@ void App::RenderNodes()
                                 DeleteLink(node->ins[sorted_pin_indices[idx]]->link->id);
                             }
                             node->ins.erase(node->ins.begin() + sorted_pin_indices[idx]);
-                            if (node->IsMerger()) // Sink doesn't have any output to update
+                            if (node->IsMerger()) // Sink doesn't have any output to update, nor lock pins to update
                             {
                                 FractionalNumber sum_inputs;
+                                size_t num_unlocked = 0;
                                 for (const auto& p : node->ins)
                                 {
                                     sum_inputs += p->current_rate;
+                                    num_unlocked += !p->GetLocked();
                                 }
                                 const FractionalNumber old_output = node->outs.at(0).get()->current_rate;
                                 // We need to set the current rate to the new sum, otherwise balancing would
@@ -2221,6 +2342,9 @@ void App::RenderNodes()
                                     fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
                                     error_time = ax::NodeEditor::GetStyle().FlowDuration;
                                 }
+
+                                // Update lock state
+                                node->outs.at(0)->SetLocked(num_unlocked < node->ins.size());
                             }
                         }
                     }
@@ -2251,7 +2375,15 @@ void App::RenderNodes()
                                 ImGui::Image((void*)(intptr_t)p->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
                             }
                             ImGui::Spring(0.0f);
-                            p->current_rate.RenderInputText("##rate", false, false, rate_width);
+                            if (p->GetLocked())
+                            {
+                                ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
+                            }
+                            p->current_rate.RenderInputText("##rate", p->GetLocked(), false, rate_width);
+                            if (p->GetLocked())
+                            {
+                                ImGui::PopStyleColor();
+                            }
                             if (ImGui::IsItemDeactivatedAfterEdit())
                             {
                                 try
@@ -2333,6 +2465,10 @@ void App::RenderNodes()
                         if (ImGui::Button("+"))
                         {
                             org_node->outs.emplace_back(std::make_unique<Pin>(GetNextId(), ax::NodeEditor::PinKind::Output, org_node, org_node->item));
+                            if (node->ins.at(0)->GetLocked())
+                            {
+                                node->outs.back()->SetLocked(true);
+                            }
                             if (node->IsGameSplitter())
                             {
                                 try
@@ -2363,9 +2499,11 @@ void App::RenderNodes()
                             if (node->IsCustomSplitter())
                             {
                                 FractionalNumber sum_outputs;
+                                size_t num_unlocked = 0;
                                 for (const auto& p : node->outs)
                                 {
                                     sum_outputs += p->current_rate;
+                                    num_unlocked += !p->GetLocked();
                                 }
                                 const FractionalNumber old_input = node->ins.at(0).get()->current_rate;
                                 // We need to set the current rate to the new sum, otherwise balancing would
@@ -2384,6 +2522,9 @@ void App::RenderNodes()
                                     fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
                                     error_time = ax::NodeEditor::GetStyle().FlowDuration;
                                 }
+
+                                // Update lock state
+                                node->ins.at(0)->SetLocked(num_unlocked < node->outs.size());
                             }
                             else // GameSplitter
                             {
@@ -2415,7 +2556,18 @@ void App::RenderNodes()
                 {
                     ImGui::Spring(0.0f);
                     PoweredNode* powered_node = static_cast<PoweredNode*>(node.get());
+                    const bool is_locked =
+                        (node->ins.size() > 0 && node->ins[0]->GetLocked()) ||
+                        (node->outs.size() > 0 && node->outs[0]->GetLocked());
+                    if (is_locked)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
+                    }
                     (settings.power_equal_clocks ? powered_node->same_clock_power : powered_node->last_underclock_power).RenderInputText("##power", true, false);
+                    if (is_locked)
+                    {
+                        ImGui::PopStyleColor();
+                    }
                     ImGui::Spring(0.0f);
                     ImGui::Text("%sMW", powered_node->HasVariablePower() ? "~" : "");
                     if (powered_node->HasVariablePower() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -2423,7 +2575,15 @@ void App::RenderNodes()
                         frame_tooltips.push_back("Average power");
                     }
                     ImGui::Spring(1.0f);
-                    powered_node->current_rate.RenderInputText("##rate", false, false, rate_width);
+                    if (is_locked)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
+                    }
+                    powered_node->current_rate.RenderInputText("##rate", is_locked, false, rate_width);
+                    if (is_locked)
+                    {
+                        ImGui::PopStyleColor();
+                    }
                     if (ImGui::IsItemDeactivatedAfterEdit())
                     {
                         const FractionalNumber old_rate = FractionalNumber(powered_node->current_rate.GetNumerator(), powered_node->current_rate.GetDenominator());
@@ -2479,7 +2639,17 @@ void App::RenderNodes()
                         {
                             ImGui::Spring(1.0f);
                             ImGui::SetNextItemWidth(somersloop_width);
+                            if (is_locked)
+                            {
+                                ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
+                                ImGui::BeginDisabled();
+                            }
                             ImGui::InputText("##somersloop", &craft_node->num_somersloop.GetStringFraction(), ImGuiInputTextFlags_CharsDecimal);
+                            if (is_locked)
+                            {
+                                ImGui::EndDisabled();
+                                ImGui::PopStyleColor();
+                            }
                             if (ImGui::IsItemDeactivatedAfterEdit())
                             {
                                 const FractionalNumber old_num_somersloop = FractionalNumber(craft_node->num_somersloop.GetNumerator(), craft_node->num_somersloop.GetDenominator());
@@ -2627,15 +2797,20 @@ void App::DragLink()
                     start_pin->node == end_pin->node ||
                     start_pin->link != nullptr ||
                     end_pin->link != nullptr ||
-                    (start_pin->item != nullptr && end_pin->item != nullptr && start_pin->item != end_pin->item)
+                    (start_pin->item != nullptr && end_pin->item != nullptr && start_pin->item != end_pin->item) ||
+                    (start_pin->GetLocked() && end_pin->GetLocked() && start_pin->current_rate != end_pin->current_rate)
                 )
                 {
                     ax::NodeEditor::RejectNewItem(ImColor(255, 0, 0), 2.0f);
                 }
                 else if (ax::NodeEditor::AcceptNewItem(ImColor(128, 255, 128), 4.0f))
                 {
-                    // If we are dragging from a default initialized 0 pin of an organizer node, pull value instead of pushing it
-                    if ((start_pin->node->IsOrganizer() || start_pin->node->IsSink()) && start_pin->current_rate.GetNumerator() == 0)
+                    // If we are dragging from a default initialized 0 pin of an organizer node
+                    // or if end pin is locked
+                    // pull value instead of pushing it
+                    if (((start_pin->node->IsOrganizer() || start_pin->node->IsSink()) && start_pin->current_rate.GetNumerator() == 0) ||
+                        end_pin->GetLocked()
+                    )
                     {
                         CreateLink(end_pin, start_pin, true);
                     }
@@ -2965,7 +3140,7 @@ void App::RenderControlsPopup()
     if (ImGui::BeginTable("##controls_table", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV))
     {
         static constexpr std::array controls = {
-            std::make_pair("Right click",         "Add node"),
+            std::make_pair("Right click",         "Add node/Lock Pin"),
             std::make_pair("Right click + mouse", "Move view"),
             std::make_pair("Left click",          "Select node/link"),
             std::make_pair("Left click + mouse",  "Move node/link"),
@@ -3063,5 +3238,42 @@ void App::CustomKeyControl()
     if (ImGui::IsAnyMouseDown() || io.MouseDelta.x != 0.0f || io.MouseDelta.y != 0.0f)
     {
         last_time_interacted = std::chrono::steady_clock::now();
+    }
+
+    if (ImGui::IsMouseReleased(ImGuiMouseButton_::ImGuiMouseButton_Right) &&
+        io.MouseDelta.x == 0.0f &&
+        io.MouseDelta.y == 0.0f)
+    {
+        const ax::NodeEditor::PinId hovered_pin = ax::NodeEditor::GetHoveredPin();
+        const ax::NodeEditor::NodeId hovered_node = ax::NodeEditor::GetHoveredNode();
+        if (hovered_pin)
+        {
+            Pin* pin = FindPin(hovered_pin);
+            if (pin != nullptr)
+            {
+                pin->SetLocked(!pin->GetLocked());
+            }
+        }
+        else if (hovered_node)
+        {
+            for (const auto& n : nodes)
+            {
+                if (n->id == hovered_node)
+                {
+                    const bool is_locked =
+                        (n->ins.size() > 0 && n->ins[0]->GetLocked()) ||
+                        (n->outs.size() > 0 && n->outs[0]->GetLocked());
+                    for (const auto& p : n->ins)
+                    {
+                        p->SetLocked(!is_locked);
+                    }
+                    for (const auto& p : n->outs)
+                    {
+                        p->SetLocked(!is_locked);
+                    }
+                    break;
+                }
+            }
+        }
     }
 }
