@@ -28,6 +28,7 @@ struct Node
         Group,
         GameSplitter,
         Sink,
+        // ALWAYS ADD NEW TYPES HERE (would break compatibility with old save files otherwise)
     };
 
     Node(const ax::NodeEditor::NodeId id);
