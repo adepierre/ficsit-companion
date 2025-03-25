@@ -680,7 +680,7 @@ OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const Item* item) 
 
 }
 
-OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const Json::Value& serialized) : Node(id, serialized), item(nullptr)
+OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : Node(id, serialized), item(nullptr)
 {
     const Kind kind = static_cast<Kind>(serialized["kind"].get<int>());
     if (kind != Kind::Merger && kind != Kind::CustomSplitter && kind != Kind::GameSplitter)
@@ -695,6 +695,18 @@ OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const Json::Value&
     else if (serialized["item"].get_string() != "")
     {
         throw std::runtime_error("Unknown item when loading organizer node");
+    }
+
+    for (size_t i = 0; i < serialized["ins"].size(); ++i)
+    {
+        ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+        ins.back()->current_rate = FractionalNumber(serialized["ins"][i]["num"].get<long long int>(), serialized["ins"][i]["den"].get<long long int>());
+    }
+
+    for (size_t i = 0; i < serialized["outs"].size(); ++i)
+    {
+        outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
+        outs.back()->current_rate = FractionalNumber(serialized["outs"][i]["num"].get<long long int>(), serialized["outs"][i]["den"].get<long long int>());
     }
 }
 
@@ -802,7 +814,7 @@ CustomSplitterNode::CustomSplitterNode(const ax::NodeEditor::NodeId id, const st
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
 }
 
-CustomSplitterNode::CustomSplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, serialized)
+CustomSplitterNode::CustomSplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, id_generator, serialized)
 {
     if (static_cast<Kind>(serialized["kind"].get<int>()) != Kind::CustomSplitter)
     {
@@ -812,14 +824,6 @@ CustomSplitterNode::CustomSplitterNode(const ax::NodeEditor::NodeId id, const st
     if (serialized["ins"].size() != 1)
     {
         throw std::runtime_error("Trying to deserialize an unvalid custom splitter node (wrong number of inputs)");
-    }
-    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
-    ins.back()->current_rate = FractionalNumber(serialized["ins"][0]["num"].get<long long int>(), serialized["ins"][0]["den"].get<long long int>());
-
-    for (int i = 0; i < serialized["outs"].size(); ++i)
-    {
-        outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
-        outs.back()->current_rate = FractionalNumber(serialized["outs"][i]["num"].get<long long int>(), serialized["outs"][i]["den"].get<long long int>());
     }
 }
 
@@ -845,25 +849,17 @@ MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsi
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
 }
 
-MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, serialized)
+MergerNode::MergerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, id_generator, serialized)
 {
     if (static_cast<Kind>(serialized["kind"].get<int>()) != Kind::Merger)
     {
         throw std::runtime_error("Trying to deserialize an unvalid node as a merger node");
     }
 
-    for (int i = 0; i < serialized["ins"].size(); ++i)
-    {
-        ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
-        ins.back()->current_rate = FractionalNumber(serialized["ins"][i]["num"].get<long long int>(), serialized["ins"][i]["den"].get<long long int>());
-    }
-
     if (serialized["outs"].size() != 1)
     {
         throw std::runtime_error("Trying to deserialize an unvalid merger node (wrong number of outputs)");
     }
-    outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
-    outs.back()->current_rate = FractionalNumber(serialized["outs"][0]["num"].get<long long int>(), serialized["outs"][0]["den"].get<long long int>());
 }
 
 MergerNode::~MergerNode()
@@ -889,7 +885,7 @@ GameSplitterNode::GameSplitterNode(const ax::NodeEditor::NodeId id, const std::f
     outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
 }
 
-GameSplitterNode::GameSplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, serialized)
+GameSplitterNode::GameSplitterNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized) : OrganizerNode(id, id_generator, serialized)
 {
     if (static_cast<Kind>(serialized["kind"].get<int>()) != Kind::GameSplitter)
     {
@@ -899,14 +895,6 @@ GameSplitterNode::GameSplitterNode(const ax::NodeEditor::NodeId id, const std::f
     if (serialized["ins"].size() != 1)
     {
         throw std::runtime_error("Trying to deserialize an unvalid game splitter node (wrong number of inputs)");
-    }
-    ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
-    ins.back()->current_rate = FractionalNumber(serialized["ins"][0]["num"].get<long long int>(), serialized["ins"][0]["den"].get<long long int>());
-
-    for (int i = 0; i < serialized["outs"].size(); ++i)
-    {
-        outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
-        outs.back()->current_rate = FractionalNumber(serialized["outs"][i]["num"].get<long long int>(), serialized["outs"][i]["den"].get<long long int>());
     }
 }
 

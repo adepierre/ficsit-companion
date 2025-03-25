@@ -140,7 +140,7 @@ public:
 struct OrganizerNode : public Node
 {
     OrganizerNode(const ax::NodeEditor::NodeId id, const Item* item = nullptr);
-    OrganizerNode(const ax::NodeEditor::NodeId id, const Json::Value& serialized);
+    OrganizerNode(const ax::NodeEditor::NodeId id, const std::function<unsigned long long int()>& id_generator, const Json::Value& serialized);
     virtual ~OrganizerNode();
     virtual bool IsOrganizer() const override;
     virtual Json::Value Serialize() const override;
