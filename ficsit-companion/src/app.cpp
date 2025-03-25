@@ -2344,7 +2344,7 @@ void App::RenderNodes()
                                 }
 
                                 // Update lock state
-                                node->outs.at(0)->SetLocked(num_unlocked < node->ins.size());
+                                node->outs.at(0)->SetLocked(num_unlocked == 0);
                             }
                         }
                     }
@@ -2524,7 +2524,7 @@ void App::RenderNodes()
                                 }
 
                                 // Update lock state
-                                node->ins.at(0)->SetLocked(num_unlocked < node->outs.size());
+                                node->ins.at(0)->SetLocked(num_unlocked == 0);
                             }
                             else // GameSplitter
                             {
