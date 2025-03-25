@@ -2298,12 +2298,9 @@ void App::RenderNodes()
                                 GetNextId(),
                                 ax::NodeEditor::PinKind::Input,
                                 node.get(),
-                                node->IsMerger() ? static_cast<MergerNode*>(node.get())->item : nullptr) // Merger or Sink
-                            );
-                            if (node->IsMerger() && node->outs.at(0)->GetLocked())
-                            {
-                                node->ins.back()->SetLocked(true);
-                            }
+                                node->IsMerger() ? static_cast<MergerNode*>(node.get())->item : nullptr, // Merger or Sink
+                                node->IsMerger() && node->outs.at(0)->GetLocked()
+                            ));
                         }
                         ImGui::Spring(1.0f, 0.0f);
                         ImGui::EndHorizontal();
@@ -2464,11 +2461,13 @@ void App::RenderNodes()
                         ImGui::Spring(1.0f, 0.0f);
                         if (ImGui::Button("+"))
                         {
-                            org_node->outs.emplace_back(std::make_unique<Pin>(GetNextId(), ax::NodeEditor::PinKind::Output, org_node, org_node->item));
-                            if (node->ins.at(0)->GetLocked())
-                            {
-                                node->outs.back()->SetLocked(true);
-                            }
+                            org_node->outs.emplace_back(std::make_unique<Pin>(
+                                GetNextId(),
+                                ax::NodeEditor::PinKind::Output,
+                                org_node,
+                                org_node->item,
+                                node->ins.at(0)->GetLocked()
+                            ));
                             if (node->IsGameSplitter())
                             {
                                 try

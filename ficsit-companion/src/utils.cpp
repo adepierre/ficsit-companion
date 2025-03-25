@@ -181,6 +181,48 @@ bool UpdateSave(Json::Value& save, const int to)
         return true;
     }
 
+
+    // From 4 to 5, save pin locked state
+    if (save["save_version"].get<int>() == 4)
+    {
+        std::function<void(Json::Array&)> update_nodes_locked = [&update_nodes_locked](Json::Array& nodes) {
+            for (auto& n : nodes)
+            {
+                switch (static_cast<Node::Kind>(n["kind"].get_number<int>()))
+                {
+                case Node::Kind::Craft:
+                    n["locked"] = false;
+                    break;
+                case Node::Kind::Group:
+                    n["locked"] = false;
+                    update_nodes_locked(n["nodes"].get_array());
+                    break;
+                case Node::Kind::CustomSplitter:
+                case Node::Kind::Merger:
+                case Node::Kind::GameSplitter:
+                case Node::Kind::Sink:
+                    for (auto& i : n["ins"].get_array())
+                    {
+                        i["locked"] = false;
+                    }
+                    for (auto& i : n["outs"].get_array())
+                    {
+                        i["locked"] = false;
+                    }
+                    break;
+                }
+            }
+        };
+        update_nodes_locked(save["nodes"].get_array());
+
+        save["save_version"] = 5;
+    }
+
+    if (save["save_version"].get<int>() == to)
+    {
+        return true;
+    }
+
     return false;
 }
 

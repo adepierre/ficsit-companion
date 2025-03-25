@@ -134,6 +134,9 @@ Json::Value PoweredNode::Serialize() const
         { "num", current_rate.GetNumerator()},
         { "den", current_rate.GetDenominator()}
     };
+    node["locked"] =
+        (ins.size() > 0 && ins[0]->GetLocked()) ||
+        (outs.size() > 0 && outs[0]->GetLocked());
     return node;
 }
 
@@ -165,13 +168,16 @@ CraftNode::CraftNode(const ax::NodeEditor::NodeId id, const std::function<unsign
 
     num_somersloop = FractionalNumber(serialized["num_somersloop"].get<long long int>());
     ComputePowerUsage();
+    const bool locked = serialized["locked"].get<bool>();
     for (auto& p : ins)
     {
         p->current_rate = p->base_rate * current_rate;
+        p->SetLocked(locked);
     }
     for (auto& p : outs)
     {
         p->current_rate = p->base_rate * current_rate * (1 + num_somersloop * recipe->building->somersloop_mult);
+        p->SetLocked(locked);
     }
     built = serialized["built"].get<bool>();
 }
@@ -256,11 +262,11 @@ void CraftNode::ChangeRecipe(const Recipe* recipe, const std::function<unsigned 
     ComputePowerUsage();
     for (const auto& input : recipe->ins)
     {
-        ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, input.item, input.quantity));
+        ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, input.item, false, input.quantity));
     }
     for (const auto& output : recipe->outs)
     {
-        outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, output.item, output.quantity));
+        outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, output.item, false, output.quantity));
     }
 }
 
@@ -337,6 +343,15 @@ GroupNode::GroupNode(const ax::NodeEditor::NodeId id, const std::function<unsign
     }
 
     CreateInsOuts(id_generator);
+    const bool locked = serialized["locked"].get<bool>();
+    for (auto& p : ins)
+    {
+        p->SetLocked(locked);
+    }
+    for (auto& p : outs)
+    {
+        p->SetLocked(locked);
+    }
     ComputePowerUsage();
     UpdateDetails();
 }
@@ -586,13 +601,13 @@ void GroupNode::CreateInsOuts(const std::function<unsigned long long int()>& id_
         // Only consumed, create an input pin
         if (it == outputs.end())
         {
-            ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, k, v));
+            ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, k, false, v));
             ins.back()->current_rate = v;
         }
         // Less produced than consumed, create an input pin with the difference
         else if (it->second < v)
         {
-            ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, k, v - it->second));
+            ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, k, false, v - it->second));
             ins.back()->current_rate = v - it->second;
         }
     }
@@ -604,13 +619,13 @@ void GroupNode::CreateInsOuts(const std::function<unsigned long long int()>& id_
         // Only produced, create an output pin
         if (it == inputs.end())
         {
-            outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, k, v));
+            outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, k, false, v));
             outs.back()->current_rate = v;
         }
         // Less consumed than produced, create an output pin with the difference
         else if (it->second < v)
         {
-            outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, k, v - it->second));
+            outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, k, false, v - it->second));
             outs.back()->current_rate = v - it->second;
         }
     }
@@ -699,13 +714,13 @@ OrganizerNode::OrganizerNode(const ax::NodeEditor::NodeId id, const std::functio
 
     for (size_t i = 0; i < serialized["ins"].size(); ++i)
     {
-        ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+        ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item, serialized["ins"][i]["locked"].get<bool>()));
         ins.back()->current_rate = FractionalNumber(serialized["ins"][i]["num"].get<long long int>(), serialized["ins"][i]["den"].get<long long int>());
     }
 
     for (size_t i = 0; i < serialized["outs"].size(); ++i)
     {
-        outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item));
+        outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, item, serialized["outs"][i]["locked"].get<bool>()));
         outs.back()->current_rate = FractionalNumber(serialized["outs"][i]["num"].get<long long int>(), serialized["outs"][i]["den"].get<long long int>());
     }
 }
@@ -733,6 +748,7 @@ Json::Value OrganizerNode::Serialize() const
         ins_array.push_back({
             { "num", i->current_rate.GetNumerator() },
             { "den", i->current_rate.GetDenominator() },
+            { "locked", i->GetLocked() },
         });
     }
     serialized["ins"] = ins_array;
@@ -744,6 +760,7 @@ Json::Value OrganizerNode::Serialize() const
         outs_array.push_back({
             { "num", o->current_rate.GetNumerator() },
             { "den", o->current_rate.GetDenominator() },
+            { "locked", o->GetLocked() },
         });
     }
     serialized["outs"] = outs_array;
@@ -957,7 +974,7 @@ SinkNode::SinkNode(const ax::NodeEditor::NodeId id, const std::function<unsigned
         {
             throw std::runtime_error("Unknown item when loading sink node");
         }
-        ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item));
+        ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, item, i["locked"].get<bool>()));
         ins.back()->current_rate = FractionalNumber(i["num"].get<long long int>(), i["den"].get<long long int>());
     }
 }
@@ -988,7 +1005,8 @@ Json::Value SinkNode::Serialize() const
         ins_array.push_back({
             { "num", i->current_rate.GetNumerator() },
             { "den", i->current_rate.GetDenominator() },
-            { "item",i->item == nullptr ? "" : i->item->name }
+            { "item", i->item == nullptr ? "" : i->item->name },
+            { "locked", i->GetLocked() },
         });
     }
     serialized["ins"] = ins_array;

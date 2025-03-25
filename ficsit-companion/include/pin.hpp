@@ -12,7 +12,7 @@ struct CountedItem;
 struct Pin
 {
     Pin(const ax::NodeEditor::PinId id, const ax::NodeEditor::PinKind direction,
-        Node* node, const Item* item, const FractionalNumber& base_rate = FractionalNumber(0,1));
+        Node* node, const Item* item, const bool locked = false, const FractionalNumber& base_rate = FractionalNumber(0,1));
     ~Pin();
     void SetLocked(const bool b);
     bool GetLocked() const;
