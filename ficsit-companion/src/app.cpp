@@ -2307,7 +2307,7 @@ void App::RenderNodes()
                                 ax::NodeEditor::PinKind::Input,
                                 node.get(),
                                 node->IsMerger() ? static_cast<MergerNode*>(node.get())->item : nullptr, // Merger or Sink
-                                node->IsMerger() && node->outs.at(0)->GetLocked()
+                                node->IsMerger() && node->outs[0]->GetLocked()
                             ));
                         }
                         ImGui::Spring(1.0f, 0.0f);
@@ -2329,10 +2329,10 @@ void App::RenderNodes()
                                     sum_inputs += p->current_rate;
                                     num_unlocked += !p->GetLocked();
                                 }
-                                const FractionalNumber old_output = node->outs.at(0).get()->current_rate;
+                                const FractionalNumber old_output = node->outs[0].get()->current_rate;
                                 // We need to set the current rate to the new sum, otherwise balancing would
                                 // be performed on the old ratios (including the deleted pin)
-                                node->outs.at(0).get()->current_rate = sum_inputs;
+                                node->outs[0].get()->current_rate = sum_inputs;
                                 try
                                 {
                                     if (!UpdateNodesRate(node->outs[0].get(), sum_inputs))
@@ -2482,7 +2482,7 @@ void App::RenderNodes()
                                 ax::NodeEditor::PinKind::Output,
                                 org_node,
                                 org_node->item,
-                                node->ins.at(0)->GetLocked()
+                                node->ins[0]->GetLocked()
                             ));
                             if (node->IsGameSplitter())
                             {
@@ -2520,15 +2520,15 @@ void App::RenderNodes()
                                     sum_outputs += p->current_rate;
                                     num_unlocked += !p->GetLocked();
                                 }
-                                const FractionalNumber old_input = node->ins.at(0).get()->current_rate;
+                                const FractionalNumber old_input = node->ins[0].get()->current_rate;
                                 // We need to set the current rate to the new sum, otherwise balancing would
                                 // be performed on the old ratios (including the deleted pin)
-                                node->ins.at(0).get()->current_rate = sum_outputs;
+                                node->ins[0].get()->current_rate = sum_outputs;
                                 try
                                 {
                                     if (!UpdateNodesRate(node->ins[0].get(), sum_outputs))
                                     {
-                                        node->ins.at(0).get()->current_rate = old_input;
+                                        node->ins[0].get()->current_rate = old_input;
                                     }
                                 }
                                 // Wrong equations during update process
