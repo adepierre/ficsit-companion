@@ -82,6 +82,9 @@ private:
     /// @brief Unpack all nodes contained in the currently selected node
     void UngroupSelectedNode();
 
+    /// @brief Create a copy of all selected nodes, including internal links between them
+    void DuplicateSelectedNodes();
+
 
     /// @brief Render the panel on the left with global info (inputs/outputs/etc...)
     void RenderLeftPanel();

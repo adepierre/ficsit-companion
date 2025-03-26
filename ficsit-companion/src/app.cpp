@@ -1297,6 +1297,73 @@ void App::UngroupSelectedNode()
     DeleteNode(group_node->id);
 }
 
+void App::DuplicateSelectedNodes()
+{
+    // Duplicate nodes
+    std::vector<std::unique_ptr<Node>> new_nodes;
+    std::unordered_map<const Node*, const Node*> original_to_copy;
+    for (const auto& n : nodes)
+    {
+        if (!ax::NodeEditor::IsNodeSelected(n->id))
+        {
+            continue;
+        }
+
+        // Don't add the new nodes directly as we are looping through it
+        new_nodes.emplace_back(Node::Deserialize(GetNextId(), std::bind(&App::GetNextId, this), n->Serialize()));
+        ax::NodeEditor::SetNodePosition(new_nodes.back()->id, ImVec2(n->pos.x + 100.0f, n->pos.y + 100.0f));
+        original_to_copy[n.get()] = new_nodes.back().get();
+    }
+    // Insert new nodes in the graph once the loop is done
+    nodes.insert(nodes.end(), std::make_move_iterator(new_nodes.begin()), std::make_move_iterator(new_nodes.end()));
+
+    // Duplicate links between two selected nodes
+    std::vector<std::pair<Pin*, Pin*>> new_links;
+    for (const auto& l : links)
+    {
+        if (ax::NodeEditor::IsNodeSelected(l->start->node->id) && ax::NodeEditor::IsNodeSelected(l->end->node->id))
+        {
+            int index_start = -1;
+            for (int i = 0; i < l->start->node->outs.size(); ++i)
+            {
+                if (l->start->node->outs[i].get() == l->start)
+                {
+                    index_start = i;
+                    break;
+                }
+            }
+            int index_end = -1;
+            for (int i = 0; i < l->end->node->ins.size(); ++i)
+            {
+                if (l->end->node->ins[i].get() == l->end)
+                {
+                    index_end = i;
+                    break;
+                }
+            }
+
+            // Should always be true but just in case
+            if (index_start != -1 && index_end != -1)
+            {
+                // Don't create link now as we loop through links
+                new_links.push_back({ original_to_copy.at(l->start->node)->outs[index_start].get(), original_to_copy.at(l->end->node)->ins[index_end].get() });
+            }
+        }
+    }
+
+    for (const auto& [s, e] : new_links)
+    {
+        CreateLink(s, e, false);
+    }
+
+    // Swap selection between old nodes and new nodes
+    for (const auto& [o, c] : original_to_copy)
+    {
+        ax::NodeEditor::DeselectNode(o->id);
+        ax::NodeEditor::SelectNode(c->id, true);
+    }
+}
+
 
 /******************************************************\
 *              Rendering related functions             *
@@ -3201,6 +3268,7 @@ void App::RenderControlsPopup()
             std::make_pair("Alt",                 "Disable grid snapping"),
             std::make_pair("Arrows",              "Nudge selection"),
             std::make_pair("Ctrl + A",            "Select all nodes"),
+            std::make_pair("Ctrl + D",            "Duplicate nodes"),
             std::make_pair("Ctrl + G",            "Group/Ungroup nodes"),
             std::make_pair("Ctrl + Left click",   "Add to selection"),
         };
@@ -3275,6 +3343,13 @@ void App::CustomKeyControl()
         }
     }
 
+    // Ctrl + D, duplicate selected nodes (group them and ungroup them immediately)
+    if (!io.WantCaptureKeyboard &&
+        ImGui::IsKeyPressed(ImGuiKey_D, false) &&
+        io.KeyCtrl)
+    {
+        DuplicateSelectedNodes();
+    }
 
     // If any user input happened, reset last time interaction
     for (const auto& k : io.KeysData)
