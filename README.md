@@ -10,10 +10,10 @@
 </div>
 
 <p align="center" style="margin-bottom: 0px !important;">
-  <img width="800" src="https://github.com/user-attachments/assets/8ff8ac2e-513b-4cf1-b10a-b65937dc81ce" alt="ficsit companion illustration gif" align="center">
+  <video width="720" src="https://github.com/user-attachments/assets/7867f428-bc26-46e7-b9dc-9f7dc76c97be" alt="ficsit companion demo video" align="center">
 </p>
 
-Ficsit Companion is a node based production planner for Satisfactory. It's still in beta version and very experimental. You can test the online version [here](https://adepierre.github.io/ficsit-companion/) or download a standalone desktop version from the [release page](https://github.com/adepierre/ficsit-companion/releases/latest).
+Ficsit Companion is a node based production planner for Satisfactory. You can use the online version [here](https://adepierre.github.io/ficsit-companion/) or download a standalone desktop version from the [release page](https://github.com/adepierre/ficsit-companion/releases/latest).
 
 ## Plans and ideas
 
