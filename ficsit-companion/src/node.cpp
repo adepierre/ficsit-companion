@@ -579,7 +579,7 @@ void GroupNode::CreateInsOuts(const std::function<unsigned long long int()>& id_
             {
                 if (p->item != nullptr)
                 {
-                    inputs[p->item] += p->current_rate;
+                    inputs[p->item] += p->current_rate * current_rate;
                 }
             }
         }
