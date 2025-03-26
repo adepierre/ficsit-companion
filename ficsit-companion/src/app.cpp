@@ -2248,7 +2248,12 @@ void App::RenderNodes()
                             {
                                 try
                                 {
-                                    if (!UpdateNodesRate(p.get(), p->current_rate.GetStringFloat()))
+                                    const FractionalNumber new_rate(p->current_rate.GetStringFloat());
+                                    if (new_rate.GetNumerator() < 0)
+                                    {
+                                        throw std::invalid_argument("Negative rate in pin");
+                                    }
+                                    if (!UpdateNodesRate(p.get(), new_rate))
                                     {
                                         p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
                                     }
@@ -2388,7 +2393,12 @@ void App::RenderNodes()
                             {
                                 try
                                 {
-                                    if (!UpdateNodesRate(p.get(), p->current_rate.GetStringFloat()))
+                                    const FractionalNumber new_rate(p->current_rate.GetStringFloat());
+                                    if (new_rate.GetNumerator() < 0)
+                                    {
+                                        throw std::invalid_argument("Negative rate in pin");
+                                    }
+                                    if (!UpdateNodesRate(p.get(), new_rate))
                                     {
                                         // Revert to previous value
                                         p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
@@ -2591,7 +2601,12 @@ void App::RenderNodes()
                         const FractionalNumber old_rate = FractionalNumber(powered_node->current_rate.GetNumerator(), powered_node->current_rate.GetDenominator());
                         try
                         {
-                            powered_node->UpdateRate(powered_node->current_rate.GetStringFloat());
+                            const FractionalNumber new_rate(powered_node->current_rate.GetStringFloat());
+                            if (new_rate.GetNumerator() < 0)
+                            {
+                                throw std::invalid_argument("Negative rate in node");
+                            }
+                            powered_node->UpdateRate(new_rate);
                             // Update from inputs if there is one, else from output
                             if ((powered_node->ins.size() > 0 && !UpdateNodesRate(powered_node->ins[0].get(), powered_node->ins[0]->current_rate)) ||
                                 (powered_node->outs.size() > 0 && !UpdateNodesRate(powered_node->outs[0].get(), powered_node->outs[0]->current_rate))
@@ -2659,9 +2674,9 @@ void App::RenderNodes()
                                 {
                                     FractionalNumber new_num_somersloop = FractionalNumber(craft_node->num_somersloop.GetStringFraction());
                                     // Only integer somersloop allowed
-                                    if (new_num_somersloop.GetDenominator() != 1)
+                                    if (new_num_somersloop.GetDenominator() != 1 || new_num_somersloop.GetNumerator() < 0)
                                     {
-                                        throw std::invalid_argument("somersloop num can only be whole integers");
+                                        throw std::invalid_argument("somersloop num can only be positive whole integers");
                                     }
                                     // Check we don't try to boost more than 2x
                                     // We know numerator is > 0 as otherwise somersloop input is not displayed, so it's ok to invert the fraction
@@ -2679,13 +2694,12 @@ void App::RenderNodes()
                                         craft_node->UpdateRate(craft_node->current_rate);
                                     }
                                 }
-                                // User entered an invalid string for somersloop, reset node rate
+                                // User entered an invalid string for somersloop, reset somersloop num (node rate wasn't changed)
                                 catch (const std::invalid_argument&)
                                 {
                                     craft_node->num_somersloop = old_num_somersloop;
-                                    craft_node->UpdateRate(craft_node->current_rate);
                                 }
-                                // Wrong equations during update process
+                                // Wrong equations during update process, reset somersloop num and node rate
                                 catch (const std::runtime_error&)
                                 {
                                     craft_node->num_somersloop = old_num_somersloop;
