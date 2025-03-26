@@ -10,6 +10,7 @@
 #include <stack>
 #include <stdexcept>
 #include <unordered_map>
+#include <vector>
 
 FractionalNumber::FractionalNumber(const long long int n, const long long int d) : numerator(n), denominator(d)
 {
