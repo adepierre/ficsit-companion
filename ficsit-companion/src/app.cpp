@@ -1263,6 +1263,18 @@ void App::UngroupSelectedNode()
     {
         // Deserialize should always work as it's serialized in this version of the app (not loaded from a file)
         nodes.emplace_back(Node::Deserialize(GetNextId(), std::bind(&App::GetNextId, this), n));
+        // For nodes without a rate stored, remultiply the current rates by the node global rate
+        if (nodes.back()->IsOrganizer() || nodes.back()->IsSink())
+        {
+            for (auto& p : nodes.back()->ins)
+            {
+                p->current_rate *= group_node->current_rate;
+            }
+            for (auto& p : nodes.back()->outs)
+            {
+                p->current_rate *= group_node->current_rate;
+            }
+        }
 
         // Offset the new node with the group node position
         nodes.back()->pos.x += group_node->pos.x;
