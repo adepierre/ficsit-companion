@@ -120,10 +120,10 @@ private:
 
     /// @brief All settings to customize app behaviour
     struct Settings {
-        /// @brief If true, recipes marked as spoiler will not be proposed in the list
-        bool hide_spoilers = true;
-        /// @brief If true, somersloop override will not be displayed in the nodes
-        bool hide_somersloop = false;
+        /// @brief If true, recipes marked as spoiler will be added to the list
+        bool show_spoilers = false;
+        /// @brief If true, somersloop override will be displayed in the nodes
+        bool show_somersloop = false;
         /// @brief For each alt recipes, stores wether or not it's been unlocked yet
         std::map<const Recipe*, bool> unlocked_alts = {};
         /// @brief If true, will display power info with equal clocks on all machines in a node

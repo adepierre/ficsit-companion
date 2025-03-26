@@ -157,11 +157,11 @@ void App::LoadSettings()
     // Load all settings values from json
     // Spoilers are disabled since we are not just after a major release anymore
 #ifdef WITH_SPOILERS
-    settings.hide_spoilers = !json.contains("hide_spoilers") || json["hide_spoilers"].get<bool>(); // default true
+    settings.show_spoilers = json.contains("show_spoilers") && json["show_spoilers"].get<bool>(); // default false
 #else
-    settings.hide_spoilers = false;
+    settings.show_spoilers = true;
 #endif
-    settings.hide_somersloop = json.contains("hide_somersloop") && json["hide_somersloop"].get<bool>(); // default false
+    settings.show_somersloop = json.contains("show_somersloop") && json["show_somersloop"].get<bool>(); // default false
     settings.unlocked_alts = {};
 
     for (const auto& r : Data::Recipes())
@@ -185,8 +185,8 @@ void App::SaveSettings() const
     Json::Value serialized;
 
     // Save all settings values in the json
-    serialized["hide_spoilers"] = settings.hide_spoilers;
-    serialized["hide_somersloop"] = settings.hide_somersloop;
+    serialized["show_spoilers"] = settings.show_spoilers;
+    serialized["show_somersloop"] = settings.show_somersloop;
 
     Json::Object unlocked;
     for (const auto& [r, b] : settings.unlocked_alts)
@@ -1799,54 +1799,6 @@ void App::RenderLeftPanel()
 
     ImGui::SeparatorText("Settings");
     // Display all settings here
-    if (ImGui::Checkbox("Hide somersloop amplifier", &settings.hide_somersloop))
-    {
-        SaveSettings();
-    }
-#ifdef WITH_SPOILERS
-    if (ImGui::Checkbox("Hide 1.0 new advanced recipes", &settings.hide_spoilers))
-    {
-        SaveSettings();
-    }
-#endif
-    if (ImGui::Checkbox("Compute power with equal clocks", &settings.power_equal_clocks))
-    {
-        SaveSettings();
-    }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-    {
-        ImGui::SetTooltip("%s",
-            "If set, the power per node will be calculated assuming all machines are set at the same clock value\n"
-            "Otherwise, it will be calculated with machines at 100% and one last machine underclocked");
-    }
-    if (ImGui::Checkbox("Show build progress", &settings.show_build_progress))
-    {
-        SaveSettings();
-    }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-    {
-        ImGui::SetTooltip("%s", "If set, build checkmark on craft nodes and overall progress bars won't be displayed");
-    }
-    if (settings.show_build_progress && all_machines.GetNumerator() != 0 && (all_built_machines / all_machines).GetNumerator() != 0)
-    {
-        ImGui::SameLine();
-        if (ImGui::Button("Reset progress"))
-        {
-            for (auto& n : nodes)
-            {
-                if (n->IsCraft())
-                {
-                    static_cast<CraftNode*>(n.get())->built = false;
-                }
-                else if (n->IsGroup())
-                {
-                    static_cast<GroupNode*>(n.get())->SetBuiltState(false);
-                }
-            }
-        }
-    }
-
-
     if (ImGui::Button("Unlock all alt recipes"))
     {
         settings.unlocked_alts = {};
@@ -1859,6 +1811,7 @@ void App::RenderLeftPanel()
         }
         SaveSettings();
     }
+
     if (ImGui::GetContentRegionAvail().x - ImGui::GetItemRectSize().x > ImGui::CalcTextSize("Reset alt recipes").x + ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x)
     {
         ImGui::SameLine();
@@ -1875,6 +1828,47 @@ void App::RenderLeftPanel()
         }
         SaveSettings();
     }
+
+    if (ImGui::Checkbox("Show somersloop", &settings.show_somersloop))
+    {
+        SaveSettings();
+    }
+#ifdef WITH_SPOILERS
+    if (ImGui::Checkbox("Show 1.0 new recipes", &settings.show_spoilers))
+    {
+        SaveSettings();
+    }
+#endif
+    if (ImGui::Checkbox("Show build progress", &settings.show_build_progress))
+    {
+        SaveSettings();
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("%s", "If set, will add a checkmark on craft nodes and overall build progress bars");
+    }
+    if (settings.show_build_progress && all_machines.GetNumerator() != 0 && (all_built_machines / all_machines).GetNumerator() != 0)
+    {
+        if (ImGui::GetContentRegionAvail().x - ImGui::GetItemRectSize().x > ImGui::CalcTextSize("Reset progress").x + ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x)
+        {
+            ImGui::SameLine();
+        }
+        if (ImGui::Button("Reset progress"))
+        {
+            for (auto& n : nodes)
+            {
+                if (n->IsCraft())
+                {
+                    static_cast<CraftNode*>(n.get())->built = false;
+                }
+                else if (n->IsGroup())
+                {
+                    static_cast<GroupNode*>(n.get())->SetBuiltState(false);
+                }
+            }
+        }
+    }
+
 
     if (settings.show_build_progress)
     {
@@ -1919,6 +1913,17 @@ void App::RenderLeftPanel()
     ImGui::SeparatorText(has_variable_power ? "Average Power Consumption" : "Power Consumption");
     if (total_power.GetNumerator() != 0)
     {
+        if (ImGui::Checkbox("Compute power with equal clocks", &settings.power_equal_clocks))
+        {
+            SaveSettings();
+        }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("%s",
+                "If set, the power will be calculated assuming all machines in a node are set at the same clock rate\n"
+                "Otherwise, it will be calculated with machines at 100% and one last machine underclocked");
+        }
+
         const float power_width = ImGui::CalcTextSize("000000.00").x + ImGui::GetStyle().FramePadding.x * 2.0f;
         std::vector<std::pair<const Recipe*, FractionalNumber>> sorted_detailed_power(detailed_power.begin(), detailed_power.end());
         std::stable_sort(sorted_detailed_power.begin(), sorted_detailed_power.end(), [](const auto& a, const auto& b) {
@@ -2762,9 +2767,8 @@ void App::RenderNodes()
                         CraftNode* craft_node = static_cast<CraftNode*>(node.get());
                         ImGui::Spring(0.0f);
                         ImGui::TextUnformatted(craft_node->recipe->building->name.c_str());
-                        if (
-                            // Override settings if it's not 0 (for example if the production chain is imported)
-                            (settings.hide_somersloop && craft_node->num_somersloop.GetNumerator() == 0) ||
+                        if (// Override settings if it's not 0 (for example if the production chain is imported)
+                            (!settings.show_somersloop && craft_node->num_somersloop.GetNumerator() == 0) ||
                             // Don't display somersloop if this building can't have one
                             craft_node->recipe->building->somersloop_mult.GetNumerator() == 0 ||
                             // Don't display somersloop for power generators
@@ -3185,7 +3189,7 @@ void App::AddNewNode()
 
         for (const auto [i, score_ignored] : recipe_indices)
         {
-            if (settings.hide_spoilers && recipes[i]->is_spoiler)
+            if (!settings.show_spoilers && recipes[i]->is_spoiler)
             {
                 continue;
             }
