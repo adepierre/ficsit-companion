@@ -505,6 +505,7 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
     // (e.g. if they are linked to another node that is updated)
     std::unordered_set<const Pin*> multi_pin_constrained;
 
+
     // Current queue of pins that had their new rate set and need to propagate it
     std::queue<const Pin*> pins_to_propagate;
     pins_to_propagate.push(constraint_pin);
@@ -515,10 +516,34 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
         pins_to_propagate.push(constraint_pin->direction == ax::NodeEditor::PinKind::Input ? constraint_pin->link->start : constraint_pin->link->end);
     }
 
+    // A secondary queue to store multi-pin (merger/custom splitter) that should be updated,
+    // but could also be constrained, so wait to see and if not constrained then propagate
+    std::queue<const Pin*> multi_pin_maybe_constrained;
+
     // First pass, collect all pins involved in this graph operation (disambiguate between
     // updated from single pin or multi pin side for CustomSplitter and Merger)
-    while (!pins_to_propagate.empty())
+    while (!pins_to_propagate.empty() || !multi_pin_maybe_constrained.empty())
     {
+        if (pins_to_propagate.empty())
+        {
+            const Pin* maybe_pin = multi_pin_maybe_constrained.front();
+            multi_pin_maybe_constrained.pop();
+            // This pin doesn't have other external constraint, propagate from it
+            if (relevant_pins.find(maybe_pin) == relevant_pins.end())
+            {
+                pins_to_propagate.push(maybe_pin);
+                if (maybe_pin->link != nullptr)
+                {
+                    const Pin* linked_pin = maybe_pin->direction == ax::NodeEditor::PinKind::Input ? maybe_pin->link->start : maybe_pin->link->end;
+                    pins_to_propagate.push(linked_pin);
+                }
+            }
+        }
+        // No valid multi_pin_maybe_constrained, just break
+        if (pins_to_propagate.empty())
+        {
+            break;
+        }
         const Pin* updated_pin = pins_to_propagate.front();
         pins_to_propagate.pop();
 
@@ -587,11 +612,8 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
                     {
                         if (updated_pin != p.get() && !p->GetLocked() && relevant_pins.find(p.get()) == relevant_pins.end())
                         {
-                            relevant_pins.insert(p.get());
-                            if (p->link != nullptr)
-                            {
-                                pins_to_propagate.push(p->link->start);
-                            }
+                            // Don't propagate yet
+                            multi_pin_maybe_constrained.push(p.get());
                         }
                     }
                 }
@@ -616,11 +638,8 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
                     {
                         if (updated_pin != p.get() && !p->GetLocked() && relevant_pins.find(p.get()) == relevant_pins.end())
                         {
-                            relevant_pins.insert(p.get());
-                            if (p->link != nullptr)
-                            {
-                                pins_to_propagate.push(p->link->end);
-                            }
+                            // Don't propagate yet
+                            multi_pin_maybe_constrained.push(p.get());
                         }
                     }
                 }
@@ -827,11 +846,11 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
                     }
                 }
 
-
-                // Create ratio equality equations for the unlocked pins that don't have their own constraint
-                // (no-op if num_unlocked_not_constraint == 0)
+                // Process the link for each multi-pin and create ratio equality equations
+                // for the unlocked pins that don't have their own constraint
                 for (const auto& p : multi_pin)
                 {
+                    process_link(p.get());
                     if (multi_pin_constrained.find(p.get()) != multi_pin_constrained.end())
                     {
                         continue;
@@ -865,7 +884,6 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
                     {
                         constants.push_back(-1 * multiplier * sum_locked);
                     }
-                    process_link(p.get());
                 }
             }
             // If one of the multi-pin side is updated and single pin isn't locked
