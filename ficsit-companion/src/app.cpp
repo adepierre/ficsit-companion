@@ -2608,11 +2608,19 @@ void App::RenderNodes()
                             }
                             powered_node->UpdateRate(new_rate);
                             // Update from inputs if there is one, else from output
-                            if ((powered_node->ins.size() > 0 && !UpdateNodesRate(powered_node->ins[0].get(), powered_node->ins[0]->current_rate)) ||
-                                (powered_node->outs.size() > 0 && !UpdateNodesRate(powered_node->outs[0].get(), powered_node->outs[0]->current_rate))
-                            )
+                            if (powered_node->ins.size() > 0)
                             {
-                                powered_node->UpdateRate(old_rate);
+                                if (!UpdateNodesRate(powered_node->ins[0].get(), powered_node->ins[0]->current_rate))
+                                {
+                                    powered_node->UpdateRate(old_rate);
+                                }
+                            }
+                            else if (powered_node->outs.size() > 0)
+                            {
+                                if (!UpdateNodesRate(powered_node->outs[0].get(), powered_node->outs[0]->current_rate))
+                                {
+                                    powered_node->UpdateRate(old_rate);
+                                }
                             }
                         }
                         // User entered an invalid string, reset node rate
@@ -2686,12 +2694,21 @@ void App::RenderNodes()
                                     }
                                     craft_node->num_somersloop = new_num_somersloop;
                                     craft_node->UpdateRate(craft_node->current_rate);
-                                    if ((craft_node->ins.size() > 0 && !UpdateNodesRate(craft_node->ins[0].get(), craft_node->ins[0]->current_rate)) ||
-                                        (craft_node->outs.size() > 0 && !UpdateNodesRate(craft_node->outs[0].get(), craft_node->outs[0]->current_rate))
-                                    )
+                                    if (craft_node->ins.size() > 0)
                                     {
-                                        craft_node->num_somersloop = old_num_somersloop;
-                                        craft_node->UpdateRate(craft_node->current_rate);
+                                        if (!UpdateNodesRate(craft_node->ins[0].get(), craft_node->ins[0]->current_rate))
+                                        {
+                                            craft_node->num_somersloop = old_num_somersloop;
+                                            craft_node->UpdateRate(craft_node->current_rate);
+                                        }
+                                    }
+                                    else if (craft_node->outs.size() > 0)
+                                    {
+                                        if (!UpdateNodesRate(craft_node->outs[0].get(), craft_node->outs[0]->current_rate))
+                                        {
+                                            craft_node->num_somersloop = old_num_somersloop;
+                                            craft_node->UpdateRate(craft_node->current_rate);
+                                        }
                                     }
                                 }
                                 // User entered an invalid string for somersloop, reset somersloop num (node rate wasn't changed)
