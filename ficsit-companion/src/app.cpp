@@ -2419,20 +2419,25 @@ void App::RenderNodes()
                             node->ins.erase(node->ins.begin() + sorted_pin_indices[idx]);
                             if (node->IsMerger()) // Sink doesn't have any output to update, nor lock pins to update
                             {
-                                FractionalNumber sum_inputs;
+                                FractionalNumber new_output;
                                 size_t num_unlocked = 0;
                                 for (const auto& p : node->ins)
                                 {
-                                    sum_inputs += p->current_rate;
+                                    new_output += p->current_rate;
                                     num_unlocked += !p->GetLocked();
+                                }
+                                // Output can't change if it's locked
+                                if (node->outs[0]->GetLocked())
+                                {
+                                    new_output = node->outs[0]->current_rate;
                                 }
                                 const FractionalNumber old_output = node->outs[0].get()->current_rate;
                                 // We need to set the current rate to the new sum, otherwise balancing would
                                 // be performed on the old ratios (including the deleted pin)
-                                node->outs[0].get()->current_rate = sum_inputs;
+                                node->outs[0].get()->current_rate = new_output;
                                 try
                                 {
-                                    if (!UpdateNodesRate(node->outs[0].get(), sum_inputs))
+                                    if (!UpdateNodesRate(node->outs[0].get(), new_output))
                                     {
                                         node->outs[0].get()->current_rate = old_output;
                                     }
@@ -2610,20 +2615,25 @@ void App::RenderNodes()
                             node->outs.erase(node->outs.begin() + sorted_pin_indices[idx]);
                             if (node->IsCustomSplitter())
                             {
-                                FractionalNumber sum_outputs;
+                                FractionalNumber new_input;
                                 size_t num_unlocked = 0;
                                 for (const auto& p : node->outs)
                                 {
-                                    sum_outputs += p->current_rate;
+                                    new_input += p->current_rate;
                                     num_unlocked += !p->GetLocked();
+                                }
+                                // Input can't change if it's locked
+                                if (node->ins[0]->GetLocked())
+                                {
+                                    new_input = node->ins[0]->current_rate;
                                 }
                                 const FractionalNumber old_input = node->ins[0].get()->current_rate;
                                 // We need to set the current rate to the new sum, otherwise balancing would
                                 // be performed on the old ratios (including the deleted pin)
-                                node->ins[0].get()->current_rate = sum_outputs;
+                                node->ins[0].get()->current_rate = new_input;
                                 try
                                 {
-                                    if (!UpdateNodesRate(node->ins[0].get(), sum_outputs))
+                                    if (!UpdateNodesRate(node->ins[0].get(), new_input))
                                     {
                                         node->ins[0].get()->current_rate = old_input;
                                     }
