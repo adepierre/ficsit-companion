@@ -259,7 +259,6 @@ void CraftNode::ChangeRecipe(const Recipe* recipe, const std::function<unsigned 
         return;
     }
 
-    ComputePowerUsage();
     for (const auto& input : recipe->ins)
     {
         ins.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Input, this, input.item, false, input.quantity));
@@ -268,6 +267,7 @@ void CraftNode::ChangeRecipe(const Recipe* recipe, const std::function<unsigned 
     {
         outs.emplace_back(std::make_unique<Pin>(id_generator(), ax::NodeEditor::PinKind::Output, this, output.item, false, output.quantity));
     }
+    UpdateRate(current_rate);
 }
 
 Node::Kind CraftNode::GetKind() const
