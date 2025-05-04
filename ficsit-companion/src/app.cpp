@@ -850,12 +850,12 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
                 // for the unlocked pins that don't have their own constraint
                 for (const auto& p : multi_pin)
                 {
-                    process_link(p.get());
-                    if (multi_pin_constrained.find(p.get()) != multi_pin_constrained.end())
+                    if (p->GetLocked())
                     {
                         continue;
                     }
-                    if (p->GetLocked())
+                    process_link(p.get());
+                    if (multi_pin_constrained.find(p.get()) != multi_pin_constrained.end())
                     {
                         continue;
                     }
