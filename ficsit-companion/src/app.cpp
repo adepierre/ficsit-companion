@@ -531,7 +531,7 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
             // This pin doesn't have other external constraint, propagate from it
             if (relevant_pins.find(maybe_pin) == relevant_pins.end())
             {
-                pins_to_propagate.push(maybe_pin);
+                relevant_pins.insert(maybe_pin);
                 if (maybe_pin->link != nullptr)
                 {
                     const Pin* linked_pin = maybe_pin->direction == ax::NodeEditor::PinKind::Input ? maybe_pin->link->start : maybe_pin->link->end;
