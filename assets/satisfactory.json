@@ -5,7 +5,7 @@
             "name": "Coal-Powered Generator",
             "somersloop_mult": 1.0,
             "power": -75.0,
-            "power_exponent": 1.6,
+            "power_exponent": 1.0,
             "somersloop_power_exponent": 2.0,
             "variable_power": false
         },
@@ -13,7 +13,7 @@
             "name": "Fuel-Powered Generator",
             "somersloop_mult": 1.0,
             "power": -250.0,
-            "power_exponent": 1.6,
+            "power_exponent": 1.0,
             "somersloop_power_exponent": 2.0,
             "variable_power": false
         },
@@ -21,7 +21,7 @@
             "name": "Biomass Burner",
             "somersloop_mult": 1.0,
             "power": -30.0,
-            "power_exponent": 1.6,
+            "power_exponent": 1.0,
             "somersloop_power_exponent": 2.0,
             "variable_power": false
         },
@@ -117,7 +117,7 @@
             "name": "Nuclear Power Plant",
             "somersloop_mult": 1.0,
             "power": -2500.0,
-            "power_exponent": 1.6,
+            "power_exponent": 1.0,
             "somersloop_power_exponent": 2.0,
             "variable_power": false
         }

@@ -70,7 +70,7 @@ buildings = {
         "name": b["mDisplayName"],
         "somersloop_mult": float(b["mProductionShardBoostMultiplier"]),
         "power": -float(b["mPowerProduction"]) if "mPowerProduction" in b else float(b["mPowerConsumption"]),
-        "power_exponent": float(b["mPowerConsumptionExponent"]),
+        "power_exponent": 1.0 if "mPowerProduction" in b else float(b["mPowerConsumptionExponent"]),
         "somersloop_power_exponent": float(b["mProductionBoostPowerConsumptionExponent"]),
         "variable_power": "FGBuildableManufacturerVariablePower" in b["NativeClass"],
     } for b in get_classes(data, BUILDINGS)
