@@ -124,7 +124,12 @@
                 "You can duplicate all selected nodes using Ctrl + D",
             ];
 
-            document.getElementById("tip").textContent = "Tip: " + tips[Math.floor(Math.random() * tips.length)];
+            function updateTip() {
+                document.getElementById("tip").textContent = "Tip: " + tips[Math.floor(Math.random() * tips.length)];
+            }
+            updateTip();
+            setInterval(updateTip, 60000);
+
         </script>
         <script type='text/javascript'>
             var Module = {
