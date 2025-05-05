@@ -2176,6 +2176,7 @@ void App::RenderLeftPanel()
 
 void App::RenderNodes()
 {
+    const float zoom_level = ax::NodeEditor::GetCurrentZoom();
     const float rate_width = ImGui::CalcTextSize("000.000").x + ImGui::GetStyle().FramePadding.x * 2.0f;
     const float somersloop_width = ImGui::CalcTextSize("4").x + ImGui::GetStyle().FramePadding.x * 2.0f;
     // Vector that will be reused to sort pins for all nodes (instead of creating two per nodes)
@@ -2265,63 +2266,66 @@ void App::RenderNodes()
         ImGui::PushID(node->id.AsPointer());
         ImGui::BeginVertical("node");
         {
-            ImGui::BeginHorizontal("header");
+            if (zoom_level < 1.5f)
             {
-                switch (node->GetKind())
+                ImGui::BeginHorizontal("header");
                 {
-                case Node::Kind::Craft:
-                {
-                    CraftNode* craft_node = static_cast<CraftNode*>(node.get());
-                    ImGui::Spring(1.0f);
-                    ImGui::TextUnformatted(craft_node->recipe->display_name.c_str());
-                    ImGui::Spring(1.0f);
-                    if (settings.show_build_progress)
+                    switch (node->GetKind())
                     {
-                        ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-                        ImGui::Checkbox("##craft_built", &craft_node->built);
-                        ImGui::PopStyleVar();
-                    }
-                }
-                    break;
-                case Node::Kind::Merger:
-                    ImGui::TextUnformatted("Merger");
-                    break;
-                case Node::Kind::CustomSplitter:
-                    ImGui::TextUnformatted("Splitter*");
-                    break;
-                case Node::Kind::GameSplitter:
-                    ImGui::TextUnformatted("Splitter");
-                    break;
-                case Node::Kind::Sink:
-                    ImGui::TextUnformatted("Sink");
-                    break;
-                case Node::Kind::Group:
-                {
-                    GroupNode* group_node = static_cast<GroupNode*>(node.get());
-                    ImGui::Spring(1.0f);
-                    ImGui::TextUnformatted("Group");
-                    ImGui::Spring(0.0f);
-                    ImGui::SetNextItemWidth(std::max(ImGui::CalcTextSize(group_node->name.c_str()).x, ImGui::CalcTextSize("Name...").x) + ImGui::GetStyle().FramePadding.x * 4.0f);
-                    ImGui::InputTextWithHint("##name", "Name...", &group_node->name);
-                    ImGui::Spring(1.0f);
-                    if (settings.show_build_progress)
+                    case Node::Kind::Craft:
                     {
-                        ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-                        bool is_built = group_node->built_machines == group_node->total_machines;
-                        if (ImGui::Checkbox("##group_built", &is_built))
+                        CraftNode* craft_node = static_cast<CraftNode*>(node.get());
+                        ImGui::Spring(1.0f);
+                        ImGui::TextUnformatted(craft_node->recipe->display_name.c_str());
+                        ImGui::Spring(1.0f);
+                        if (settings.show_build_progress)
                         {
-                            group_node->SetBuiltState(is_built);
+                            ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+                            ImGui::Checkbox("##craft_built", &craft_node->built);
+                            ImGui::PopStyleVar();
                         }
-                        ImGui::PopStyleVar();
                     }
                     break;
+                    case Node::Kind::Merger:
+                        ImGui::TextUnformatted("Merger");
+                        break;
+                    case Node::Kind::CustomSplitter:
+                        ImGui::TextUnformatted("Splitter*");
+                        break;
+                    case Node::Kind::GameSplitter:
+                        ImGui::TextUnformatted("Splitter");
+                        break;
+                    case Node::Kind::Sink:
+                        ImGui::TextUnformatted("Sink");
+                        break;
+                    case Node::Kind::Group:
+                    {
+                        GroupNode* group_node = static_cast<GroupNode*>(node.get());
+                        ImGui::Spring(1.0f);
+                        ImGui::TextUnformatted("Group");
+                        ImGui::Spring(0.0f);
+                        ImGui::SetNextItemWidth(std::max(ImGui::CalcTextSize(group_node->name.c_str()).x, ImGui::CalcTextSize("Name...").x) + ImGui::GetStyle().FramePadding.x * 4.0f);
+                        ImGui::InputTextWithHint("##name", "Name...", &group_node->name);
+                        ImGui::Spring(1.0f);
+                        if (settings.show_build_progress)
+                        {
+                            ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+                            bool is_built = group_node->built_machines == group_node->total_machines;
+                            if (ImGui::Checkbox("##group_built", &is_built))
+                            {
+                                group_node->SetBuiltState(is_built);
+                            }
+                            ImGui::PopStyleVar();
+                        }
+                        break;
+                    }
+                    }
                 }
-                }
-            }
-            ImGui::EndHorizontal();
+                ImGui::EndHorizontal();
 
-            // spacing between header and content
-            ImGui::Spring(0, ImGui::GetStyle().ItemSpacing.y * 2.0f);
+                // spacing between header and content
+                ImGui::Spring(0, ImGui::GetStyle().ItemSpacing.y * 2.0f);
+            }
 
             ImGui::BeginHorizontal("content");
             {
@@ -2362,68 +2366,76 @@ void App::RenderNodes()
                             }
                             ImGui::Dummy(size);
                             ImGui::Spring(0.0f);
-                            if (node->IsMerger() || node->IsSink())
+                            if (zoom_level < 1.5f)
                             {
-                                ImGui::BeginDisabled(node->ins.size() == 1);
-                                if (ImGui::Button("x"))
+                                if (node->IsMerger() || node->IsSink())
                                 {
-                                    // We can't remove it directly as we are currently looping through the pins
-                                    removed_input_idx = idx;
-                                }
-                                ImGui::EndDisabled();
-                            }
-                            ImGui::Spring(0.0f);
-                            if (p->GetLocked())
-                            {
-                                ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
-                            }
-                            p->current_rate.RenderInputText("##rate", p->GetLocked(), false, rate_width);
-                            if (p->GetLocked())
-                            {
-                                ImGui::PopStyleColor();
-                            }
-                            if (ImGui::IsItemDeactivatedAfterEdit())
-                            {
-                                try
-                                {
-                                    const FractionalNumber new_rate(p->current_rate.GetStringFloat());
-                                    if (new_rate.GetNumerator() < 0)
+                                    ImGui::BeginDisabled(node->ins.size() == 1);
+                                    if (ImGui::Button("x"))
                                     {
-                                        throw std::invalid_argument("Negative rate in pin");
+                                        // We can't remove it directly as we are currently looping through the pins
+                                        removed_input_idx = idx;
                                     }
-                                    if (!UpdateNodesRate(p.get(), new_rate))
+                                    ImGui::EndDisabled();
+                                }
+                                ImGui::Spring(0.0f);
+                                if (p->GetLocked())
+                                {
+                                    ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
+                                }
+                                p->current_rate.RenderInputText("##rate", p->GetLocked(), false, rate_width);
+                                if (p->GetLocked())
+                                {
+                                    ImGui::PopStyleColor();
+                                }
+                                if (ImGui::IsItemDeactivatedAfterEdit())
+                                {
+                                    try
+                                    {
+                                        const FractionalNumber new_rate(p->current_rate.GetStringFloat());
+                                        if (new_rate.GetNumerator() < 0)
+                                        {
+                                            throw std::invalid_argument("Negative rate in pin");
+                                        }
+                                        if (!UpdateNodesRate(p.get(), new_rate))
+                                        {
+                                            p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
+                                        }
+                                    }
+                                    // User entered an invalid string
+                                    catch (const std::invalid_argument&)
                                     {
                                         p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
                                     }
+                                    // Wrong equations during update process
+                                    catch (const std::runtime_error&)
+                                    {
+                                        p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
+                                        fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
+                                    }
                                 }
-                                // User entered an invalid string
-                                catch (const std::invalid_argument&)
+                                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                                 {
-                                    p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
+                                    frame_tooltips.push_back(p->current_rate.GetStringFraction());
                                 }
-                                // Wrong equations during update process
-                                catch (const std::runtime_error&)
+                                if (p->error)
                                 {
-                                    p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
-                                    fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
+                                    // Draw red rectangle around pin
+                                    ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImColor(255, 0, 0), 0.0f, ImDrawFlags_None, 1.0f);
                                 }
-                            }
-                            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                            {
-                                frame_tooltips.push_back(p->current_rate.GetStringFraction());
-                            }
-                            if (p->error)
-                            {
-                                // Draw red rectangle around pin
-                                ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImColor(255, 0, 0), 0.0f, ImDrawFlags_None, 1.0f);
-                            }
 
-                            if (node->IsPowered() || (node->IsSink() && p->item != nullptr))
+                                if (node->IsPowered() || (node->IsSink() && p->item != nullptr))
+                                {
+                                    ImGui::Spring(0.0f);
+                                    ImGui::Image((void*)(intptr_t)p->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+                                    ImGui::Spring(0.0f);
+                                    ImGui::TextUnformatted(p->item->new_line_name.c_str());
+                                    ImGui::Spring(0.0f);
+                                }
+                            }
+                            else if (zoom_level < 3.5f && node->IsPowered() && p->item != nullptr)
                             {
-                                ImGui::Spring(0.0f);
-                                ImGui::Image((void*)(intptr_t)p->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-                                ImGui::Spring(0.0f);
-                                ImGui::TextUnformatted(p->item->new_line_name.c_str());
+                                ImGui::Image((void*)(intptr_t)p->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing() * (0.5f + zoom_level), ImGui::GetTextLineHeightWithSpacing() * (0.5f + zoom_level)));
                                 ImGui::Spring(0.0f);
                             }
                         }
@@ -2434,7 +2446,7 @@ void App::RenderNodes()
                     }
                     ax::NodeEditor::PopStyleVar();
                     ax::NodeEditor::PopStyleVar();
-                    if (node->IsMerger() || node->IsSink())
+                    if (zoom_level < 1.5f && (node->IsMerger() || node->IsSink()))
                     {
                         ImGui::BeginHorizontal("add_input_+_buttton");
                         ImGui::Spring(1.0f, 0.0f);
@@ -2503,7 +2515,16 @@ void App::RenderNodes()
                 }
                 ImGui::EndVertical();
 
-                ImGui::Spring(1.0f);
+                if (zoom_level < 3.5f)
+                {
+                    ImGui::Spring(1.0f);
+                }
+                else if (node->IsPowered() && node->outs.size() > 0)
+                {
+                    ImGui::Spring(0.0f);
+                    ImGui::Image((void*)(intptr_t)node->outs[0]->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing() * (0.5f + zoom_level), ImGui::GetTextLineHeightWithSpacing() * (0.5f + zoom_level)));
+                    ImGui::Spring(0.0f);
+                }
 
                 ImGui::BeginVertical("outputs", ImVec2(0, 0), 1.0f); // Align all elements on the right of the column
                 {
@@ -2518,70 +2539,77 @@ void App::RenderNodes()
                         ax::NodeEditor::BeginPin(p->id, p->direction);
                         ImGui::BeginHorizontal(p->id.AsPointer());
                         {
-                            if (node->IsPowered())
+                            if (zoom_level < 1.5f)
                             {
-                                ImGui::Spring(0.0f);
-                                ImGui::TextUnformatted(p->item->new_line_name.c_str());
-                                ImGui::Spring(0.0f);
-                                ImGui::Image((void*)(intptr_t)p->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-                            }
-                            ImGui::Spring(0.0f);
-                            if (p->GetLocked())
-                            {
-                                ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
-                            }
-                            p->current_rate.RenderInputText("##rate", p->GetLocked(), false, rate_width);
-                            if (p->GetLocked())
-                            {
-                                ImGui::PopStyleColor();
-                            }
-                            if (ImGui::IsItemDeactivatedAfterEdit())
-                            {
-                                try
+                                if (node->IsPowered())
                                 {
-                                    const FractionalNumber new_rate(p->current_rate.GetStringFloat());
-                                    if (new_rate.GetNumerator() < 0)
+                                    ImGui::Spring(0.0f);
+                                    ImGui::TextUnformatted(p->item->new_line_name.c_str());
+                                    ImGui::Spring(0.0f);
+                                    ImGui::Image((void*)(intptr_t)p->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+                                }
+                                ImGui::Spring(0.0f);
+                                if (p->GetLocked())
+                                {
+                                    ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
+                                }
+                                p->current_rate.RenderInputText("##rate", p->GetLocked(), false, rate_width);
+                                if (p->GetLocked())
+                                {
+                                    ImGui::PopStyleColor();
+                                }
+                                if (ImGui::IsItemDeactivatedAfterEdit())
+                                {
+                                    try
                                     {
-                                        throw std::invalid_argument("Negative rate in pin");
+                                        const FractionalNumber new_rate(p->current_rate.GetStringFloat());
+                                        if (new_rate.GetNumerator() < 0)
+                                        {
+                                            throw std::invalid_argument("Negative rate in pin");
+                                        }
+                                        if (!UpdateNodesRate(p.get(), new_rate))
+                                        {
+                                            // Revert to previous value
+                                            p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
+                                        }
                                     }
-                                    if (!UpdateNodesRate(p.get(), new_rate))
+                                    // User entered an invalid string
+                                    catch (const std::invalid_argument&)
                                     {
-                                        // Revert to previous value
                                         p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
                                     }
+                                    // Wrong equations during update process
+                                    catch (const std::runtime_error&)
+                                    {
+                                        p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
+                                        fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
+                                        error_time = ax::NodeEditor::GetStyle().FlowDuration;
+                                    }
                                 }
-                                // User entered an invalid string
-                                catch (const std::invalid_argument&)
+                                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                                 {
-                                    p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
+                                    frame_tooltips.push_back(p->current_rate.GetStringFraction());
                                 }
-                                // Wrong equations during update process
-                                catch (const std::runtime_error&)
+                                if (p->error)
                                 {
-                                    p->current_rate = FractionalNumber(p->current_rate.GetNumerator(), p->current_rate.GetDenominator());
-                                    fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
-                                    error_time = ax::NodeEditor::GetStyle().FlowDuration;
+                                    // Draw red rectangle around pin
+                                    ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImColor(255, 0, 0), 0.0f, ImDrawFlags_None, 1.0f);
+                                }
+                                ImGui::Spring(0.0f);
+                                if (node->IsCustomSplitter() || node->IsGameSplitter())
+                                {
+                                    ImGui::BeginDisabled(node->outs.size() == 1);
+                                    if (ImGui::Button("x"))
+                                    {
+                                        // We can't remove it directly as we are currently looping through the pins
+                                        removed_output_idx = idx;
+                                    }
+                                    ImGui::EndDisabled();
                                 }
                             }
-                            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                            else if (zoom_level < 3.5f && node->IsPowered() && p->item != nullptr)
                             {
-                                frame_tooltips.push_back(p->current_rate.GetStringFraction());
-                            }
-                            if (p->error)
-                            {
-                                // Draw red rectangle around pin
-                                ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImColor(255, 0, 0), 0.0f, ImDrawFlags_None, 1.0f);
-                            }
-                            ImGui::Spring(0.0f);
-                            if (node->IsCustomSplitter() || node->IsGameSplitter())
-                            {
-                                ImGui::BeginDisabled(node->outs.size() == 1);
-                                if (ImGui::Button("x"))
-                                {
-                                    // We can't remove it directly as we are currently looping through the pins
-                                    removed_output_idx = idx;
-                                }
-                                ImGui::EndDisabled();
+                                ImGui::Image((void*)(intptr_t)p->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing() * (0.5f + zoom_level), ImGui::GetTextLineHeightWithSpacing() * (0.5f + zoom_level)));
                             }
                             ImGui::Spring(0.0f);
                             const float radius = 0.2f * ImGui::GetTextLineHeightWithSpacing();
@@ -2613,7 +2641,7 @@ void App::RenderNodes()
                     }
                     ax::NodeEditor::PopStyleVar();
                     ax::NodeEditor::PopStyleVar();
-                    if (node->IsCustomSplitter() || node->IsGameSplitter())
+                    if (zoom_level < 1.5f && (node->IsCustomSplitter() || node->IsGameSplitter()))
                     {
                         OrganizerNode* org_node = static_cast<OrganizerNode*>(node.get());
                         ImGui::BeginHorizontal("add_output_+_buttton");
@@ -2716,214 +2744,217 @@ void App::RenderNodes()
             }
             ImGui::EndHorizontal();
 
-            ImGui::BeginHorizontal("bottom");
+            if (zoom_level < 1.5f)
             {
-                if (node->IsPowered())
+                ImGui::BeginHorizontal("bottom");
                 {
-                    ImGui::Spring(0.0f);
-                    PoweredNode* powered_node = static_cast<PoweredNode*>(node.get());
-                    const bool is_locked =
-                        (node->ins.size() > 0 && node->ins[0]->GetLocked()) ||
-                        (node->outs.size() > 0 && node->outs[0]->GetLocked());
-                    if (is_locked)
+                    if (node->IsPowered())
                     {
-                        ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
-                    }
-                    (settings.power_equal_clocks ? powered_node->same_clock_power : powered_node->last_underclock_power).RenderInputText("##power", true, false);
-                    if (is_locked)
-                    {
-                        ImGui::PopStyleColor();
-                    }
-                    ImGui::Spring(0.0f);
-                    ImGui::Text("%sMW", powered_node->HasVariablePower() ? "~" : "");
-                    if (powered_node->HasVariablePower() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                    {
-                        frame_tooltips.push_back("Average power");
-                    }
-                    ImGui::Spring(1.0f);
-                    if (is_locked)
-                    {
-                        ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
-                    }
-                    powered_node->current_rate.RenderInputText("##rate", is_locked, false, rate_width);
-                    if (is_locked)
-                    {
-                        ImGui::PopStyleColor();
-                    }
-                    if (ImGui::IsItemDeactivatedAfterEdit())
-                    {
-                        const FractionalNumber old_rate = FractionalNumber(powered_node->current_rate.GetNumerator(), powered_node->current_rate.GetDenominator());
-                        try
+                        ImGui::Spring(0.0f);
+                        PoweredNode* powered_node = static_cast<PoweredNode*>(node.get());
+                        const bool is_locked =
+                            (node->ins.size() > 0 && node->ins[0]->GetLocked()) ||
+                            (node->outs.size() > 0 && node->outs[0]->GetLocked());
+                        if (is_locked)
                         {
-                            const FractionalNumber new_rate(powered_node->current_rate.GetStringFloat());
-                            if (new_rate.GetNumerator() < 0)
+                            ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
+                        }
+                        (settings.power_equal_clocks ? powered_node->same_clock_power : powered_node->last_underclock_power).RenderInputText("##power", true, false);
+                        if (is_locked)
+                        {
+                            ImGui::PopStyleColor();
+                        }
+                        ImGui::Spring(0.0f);
+                        ImGui::Text("%sMW", powered_node->HasVariablePower() ? "~" : "");
+                        if (powered_node->HasVariablePower() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                        {
+                            frame_tooltips.push_back("Average power");
+                        }
+                        ImGui::Spring(1.0f);
+                        if (is_locked)
+                        {
+                            ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
+                        }
+                        powered_node->current_rate.RenderInputText("##rate", is_locked, false, rate_width);
+                        if (is_locked)
+                        {
+                            ImGui::PopStyleColor();
+                        }
+                        if (ImGui::IsItemDeactivatedAfterEdit())
+                        {
+                            const FractionalNumber old_rate = FractionalNumber(powered_node->current_rate.GetNumerator(), powered_node->current_rate.GetDenominator());
+                            try
                             {
-                                throw std::invalid_argument("Negative rate in node");
-                            }
-                            powered_node->UpdateRate(new_rate);
-                            // Update from inputs if there is one, else from output
-                            if (powered_node->ins.size() > 0)
-                            {
-                                if (!UpdateNodesRate(powered_node->ins[0].get(), powered_node->ins[0]->current_rate))
+                                const FractionalNumber new_rate(powered_node->current_rate.GetStringFloat());
+                                if (new_rate.GetNumerator() < 0)
                                 {
-                                    powered_node->UpdateRate(old_rate);
+                                    throw std::invalid_argument("Negative rate in node");
+                                }
+                                powered_node->UpdateRate(new_rate);
+                                // Update from inputs if there is one, else from output
+                                if (powered_node->ins.size() > 0)
+                                {
+                                    if (!UpdateNodesRate(powered_node->ins[0].get(), powered_node->ins[0]->current_rate))
+                                    {
+                                        powered_node->UpdateRate(old_rate);
+                                    }
+                                }
+                                else if (powered_node->outs.size() > 0)
+                                {
+                                    if (!UpdateNodesRate(powered_node->outs[0].get(), powered_node->outs[0]->current_rate))
+                                    {
+                                        powered_node->UpdateRate(old_rate);
+                                    }
                                 }
                             }
-                            else if (powered_node->outs.size() > 0)
+                            // User entered an invalid string, reset node rate
+                            catch (const std::invalid_argument&)
                             {
-                                if (!UpdateNodesRate(powered_node->outs[0].get(), powered_node->outs[0]->current_rate))
-                                {
-                                    powered_node->UpdateRate(old_rate);
-                                }
+                                powered_node->UpdateRate(old_rate);
+                            }
+                            // Wrong equations during update process
+                            catch (const std::runtime_error&)
+                            {
+                                powered_node->UpdateRate(old_rate);
+                                fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
+                                error_time = ax::NodeEditor::GetStyle().FlowDuration;
                             }
                         }
-                        // User entered an invalid string, reset node rate
-                        catch (const std::invalid_argument&)
+                        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                         {
-                            powered_node->UpdateRate(old_rate);
+                            frame_tooltips.push_back(powered_node->current_rate.GetStringFraction());
                         }
-                        // Wrong equations during update process
-                        catch (const std::runtime_error&)
+                        if (node->IsGroup())
                         {
-                            powered_node->UpdateRate(old_rate);
-                            fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
-                            error_time = ax::NodeEditor::GetStyle().FlowDuration;
+                            ImGui::Spring(1.0f);
+                        }
+                        else if (node->IsCraft())
+                        {
+                            CraftNode* craft_node = static_cast<CraftNode*>(node.get());
+                            ImGui::Spring(0.0f);
+                            ImGui::TextUnformatted(craft_node->recipe->building->name.c_str());
+                            if (// Override settings if it's not 0 (for example if the production chain is imported)
+                                (!settings.show_somersloop && craft_node->num_somersloop.GetNumerator() == 0) ||
+                                // Don't display somersloop if this building can't have one
+                                craft_node->recipe->building->somersloop_mult.GetNumerator() == 0 ||
+                                // Don't display somersloop for power generators
+                                craft_node->recipe->building->power < 0.0
+                                )
+                            {
+                                ImGui::Spring(1.0f);
+                            }
+                            else
+                            {
+                                ImGui::Spring(1.0f);
+                                ImGui::SetNextItemWidth(somersloop_width);
+                                if (is_locked)
+                                {
+                                    ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
+                                    ImGui::BeginDisabled();
+                                }
+                                ImGui::InputText("##somersloop", &craft_node->num_somersloop.GetStringFraction(), ImGuiInputTextFlags_CharsDecimal);
+                                if (is_locked)
+                                {
+                                    ImGui::EndDisabled();
+                                    ImGui::PopStyleColor();
+                                }
+                                if (ImGui::IsItemDeactivatedAfterEdit())
+                                {
+                                    const FractionalNumber old_num_somersloop = FractionalNumber(craft_node->num_somersloop.GetNumerator(), craft_node->num_somersloop.GetDenominator());
+                                    try
+                                    {
+                                        FractionalNumber new_num_somersloop = FractionalNumber(craft_node->num_somersloop.GetStringFraction());
+                                        // Only integer somersloop allowed
+                                        if (new_num_somersloop.GetDenominator() != 1 || new_num_somersloop.GetNumerator() < 0)
+                                        {
+                                            throw std::invalid_argument("somersloop num can only be positive whole integers");
+                                        }
+                                        // Check we don't try to boost more than 2x
+                                        // We know numerator is > 0 as otherwise somersloop input is not displayed, so it's ok to invert the fraction
+                                        if (new_num_somersloop > 1 / craft_node->recipe->building->somersloop_mult)
+                                        {
+                                            new_num_somersloop = 1 / craft_node->recipe->building->somersloop_mult;
+                                        }
+                                        craft_node->num_somersloop = new_num_somersloop;
+                                        craft_node->UpdateRate(craft_node->current_rate);
+                                        if (craft_node->ins.size() > 0)
+                                        {
+                                            if (!UpdateNodesRate(craft_node->ins[0].get(), craft_node->ins[0]->current_rate))
+                                            {
+                                                craft_node->num_somersloop = old_num_somersloop;
+                                                craft_node->UpdateRate(craft_node->current_rate);
+                                            }
+                                        }
+                                        else if (craft_node->outs.size() > 0)
+                                        {
+                                            if (!UpdateNodesRate(craft_node->outs[0].get(), craft_node->outs[0]->current_rate))
+                                            {
+                                                craft_node->num_somersloop = old_num_somersloop;
+                                                craft_node->UpdateRate(craft_node->current_rate);
+                                            }
+                                        }
+                                    }
+                                    // User entered an invalid string for somersloop, reset somersloop num (node rate wasn't changed)
+                                    catch (const std::invalid_argument&)
+                                    {
+                                        craft_node->num_somersloop = old_num_somersloop;
+                                    }
+                                    // Wrong equations during update process, reset somersloop num and node rate
+                                    catch (const std::runtime_error&)
+                                    {
+                                        craft_node->num_somersloop = old_num_somersloop;
+                                        craft_node->UpdateRate(craft_node->current_rate);
+                                        fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
+                                        error_time = ax::NodeEditor::GetStyle().FlowDuration;
+                                    }
+                                }
+                                ImGui::Spring(0.0f);
+                                ImGui::Image((void*)(intptr_t)somersloop_texture_id, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+                                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                                {
+                                    frame_tooltips.push_back("Alien Production Amplification");
+                                }
+                                ImGui::Spring(0.0f);
+                            }
                         }
                     }
-                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                    {
-                        frame_tooltips.push_back(powered_node->current_rate.GetStringFraction());
-                    }
-                    if (node->IsGroup())
+                    else if (node->IsOrganizer())
                     {
                         ImGui::Spring(1.0f);
-                    }
-                    else if (node->IsCraft())
-                    {
-                        CraftNode* craft_node = static_cast<CraftNode*>(node.get());
-                        ImGui::Spring(0.0f);
-                        ImGui::TextUnformatted(craft_node->recipe->building->name.c_str());
-                        if (// Override settings if it's not 0 (for example if the production chain is imported)
-                            (!settings.show_somersloop && craft_node->num_somersloop.GetNumerator() == 0) ||
-                            // Don't display somersloop if this building can't have one
-                            craft_node->recipe->building->somersloop_mult.GetNumerator() == 0 ||
-                            // Don't display somersloop for power generators
-                            craft_node->recipe->building->power < 0.0
-                        )
+                        OrganizerNode* org_node = static_cast<OrganizerNode*>(node.get());
+                        if (org_node->item != nullptr)
                         {
-                            ImGui::Spring(1.0f);
-                        }
-                        else
-                        {
-                            ImGui::Spring(1.0f);
-                            ImGui::SetNextItemWidth(somersloop_width);
-                            if (is_locked)
-                            {
-                                ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
-                                ImGui::BeginDisabled();
-                            }
-                            ImGui::InputText("##somersloop", &craft_node->num_somersloop.GetStringFraction(), ImGuiInputTextFlags_CharsDecimal);
-                            if (is_locked)
-                            {
-                                ImGui::EndDisabled();
-                                ImGui::PopStyleColor();
-                            }
-                            if (ImGui::IsItemDeactivatedAfterEdit())
-                            {
-                                const FractionalNumber old_num_somersloop = FractionalNumber(craft_node->num_somersloop.GetNumerator(), craft_node->num_somersloop.GetDenominator());
-                                try
-                                {
-                                    FractionalNumber new_num_somersloop = FractionalNumber(craft_node->num_somersloop.GetStringFraction());
-                                    // Only integer somersloop allowed
-                                    if (new_num_somersloop.GetDenominator() != 1 || new_num_somersloop.GetNumerator() < 0)
-                                    {
-                                        throw std::invalid_argument("somersloop num can only be positive whole integers");
-                                    }
-                                    // Check we don't try to boost more than 2x
-                                    // We know numerator is > 0 as otherwise somersloop input is not displayed, so it's ok to invert the fraction
-                                    if (new_num_somersloop > 1 / craft_node->recipe->building->somersloop_mult)
-                                    {
-                                        new_num_somersloop = 1 / craft_node->recipe->building->somersloop_mult;
-                                    }
-                                    craft_node->num_somersloop = new_num_somersloop;
-                                    craft_node->UpdateRate(craft_node->current_rate);
-                                    if (craft_node->ins.size() > 0)
-                                    {
-                                        if (!UpdateNodesRate(craft_node->ins[0].get(), craft_node->ins[0]->current_rate))
-                                        {
-                                            craft_node->num_somersloop = old_num_somersloop;
-                                            craft_node->UpdateRate(craft_node->current_rate);
-                                        }
-                                    }
-                                    else if (craft_node->outs.size() > 0)
-                                    {
-                                        if (!UpdateNodesRate(craft_node->outs[0].get(), craft_node->outs[0]->current_rate))
-                                        {
-                                            craft_node->num_somersloop = old_num_somersloop;
-                                            craft_node->UpdateRate(craft_node->current_rate);
-                                        }
-                                    }
-                                }
-                                // User entered an invalid string for somersloop, reset somersloop num (node rate wasn't changed)
-                                catch (const std::invalid_argument&)
-                                {
-                                    craft_node->num_somersloop = old_num_somersloop;
-                                }
-                                // Wrong equations during update process, reset somersloop num and node rate
-                                catch (const std::runtime_error&)
-                                {
-                                    craft_node->num_somersloop = old_num_somersloop;
-                                    craft_node->UpdateRate(craft_node->current_rate);
-                                    fprintf(stderr, "Propagation error, please report this issue on github or discord\n");
-                                    error_time = ax::NodeEditor::GetStyle().FlowDuration;
-                                }
-                            }
                             ImGui::Spring(0.0f);
-                            ImGui::Image((void*)(intptr_t)somersloop_texture_id, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-                            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                            {
-                                frame_tooltips.push_back("Alien Production Amplification");
-                            }
+                            ImGui::TextUnformatted(org_node->item->name.c_str());
+                            ImGui::Spring(0.0f);
+                            ImGui::Image((void*)(intptr_t)org_node->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
                             ImGui::Spring(0.0f);
                         }
+                        ImGui::Spring(1.0f);
                     }
-                }
-                else if (node->IsOrganizer())
-                {
-                    ImGui::Spring(1.0f);
-                    OrganizerNode* org_node = static_cast<OrganizerNode*>(node.get());
-                    if (org_node->item != nullptr)
+                    else if (node->IsSink())
                     {
-                        ImGui::Spring(0.0f);
-                        ImGui::TextUnformatted(org_node->item->name.c_str());
-                        ImGui::Spring(0.0f);
-                        ImGui::Image((void*)(intptr_t)org_node->item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-                        ImGui::Spring(0.0f);
-                    }
-                    ImGui::Spring(1.0f);
-                }
-                else if (node->IsSink())
-                {
-                    ImGui::Spring(1.0f);
-                    FractionalNumber sum_sink;
-                    for (const auto& i : node->ins)
-                    {
-                        if (i->item != nullptr)
+                        ImGui::Spring(1.0f);
+                        FractionalNumber sum_sink;
+                        for (const auto& i : node->ins)
                         {
-                            sum_sink += i->current_rate * i->item->sink_value;
+                            if (i->item != nullptr)
+                            {
+                                sum_sink += i->current_rate * i->item->sink_value;
+                            }
                         }
+                        sum_sink.RenderInputText("##points", true, false, 0.0f);
+                        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                        {
+                            frame_tooltips.push_back(sum_sink.GetStringFraction());
+                        }
+                        ImGui::Spring(0.0f);
+                        ImGui::TextUnformatted("points");
+                        ImGui::Spring(1.0f);
                     }
-                    sum_sink.RenderInputText("##points", true, false, 0.0f);
-                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                    {
-                        frame_tooltips.push_back(sum_sink.GetStringFraction());
-                    }
-                    ImGui::Spring(0.0f);
-                    ImGui::TextUnformatted("points");
-                    ImGui::Spring(1.0f);
                 }
+                ImGui::EndHorizontal();
             }
-            ImGui::EndHorizontal();
         }
         ImGui::EndVertical();
         ImGui::PopID();
