@@ -109,6 +109,11 @@ App::App()
 
     error_time = 0.0f;
 
+    last_clicked_recipe = "";
+    next_clicked_recipe = 0;
+    last_clicked_item = "";
+    next_clicked_item = 0;
+
     LoadSettings();
 }
 
@@ -1989,6 +1994,10 @@ void App::RenderLeftPanel()
                 ImGui::Text("%sMW", recipe->building->variable_power ? "~" : "");
                 ImGui::SameLine();
                 recipe->Render();
+                if (ImGui::IsItemClicked())
+                {
+                    FocusNextRecipe(recipe->name);
+                }
             }
 
             ImGui::Unindent();
@@ -2026,11 +2035,19 @@ void App::RenderLeftPanel()
                 p.RenderInputText("##sink_points", true, true, sink_points_width);
                 ImGui::SameLine();
                 ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+                if (ImGui::IsItemClicked())
+                {
+                    FocusNextItem(item->name);
+                }
                 ImGui::SameLine();
                 ImGui::TextUnformatted(item->name.c_str());
                 if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                 {
                     ImGui::SetTooltip("%s", item->name.c_str());
+                }
+                if (ImGui::IsItemClicked())
+                {
+                    FocusNextItem(item->name);
                 }
             }
             ImGui::Unindent();
@@ -2081,6 +2098,10 @@ void App::RenderLeftPanel()
                 ImGui::SameLine();
 
                 recipe->Render();
+                if (ImGui::IsItemClicked())
+                {
+                    FocusNextRecipe(recipe->name);
+                }
             }
 
             ImGui::Unindent();
@@ -2121,8 +2142,16 @@ void App::RenderLeftPanel()
         n.RenderInputText("##rate", true, true, rate_width);
         ImGui::SameLine();
         ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+        if (ImGui::IsItemClicked())
+        {
+            FocusNextItem(item->name);
+        }
         ImGui::SameLine();
         ImGui::TextUnformatted(item->name.c_str());
+        if (ImGui::IsItemClicked())
+        {
+            FocusNextItem(item->name);
+        }
     }
 
     ImGui::SeparatorText("Outputs");
@@ -2151,8 +2180,16 @@ void App::RenderLeftPanel()
         n.RenderInputText("##rate", true, true, rate_width);
         ImGui::SameLine();
         ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+        if (ImGui::IsItemClicked())
+        {
+            FocusNextItem(item->name);
+        }
         ImGui::SameLine();
         ImGui::TextUnformatted(item->name.c_str());
+        if (ImGui::IsItemClicked())
+        {
+            FocusNextItem(item->name);
+        }
     }
 
     ImGui::SeparatorText("Intermediates");
@@ -2169,8 +2206,16 @@ void App::RenderLeftPanel()
         n.RenderInputText("##rate", true, true, rate_width);
         ImGui::SameLine();
         ImGui::Image((void*)(intptr_t)item->icon_gl_index, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+        if (ImGui::IsItemClicked())
+        {
+            FocusNextItem(item->name);
+        }
         ImGui::SameLine();
         ImGui::TextUnformatted(item->name.c_str());
+        if (ImGui::IsItemClicked())
+        {
+            FocusNextItem(item->name);
+        }
     }
 }
 
@@ -3501,4 +3546,83 @@ void App::CustomKeyControl()
             }
         }
     }
+}
+
+void App::FocusNextRecipe(const std::string& recipe)
+{
+    if (recipe != last_clicked_recipe)
+    {
+        last_clicked_recipe = recipe;
+        next_clicked_recipe = 0;
+    }
+
+    // Get all matching nodes
+    std::vector<const Node*> matching_nodes;
+    for (const auto& n : nodes)
+    {
+        if (n->IsCraft() && static_cast<CraftNode*>(n.get())->recipe->name == recipe)
+        {
+            matching_nodes.push_back(n.get());
+        }
+    }
+
+    if (matching_nodes.size() == 0)
+    {
+        return;
+    }
+
+    ax::NodeEditor::SelectNode(matching_nodes[next_clicked_recipe % matching_nodes.size()]->id);
+    ax::NodeEditor::NavigateToSelection();
+    ax::NodeEditor::DeselectNode(matching_nodes[next_clicked_recipe % matching_nodes.size()]->id);
+    next_clicked_recipe = (next_clicked_recipe + 1) % matching_nodes.size();
+}
+
+void App::FocusNextItem(const std::string& item)
+{
+    if (item != last_clicked_item)
+    {
+        last_clicked_item = item;
+        next_clicked_item = 0;
+    }
+
+    // Get all matching nodes
+    std::vector<const Node*> matching_nodes;
+    for (const auto& n : nodes)
+    {
+        bool has_item = false;
+        for (const auto& p : n->ins)
+        {
+            if (p->item != nullptr && p->item->name == item)
+            {
+                has_item = true;
+                break;
+            }
+        }
+        if (!has_item)
+        {
+            for (const auto& p : n->outs)
+            {
+                if (p->item != nullptr && p->item->name == item)
+                {
+                    has_item = true;
+                    break;
+                }
+            }
+        }
+
+        if (has_item)
+        {
+            matching_nodes.push_back(n.get());
+        }
+    }
+
+    if (matching_nodes.size() == 0)
+    {
+        return;
+    }
+
+    ax::NodeEditor::SelectNode(matching_nodes[next_clicked_item % matching_nodes.size()]->id);
+    ax::NodeEditor::NavigateToSelection();
+    ax::NodeEditor::DeselectNode(matching_nodes[next_clicked_item % matching_nodes.size()]->id);
+    next_clicked_item = (next_clicked_item + 1) % matching_nodes.size();
 }

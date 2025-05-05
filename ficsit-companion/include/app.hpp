@@ -104,6 +104,12 @@ private:
     void RenderControlsPopup();
     /// @brief React to app-specific key pressed
     void CustomKeyControl();
+    /// @brief Focus the view on the next recipe with the corresponding name
+    /// @param recipe Name of the recipe to search
+    void FocusNextRecipe(const std::string& recipe);
+    /// @brief Focus the view on the next item with the corresponding name
+    /// @param item Name of the item to search
+    void FocusNextItem(const std::string& item);
 
 private:
     /// @brief Used in saved files to track when format change. Used to update files saved with previous versions
@@ -162,4 +168,11 @@ private:
     std::chrono::steady_clock::time_point last_time_interacted;
 
     float error_time;
+
+    // Used to cycle through the nodes when clicking on the corresponding
+    // element on the left panel
+    std::string last_clicked_recipe;
+    int next_clicked_recipe;
+    std::string last_clicked_item;
+    int next_clicked_item;
 };
