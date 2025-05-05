@@ -171,8 +171,9 @@ void App::LoadSettings()
             settings.unlocked_alts[r.get()] = json.contains("unlocked_alts") && json["unlocked_alts"].contains(r->name.substr(1)) && json["unlocked_alts"][r->name.substr(1)].get<bool>();
         }
     }
-
+    settings.power_equal_clocks = json.contains("power_equal_clocks") && json["power_equal_clocks"].get<bool>(); // default false
     settings.show_build_progress = json.contains("show_build_progress") && json["show_build_progress"].get<bool>(); // default false
+    settings.left_panel_folded = json.contains("left_panel_folded") && json["left_panel_folded"].get<bool>(); // default false
 
     if (!content.has_value())
     {
@@ -195,8 +196,9 @@ void App::SaveSettings() const
         unlocked[r->name.substr(1)] = b;
     }
     serialized["unlocked_alts"] = unlocked;
-
+    serialized["power_equal_clocks"] = settings.power_equal_clocks;
     serialized["show_build_progress"] = settings.show_build_progress;
+    serialized["left_panel_folded"] = settings.left_panel_folded;
 
     SaveFile(settings_file.data(), serialized.Dump());
 }
@@ -1395,9 +1397,27 @@ void App::Render()
     ax::NodeEditor::PushStyleColor(ax::NodeEditor::StyleColor_FlowMarker, error_time > 0.0f ? ImColor(255, 0, 0) : ImColor(255, 255, 0));
     ax::NodeEditor::PushStyleVar(ax::NodeEditor::StyleVar_SelectedNodeBorderWidth, 5.0f);
 
-    ImGui::BeginChild("#left_panel", ImVec2(0.2f * ImGui::GetWindowSize().x, 0.0f), false, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoNavInputs);
-    RenderLeftPanel();
-    ImGui::EndChild();
+    if (settings.left_panel_folded)
+    {
+
+        ImGui::BeginChild("#left_panel", ImVec2(ImGui::CalcTextSize(">>").x + 2.0f * ImGui::GetStyle().FramePadding.x, 0.0f), false, ImGuiWindowFlags_NoNavInputs);
+        if (ImGui::Button(">>"))
+        {
+            settings.left_panel_folded = false;
+            SaveSettings();
+        }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("%s", "Expand left panel");
+        }
+        ImGui::EndChild();
+    }
+    else
+    {
+        ImGui::BeginChild("#left_panel", ImVec2(0.2f * ImGui::GetWindowSize().x, 0.0f), false, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoNavInputs);
+        RenderLeftPanel();
+        ImGui::EndChild();
+    }
 
     ImGui::SameLine();
 
@@ -1530,6 +1550,22 @@ void App::RenderLeftPanel()
         ImGui::SetTooltip("%s", "Import a production chain from disk");
     }
 #endif
+    ImGui::SameLine();
+    const float fold_button_size = ImGui::CalcTextSize("<<").x + 2.0f * ImGui::GetStyle().FramePadding.x;
+    const float available = ImGui::GetContentRegionAvail().x;
+    if (available > fold_button_size)
+    {
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + available - fold_button_size);
+    }
+    if (ImGui::Button("<<"))
+    {
+        settings.left_panel_folded = true;
+        SaveSettings();
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("%s", "Fold left panel");
+    }
 
     const float save_load_buttons_width = ImGui::CalcTextSize("Save").x + ImGui::CalcTextSize("Load").x + ImGui::GetStyle().FramePadding.x * 4;
     const float input_text_width = ImGui::GetContentRegionAvail().x - save_load_buttons_width - ImGui::GetStyle().ItemSpacing.x * 2;
