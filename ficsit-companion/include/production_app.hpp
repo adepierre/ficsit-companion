@@ -1,6 +1,5 @@
 #pragma once
 
-#include <chrono>
 #include <map>
 #include <memory>
 #include <string>
@@ -9,6 +8,7 @@
 
 #include <imgui_node_editor.h>
 
+#include "base_app.hpp"
 #include "fractional_number.hpp"
 
 struct Link;
@@ -16,18 +16,16 @@ struct Node;
 struct Pin;
 struct Recipe;
 
-class App
+class ProductionApp : public BaseApp
 {
 public:
-    App();
-    ~App();
-    void Render();
-
-public:
+    ProductionApp();
+    virtual ~ProductionApp();
     /// @brief Save current session (should NOT require an active ImGui context)
-    void SaveSession();
+    virtual void SaveSession() override;
 
-    bool HasRecentInteraction() const;
+protected:
+    virtual void RenderImpl() override;
 
 private:
     /// @brief Load saved session if present
@@ -164,8 +162,6 @@ private:
     std::vector<std::string> frame_tooltips;
 
     unsigned int somersloop_texture_id;
-
-    std::chrono::steady_clock::time_point last_time_interacted;
 
     float error_time;
 

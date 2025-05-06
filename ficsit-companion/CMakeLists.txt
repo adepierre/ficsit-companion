@@ -1,7 +1,7 @@
 project(ficsit-companion)
 
 set(HEADER_FILES
-	include/app.hpp
+	include/base_app.hpp
 	include/building.hpp
 	include/fractional_number.hpp
 	include/game_data.hpp
@@ -9,6 +9,7 @@ set(HEADER_FILES
 	include/link.hpp
 	include/node.hpp
 	include/pin.hpp
+	include/production_app.hpp
 	include/recipe.hpp
 	include/utils.hpp
 )
@@ -16,7 +17,7 @@ set(HEADER_FILES
 set(SOURCE_FILES
     ${imgui_SOURCE}
 
-    src/app.cpp
+    src/base_app.cpp
     src/building.cpp
     src/fractional_number.cpp
     src/game_data.cpp
@@ -24,6 +25,7 @@ set(SOURCE_FILES
     src/link.cpp
     src/node.cpp
     src/pin.cpp
+    src/production_app.cpp
     src/recipe.cpp
     src/utils.cpp
 

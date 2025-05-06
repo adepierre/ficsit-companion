@@ -1,4 +1,4 @@
-#include "app.hpp"
+#include "production_app.hpp"
 #include "building.hpp"
 #include "fractional_number.hpp"
 #include "game_data.hpp"
@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <optional>
@@ -88,7 +89,7 @@ static void RemoveFile(const std::string& path)
 #endif
 }
 
-App::App()
+ProductionApp::ProductionApp()
 {
     next_id = 1;
     last_time_saved_session = 0.0;
@@ -105,8 +106,6 @@ App::App()
 
     somersloop_texture_id = LoadTextureFromFile("icons/Wat_1_64.png");
 
-    last_time_interacted = std::chrono::steady_clock::now();
-
     error_time = 0.0f;
 
     last_clicked_recipe = "";
@@ -117,7 +116,7 @@ App::App()
     LoadSettings();
 }
 
-App::~App()
+ProductionApp::~ProductionApp()
 {
     ax::NodeEditor::DestroyEditor(context);
 
@@ -132,17 +131,12 @@ App::~App()
 /******************************************************\
 *             Non render related functions             *
 \******************************************************/
-void App::SaveSession()
+void ProductionApp::SaveSession()
 {
     SaveFile(session_file.data(), Serialize());
 }
 
-bool App::HasRecentInteraction() const
-{
-    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - last_time_interacted).count() < 10000;
-}
-
-void App::LoadSession()
+void ProductionApp::LoadSession()
 {
     // Load session file if it exists
     const std::optional<std::string> content = LoadFile(session_file.data());
@@ -153,7 +147,7 @@ void App::LoadSession()
     Deserialize(content.value());
 }
 
-void App::LoadSettings()
+void ProductionApp::LoadSettings()
 {
     const std::optional<std::string> content = LoadFile(settings_file.data());
 
@@ -186,7 +180,7 @@ void App::LoadSettings()
     }
 }
 
-void App::SaveSettings() const
+void ProductionApp::SaveSettings() const
 {
     Json::Value serialized;
 
@@ -208,7 +202,7 @@ void App::SaveSettings() const
     SaveFile(settings_file.data(), serialized.Dump());
 }
 
-std::string App::Serialize() const
+std::string ProductionApp::Serialize() const
 {
     Json::Value output;
     output["save_version"] = SAVE_VERSION;
@@ -266,7 +260,7 @@ std::string App::Serialize() const
     return output.Dump();
 }
 
-void App::Deserialize(const std::string& s)
+void ProductionApp::Deserialize(const std::string& s)
 {
     Json::Value content = Json::Parse(s);
     if (content.is_null() || content.size() == 0)
@@ -301,7 +295,7 @@ void App::Deserialize(const std::string& s)
     {
         try
         {
-            nodes.emplace_back(Node::Deserialize(GetNextId(), std::bind(&App::GetNextId, this), n));
+            nodes.emplace_back(Node::Deserialize(GetNextId(), std::bind(&ProductionApp::GetNextId, this), n));
             ax::NodeEditor::SetNodePosition(nodes.back()->id, nodes.back()->pos);
             node_indices.push_back(num_nodes);
             num_nodes += 1;
@@ -339,12 +333,12 @@ void App::Deserialize(const std::string& s)
     }
 }
 
-unsigned long long int App::GetNextId()
+unsigned long long int ProductionApp::GetNextId()
 {
     return next_id++;
 }
 
-Pin* App::FindPin(ax::NodeEditor::PinId id) const
+Pin* ProductionApp::FindPin(ax::NodeEditor::PinId id) const
 {
     if (id == ax::NodeEditor::PinId::Invalid)
     {
@@ -373,7 +367,7 @@ Pin* App::FindPin(ax::NodeEditor::PinId id) const
     return nullptr;
 }
 
-void App::CreateLink(Pin* start, Pin* end, const bool trigger_update)
+void ProductionApp::CreateLink(Pin* start, Pin* end, const bool trigger_update)
 {
     // Make sure start is always an output and end an input
     Pin* real_end = end->direction == ax::NodeEditor::PinKind::Input ? end : start;
@@ -426,7 +420,7 @@ void App::CreateLink(Pin* start, Pin* end, const bool trigger_update)
     }
 }
 
-void App::DeleteLink(const ax::NodeEditor::LinkId id)
+void ProductionApp::DeleteLink(const ax::NodeEditor::LinkId id)
 {
     ax::NodeEditor::DeleteLink(id);
     auto it = std::find_if(links.begin(), links.end(), [id](const std::unique_ptr<Link>& link) { return link->id == id; });
@@ -459,7 +453,7 @@ void App::DeleteLink(const ax::NodeEditor::LinkId id)
     }
 }
 
-void App::DeleteNode(const ax::NodeEditor::NodeId id)
+void ProductionApp::DeleteNode(const ax::NodeEditor::NodeId id)
 {
     ax::NodeEditor::DeleteNode(id);
     const auto it = std::find_if(nodes.begin(), nodes.end(), [id](const std::unique_ptr<Node>& n) { return n->id == id; });
@@ -483,7 +477,7 @@ void App::DeleteNode(const ax::NodeEditor::NodeId id)
     }
 }
 
-bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& constraint_value)
+bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& constraint_value)
 {
     // Reset all errors
     for (const auto& n : nodes)
@@ -1138,7 +1132,7 @@ bool App::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& con
     return true;
 }
 
-void App::NudgeNodes()
+void ProductionApp::NudgeNodes()
 {
     // Don't nudge item if the add node popup is open (arrow keys are used for navigation in the dropdown menu)
     if (ImGui::IsPopupOpen(add_node_popup_id.data()))
@@ -1165,7 +1159,7 @@ void App::NudgeNodes()
     }
 }
 
-void App::PullNodesPosition()
+void ProductionApp::PullNodesPosition()
 {
     for (auto& n : nodes)
     {
@@ -1173,7 +1167,7 @@ void App::PullNodesPosition()
     }
 }
 
-void App::GroupSelectedNodes()
+void ProductionApp::GroupSelectedNodes()
 {
     std::vector<std::unique_ptr<Node>> selected_nodes;
     std::vector<std::unique_ptr<Link>> kept_links;
@@ -1253,13 +1247,13 @@ void App::GroupSelectedNodes()
         );
     }
 
-    nodes.emplace_back(std::make_unique<GroupNode>(GetNextId(), std::bind(&App::GetNextId, this), std::move(selected_nodes), std::move(kept_links)));
+    nodes.emplace_back(std::make_unique<GroupNode>(GetNextId(), std::bind(&ProductionApp::GetNextId, this), std::move(selected_nodes), std::move(kept_links)));
     nodes.back()->pos = min_pos;
     ax::NodeEditor::SetNodePosition(nodes.back()->id, min_pos);
     ax::NodeEditor::SelectNode(nodes.back()->id, false);
 }
 
-void App::UngroupSelectedNode()
+void ProductionApp::UngroupSelectedNode()
 {
     // Get the selected node
     GroupNode* group_node = nullptr;
@@ -1287,7 +1281,7 @@ void App::UngroupSelectedNode()
     for (auto& n : serialized["nodes"].get_array())
     {
         // Deserialize should always work as it's serialized in this version of the app (not loaded from a file)
-        nodes.emplace_back(Node::Deserialize(GetNextId(), std::bind(&App::GetNextId, this), n));
+        nodes.emplace_back(Node::Deserialize(GetNextId(), std::bind(&ProductionApp::GetNextId, this), n));
         // For nodes without a rate stored, remultiply the current rates by the node global rate
         if (nodes.back()->IsOrganizer() || nodes.back()->IsSink())
         {
@@ -1322,7 +1316,7 @@ void App::UngroupSelectedNode()
     DeleteNode(group_node->id);
 }
 
-void App::DuplicateSelectedNodes()
+void ProductionApp::DuplicateSelectedNodes()
 {
     // Duplicate nodes
     std::vector<std::unique_ptr<Node>> new_nodes;
@@ -1335,7 +1329,7 @@ void App::DuplicateSelectedNodes()
         }
 
         // Don't add the new nodes directly as we are looping through it
-        new_nodes.emplace_back(Node::Deserialize(GetNextId(), std::bind(&App::GetNextId, this), n->Serialize()));
+        new_nodes.emplace_back(Node::Deserialize(GetNextId(), std::bind(&ProductionApp::GetNextId, this), n->Serialize()));
         ax::NodeEditor::SetNodePosition(new_nodes.back()->id, ImVec2(n->pos.x + 100.0f, n->pos.y + 100.0f));
         original_to_copy[n.get()] = new_nodes.back().get();
     }
@@ -1393,7 +1387,7 @@ void App::DuplicateSelectedNodes()
 /******************************************************\
 *              Rendering related functions             *
 \******************************************************/
-void App::Render()
+void ProductionApp::RenderImpl()
 {
     error_time = std::max(error_time - ImGui::GetIO().DeltaTime, 0.0f);
 
@@ -1500,7 +1494,7 @@ EM_ASYNC_JS(void, waitForFileInput, (), {
 });
 #endif
 
-void App::RenderLeftPanel()
+void ProductionApp::RenderLeftPanel()
 {
     ImGui::BeginDisabled(ImGui::IsPopupOpen("##ControlsPopup"));
     if (ImGui::Button("Show controls list"))
@@ -2219,7 +2213,7 @@ void App::RenderLeftPanel()
     }
 }
 
-void App::RenderNodes()
+void ProductionApp::RenderNodes()
 {
     const float zoom_level = ax::NodeEditor::GetCurrentZoom();
     const float rate_width = ImGui::CalcTextSize("000.000").x + ImGui::GetStyle().FramePadding.x * 2.0f;
@@ -3011,7 +3005,7 @@ void App::RenderNodes()
     }
 }
 
-void App::RenderLinks()
+void ProductionApp::RenderLinks()
 {
     for (const auto& link : links)
     {
@@ -3041,7 +3035,7 @@ void App::RenderLinks()
     }
 }
 
-void App::DragLink()
+void ProductionApp::DragLink()
 {
     if (ax::NodeEditor::BeginCreate())
     {
@@ -3104,7 +3098,7 @@ void App::DragLink()
     ax::NodeEditor::EndCreate();
 }
 
-void App::DeleteNodesLinks()
+void ProductionApp::DeleteNodesLinks()
 {
     if (ax::NodeEditor::BeginDelete())
     {
@@ -3129,7 +3123,7 @@ void App::DeleteNodesLinks()
     ax::NodeEditor::EndDelete();
 }
 
-void App::AddNewNode()
+void ProductionApp::AddNewNode()
 {
     ax::NodeEditor::Suspend();
     if (ax::NodeEditor::ShowBackgroundContextMenu())
@@ -3336,19 +3330,19 @@ void App::AddNewNode()
             case RecipeSelectionIndex::None:
                 break; // Should not happen because of the if above
             case RecipeSelectionIndex::Merger:
-                nodes.emplace_back(std::make_unique<MergerNode>(GetNextId(), std::bind(&App::GetNextId, this)));
+                nodes.emplace_back(std::make_unique<MergerNode>(GetNextId(), std::bind(&ProductionApp::GetNextId, this)));
                 break;
             case RecipeSelectionIndex::CustomSplitter:
-                nodes.emplace_back(std::make_unique<CustomSplitterNode>(GetNextId(), std::bind(&App::GetNextId, this)));
+                nodes.emplace_back(std::make_unique<CustomSplitterNode>(GetNextId(), std::bind(&ProductionApp::GetNextId, this)));
                 break;
             case RecipeSelectionIndex::GameSplitter:
-                nodes.emplace_back(std::make_unique<GameSplitterNode>(GetNextId(), std::bind(&App::GetNextId, this)));
+                nodes.emplace_back(std::make_unique<GameSplitterNode>(GetNextId(), std::bind(&ProductionApp::GetNextId, this)));
                 break;
             case RecipeSelectionIndex::Sink:
-                nodes.emplace_back(std::make_unique<SinkNode>(GetNextId(), std::bind(&App::GetNextId, this)));
+                nodes.emplace_back(std::make_unique<SinkNode>(GetNextId(), std::bind(&ProductionApp::GetNextId, this)));
                 break;
             default:
-                nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipes[recipe_index - RecipeSelectionIndex::FIRST_REAL_RECIPE_INDEX].get(), std::bind(&App::GetNextId, this)));
+                nodes.emplace_back(std::make_unique<CraftNode>(GetNextId(), recipes[recipe_index - RecipeSelectionIndex::FIRST_REAL_RECIPE_INDEX].get(), std::bind(&ProductionApp::GetNextId, this)));
                 break;
             }
             ax::NodeEditor::SetNodePosition(nodes.back()->id, new_node_position);
@@ -3388,7 +3382,7 @@ void App::AddNewNode()
     ax::NodeEditor::Resume();
 }
 
-void App::RenderTooltips()
+void ProductionApp::RenderTooltips()
 {
     for (const auto& s : frame_tooltips)
     {
@@ -3397,7 +3391,7 @@ void App::RenderTooltips()
     frame_tooltips.clear();
 }
 
-void App::RenderControlsPopup()
+void ProductionApp::RenderControlsPopup()
 {
     if (ImGui::BeginTable("##controls_table", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV))
     {
@@ -3436,7 +3430,7 @@ void App::RenderControlsPopup()
     ImGui::EndPopup();
 }
 
-void App::CustomKeyControl()
+void ProductionApp::CustomKeyControl()
 {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -3495,21 +3489,6 @@ void App::CustomKeyControl()
         DuplicateSelectedNodes();
     }
 
-    // If any user input happened, reset last time interaction
-    for (const auto& k : io.KeysData)
-    {
-        if (k.Down)
-        {
-            last_time_interacted = std::chrono::steady_clock::now();
-            break;
-        }
-    }
-
-    if (ImGui::IsAnyMouseDown() || io.MouseDelta.x != 0.0f || io.MouseDelta.y != 0.0f)
-    {
-        last_time_interacted = std::chrono::steady_clock::now();
-    }
-
     if (ImGui::IsMouseReleased(ImGuiMouseButton_::ImGuiMouseButton_Right) &&
         io.MouseDelta.x == 0.0f &&
         io.MouseDelta.y == 0.0f)
@@ -3548,7 +3527,7 @@ void App::CustomKeyControl()
     }
 }
 
-void App::FocusNextRecipe(const std::string& recipe)
+void ProductionApp::FocusNextRecipe(const std::string& recipe)
 {
     if (recipe != last_clicked_recipe)
     {
@@ -3577,7 +3556,7 @@ void App::FocusNextRecipe(const std::string& recipe)
     next_clicked_recipe = (next_clicked_recipe + 1) % matching_nodes.size();
 }
 
-void App::FocusNextItem(const std::string& item)
+void ProductionApp::FocusNextItem(const std::string& item)
 {
     if (item != last_clicked_item)
     {

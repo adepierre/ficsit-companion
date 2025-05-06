@@ -25,10 +25,10 @@
 #endif
 #endif
 
-#include "app.hpp"
+#include "production_app.hpp"
 #include "game_data.hpp"
 
-bool Render(SDL_Window* window, App* app)
+bool Render(SDL_Window* window, BaseApp* app)
 {
     SDL_Event event;
     while (SDL_PollEvent(&event))
@@ -207,7 +207,7 @@ int main(int argc, char* argv[])
 
     Data::LoadData("satisfactory");
 
-    App app;
+    ProductionApp app;
 #if !defined(__EMSCRIPTEN__)
     while (Render(window, &app))
     {
@@ -217,12 +217,12 @@ int main(int argc, char* argv[])
     // Write to localStorage when quitting
     emscripten_set_beforeunload_callback(static_cast<void*>(&app), [](int event_type, const void* reserved, void* user_data) {
         // Save current session to disk
-        static_cast<App*>(user_data)->SaveSession();
+        static_cast<BaseApp*>(user_data)->SaveSession();
         // return empty string does not trigger the popup asking if we *really* want to quit
         return "";
     });
 
-    struct WindowApp { SDL_Window* window; App* app; };
+    struct WindowApp { SDL_Window* window; BaseApp* app; };
     WindowApp arg{ window, &app };
     emscripten_set_main_loop_arg([](void* arg) {
         WindowApp* window_app = static_cast<WindowApp*>(arg);
