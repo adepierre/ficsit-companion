@@ -2734,6 +2734,14 @@ void ProductionApp::RenderNodes()
                                 {
                                     node->outs[0]->SetLocked(true);
                                 }
+                                // If output is locked and there is only one remaining input, it should be locked now
+                                else if (num_unlocked == 1 && node->outs[0]->GetLocked())
+                                {
+                                    for (const auto& p : node->ins)
+                                    {
+                                        p->SetLocked(true);
+                                    }
+                                }
                             }
                         }
                     }
@@ -2963,6 +2971,14 @@ void ProductionApp::RenderNodes()
                                 if (num_unlocked == 0)
                                 {
                                     node->ins[0]->SetLocked(true);
+                                }
+                                // If input is locked and there is only one remaining output, it should be locked now
+                                else if (num_unlocked == 1 && node->ins[0]->GetLocked())
+                                {
+                                    for (const auto& p : node->outs)
+                                    {
+                                        p->SetLocked(true);
+                                    }
                                 }
                             }
                             else // GameSplitter
