@@ -2839,6 +2839,8 @@ void ProductionApp::RenderNodes()
                                         ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImColor(p->error ? 255 : 0, 255, 0), 0.0f, ImDrawFlags_None, 1.0f);
                                     }
                                 }
+                                ImGui::Spring(0.0f);
+                                ImGui::TextUnformatted(std::to_string(p->id.Get()).c_str());
 #else
                                 if (p->error)
                                 {
@@ -2846,8 +2848,6 @@ void ProductionApp::RenderNodes()
                                     ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImColor(255, 0, 0), 0.0f, ImDrawFlags_None, 1.0f);
                                 }
 #endif
-                                ImGui::Spring(0.0f);
-                                ImGui::TextUnformatted(std::to_string(p->id.Get()).c_str());
                                 ImGui::Spring(0.0f);
                                 if (node->IsCustomSplitter() || node->IsGameSplitter())
                                 {
