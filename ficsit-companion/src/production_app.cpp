@@ -1,4 +1,3 @@
-#include "production_app.hpp"
 #include "building.hpp"
 #include "fractional_number.hpp"
 #include "game_data.hpp"
@@ -6,6 +5,7 @@
 #include "link.hpp"
 #include "node.hpp"
 #include "pin.hpp"
+#include "production_app.hpp"
 #include "recipe.hpp"
 #include "utils.hpp"
 
@@ -27,9 +27,16 @@
 #include <stdexcept>
 #include <unordered_set>
 
+#define WITH_SPOILERS_OPTIONS 0
+#define DEBUG_PROPAGATION 0
+
 static const ImVec4 lock_purple = ImVec4(0.32f, 0.16f, 0.35f, 0.54f);
 
-// #define WITH_SPOILERS
+#if DEBUG_PROPAGATION
+static std::unordered_set<const Pin*> graph_update_pins;
+static std::unordered_set<const Pin*> graph_update_multi_pins_constrained;
+#endif
+
 
 /// @brief Save text file (either on disk for desktop version or in localStorage for web version)
 /// @param path
@@ -155,7 +162,7 @@ void ProductionApp::LoadSettings()
 
     // Load all settings values from json
     // Spoilers are disabled since we are not just after a major release anymore
-#ifdef WITH_SPOILERS
+#if WITH_SPOILERS_OPTIONS
     settings.show_spoilers = json.contains("show_spoilers") && json["show_spoilers"].get<bool>(); // default false
 #else
     settings.show_spoilers = true;
@@ -479,6 +486,11 @@ void ProductionApp::DeleteNode(const ax::NodeEditor::NodeId id)
 
 bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalNumber& constraint_value)
 {
+#if DEBUG_PROPAGATION
+    fprintf(stderr, "================================= BEGIN PROPAGATION =================================\n");
+    struct OnExit { ~OnExit() { fprintf(stderr, "================================= END PROPAGATION =================================\n"); } } _on_exit;
+#endif
+
     // Reset all errors
     for (const auto& n : nodes)
     {
@@ -502,10 +514,10 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
     // Will store all pins impacted by this graph update
     std::unordered_set<const Pin*> relevant_pins;
     // Will store all pins on the multi-pin side of a CustomSplitter/Merger
-    // that are impacted by this graph update NOT through the single pin
-    // (e.g. if they are linked to another node that is updated)
+    // that are impacted by this graph update with a "strong" constraint
+    // (like a being the start/end of a link connected to another updated pin)
+    // Pins updated as "potential overflow from another multi pin update" have "weak" constraints
     std::unordered_set<const Pin*> multi_pin_constrained;
-
 
     // Current queue of pins that had their new rate set and need to propagate it
     std::queue<const Pin*> pins_to_propagate;
@@ -515,18 +527,25 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
     if (constraint_pin->link != nullptr)
     {
         pins_to_propagate.push(constraint_pin->direction == ax::NodeEditor::PinKind::Input ? constraint_pin->link->start : constraint_pin->link->end);
+        if (!constraint_pin->link->flow.has_value())
+        {
+            constraint_pin->link->flow = constraint_pin->direction == ax::NodeEditor::PinKind::Input ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
+        }
     }
 
     // A secondary queue to store multi-pin (merger/custom splitter) that should be updated,
-    // but could also be constrained, so wait to see and if not constrained then propagate
+    // but could also be constrained, so wait to see and if not constrained before propagating from it
     std::queue<const Pin*> multi_pin_maybe_constrained;
 
-    // First pass, collect all pins involved in this graph operation (disambiguate between
-    // updated from single pin or multi pin side for CustomSplitter and Merger)
+    // Collect all pins involved in this graph operation
     while (!pins_to_propagate.empty() || !multi_pin_maybe_constrained.empty())
     {
-        if (pins_to_propagate.empty())
+        while (pins_to_propagate.empty())
         {
+            if (multi_pin_maybe_constrained.empty())
+            {
+                break;
+            }
             const Pin* maybe_pin = multi_pin_maybe_constrained.front();
             multi_pin_maybe_constrained.pop();
             // This pin doesn't have other external constraint, propagate from it
@@ -537,6 +556,10 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
                 {
                     const Pin* linked_pin = maybe_pin->direction == ax::NodeEditor::PinKind::Input ? maybe_pin->link->start : maybe_pin->link->end;
                     pins_to_propagate.push(linked_pin);
+                    if (!maybe_pin->link->flow.has_value())
+                    {
+                        maybe_pin->link->flow = maybe_pin->direction == ax::NodeEditor::PinKind::Input ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
+                    }
                 }
             }
         }
@@ -555,7 +578,7 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
         case Node::Kind::Craft:
         case Node::Kind::Group:
         case Node::Kind::GameSplitter:
-            // Craft/Group/GameSplitter, any pin update triggers an update of all pins
+        // Craft/Group/GameSplitter, any pin update triggers an update of all pins
         {
             for (const auto& p : updated_pin->node->ins)
             {
@@ -566,6 +589,10 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
                     if (p->link != nullptr)
                     {
                         pins_to_propagate.push(p->link->start);
+                        if (!p->link->flow.has_value())
+                        {
+                            p->link->flow = p->direction == ax::NodeEditor::PinKind::Input ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
+                        }
                     }
                 }
             }
@@ -578,6 +605,10 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
                     if (p->link != nullptr)
                     {
                         pins_to_propagate.push(p->link->end);
+                        if (!p->link->flow.has_value())
+                        {
+                            p->link->flow = p->direction == ax::NodeEditor::PinKind::Input ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
+                        }
                     }
                 }
             }
@@ -585,63 +616,38 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
         break;
         case Node::Kind::CustomSplitter:
         case Node::Kind::Merger:
+            // It was an output pin updated by something external (user or link), add it to the strongly constrained pins
             if ((updated_pin->node->GetKind() == Node::Kind::CustomSplitter && updated_pin->direction == ax::NodeEditor::PinKind::Output) ||
                 (updated_pin->node->GetKind() == Node::Kind::Merger && updated_pin->direction == ax::NodeEditor::PinKind::Input)
             )
             {
-                // This pin is a multi-pin side and is updated by something else than the single pin of this node
                 multi_pin_constrained.insert(updated_pin);
             }
-            // CustomSplitter/Merger, a pin only triggers an update of the opposite side pins, except if the single pin is locked
-            if (updated_pin->direction == ax::NodeEditor::PinKind::Input)
+
             {
-                // Update all unlocked outputs
-                for (const auto& p : updated_pin->node->outs)
+                const Pin* single_pin = updated_pin->node->GetKind() == Node::Kind::CustomSplitter ? updated_pin->node->ins[0].get() : updated_pin->node->outs[0].get();
+                const std::vector<std::unique_ptr<Pin>>& multi_pin = updated_pin->node->GetKind() == Node::Kind::CustomSplitter ? updated_pin->node->outs : updated_pin->node->ins;
+                // Process the single pin
+                if (!single_pin->GetLocked() && single_pin != updated_pin && relevant_pins.find(single_pin) == relevant_pins.end())
                 {
-                    if (!p->GetLocked() && relevant_pins.find(p.get()) == relevant_pins.end())
+                    relevant_pins.insert(single_pin);
+                    if (single_pin->link != nullptr)
                     {
-                        relevant_pins.insert(p.get());
-                        if (p->link != nullptr)
+                        pins_to_propagate.push(single_pin->link->start);
+                        if (!single_pin->link->flow.has_value())
                         {
-                            pins_to_propagate.push(p->link->end);
+                            single_pin->link->flow = single_pin->direction == ax::NodeEditor::PinKind::Input ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
                         }
                     }
                 }
-                if (updated_pin->node->GetKind() == Node::Kind::Merger && updated_pin->node->outs[0]->GetLocked())
+
+                // Process the other output pins
+                for (const auto& p : multi_pin)
                 {
-                    for (const auto& p : updated_pin->node->ins)
+                    if (!p->GetLocked() && updated_pin != p.get() && relevant_pins.find(p.get()) == relevant_pins.end())
                     {
-                        if (updated_pin != p.get() && !p->GetLocked() && relevant_pins.find(p.get()) == relevant_pins.end())
-                        {
-                            // Don't propagate yet
-                            multi_pin_maybe_constrained.push(p.get());
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // Update all unlocked inputs
-                for (const auto& p : updated_pin->node->ins)
-                {
-                    if (!p->GetLocked() && relevant_pins.find(p.get()) == relevant_pins.end())
-                    {
-                        relevant_pins.insert(p.get());
-                        if (p->link != nullptr)
-                        {
-                            pins_to_propagate.push(p->link->start);
-                        }
-                    }
-                }
-                if (updated_pin->node->GetKind() == Node::Kind::CustomSplitter && updated_pin->node->ins[0]->GetLocked())
-                {
-                    for (const auto& p : updated_pin->node->outs)
-                    {
-                        if (updated_pin != p.get() && !p->GetLocked() && relevant_pins.find(p.get()) == relevant_pins.end())
-                        {
-                            // Don't propagate yet
-                            multi_pin_maybe_constrained.push(p.get());
-                        }
+                        // Don't propagate yet
+                        multi_pin_maybe_constrained.push(p.get());
                     }
                 }
             }
@@ -652,16 +658,18 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
         }
     }
 
-    // Create the equations and variables linked to this graph operation
-    // we want to solve equations_coefficients * x = constants
-    std::vector<std::vector<FractionalNumber>> equations_coefficients;
-    std::vector<FractionalNumber> constants;
+#if DEBUG_PROPAGATION
+    graph_update_pins = relevant_pins;
+    graph_update_multi_pins_constrained = multi_pin_constrained;
+#endif
 
-    size_t num_variables = 0;
     // For each updated pin, the associated variable with a ratio
     // The ratio allows us to use only one variable/equation per craft node
     std::unordered_map<const Pin*, std::pair<size_t, FractionalNumber>> associated_variable_index;
+    size_t num_variables = 0;
 
+    // Lambda function to create a variable for a pin
+    // For nodes sharing one variable for all pins, will link the variable to all pins
     auto create_variable = [&](const Pin* pin) {
         // Pin already associated to a variable
         if (associated_variable_index.find(pin) != associated_variable_index.end())
@@ -683,7 +691,7 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
                     associated_variable_index.insert({ p.get(), { num_variables, p->base_rate } });
                 }
                 // For GameSplitter, the variable is the rate of the input
-                else
+                else if (pin->node->IsGameSplitter())
                 {
                     associated_variable_index.insert({ p.get(), { num_variables, 1 } });
                 }
@@ -702,7 +710,7 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
                     associated_variable_index.insert({ p.get(), { num_variables, p->base_rate * (1 + (craft_node->num_somersloop * craft_node->recipe->building->somersloop_mult)) } });
                 }
                 // For GameSplitter, the variable is the rate of the input divided by the number of outs
-                else
+                else if (pin->node->IsGameSplitter())
                 {
                     associated_variable_index.insert({ p.get(), { num_variables, FractionalNumber(1, pin->node->outs.size()) } });
                 }
@@ -715,90 +723,318 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
             associated_variable_index.insert({ pin, { num_variables, 1 } });
             break;
         }
-        // Add a column to each existing equation
-        for (auto& v : equations_coefficients)
-        {
-            v.push_back(0);
-        }
         // Increase the variable index
         num_variables += 1;
     };
 
-    // Used to prevent double processing the same link (saving some duplicated equations)
-    std::unordered_set<const Link*> processed_links;
-
-    auto process_link = [&](const Pin* p) {
-        if (p->link == nullptr || processed_links.find(p->link) != processed_links.end())
-        {
-            return;
-        }
-        processed_links.insert(p->link);
-        // Make sure we have variables for both ends
-        create_variable(p->link->start);
-        create_variable(p->link->end);
-        // Add an equation for equality
-        const auto& start_variable = associated_variable_index.at(p->link->start);
-        const auto& end_variable = associated_variable_index.at(p->link->end);
-        std::vector<FractionalNumber> equation(num_variables);
-        // X - Y = 0
-        equation[start_variable.first] = -1 * start_variable.second;
-        equation[end_variable.first] = end_variable.second;
-        equations_coefficients.push_back(equation);
-        constants.push_back(0);
-        pins_to_propagate.push(p->direction == ax::NodeEditor::PinKind::Input ? p->link->start : p->link->end);
-        if (!p->link->flow.has_value())
-        {
-            p->link->flow = p->direction == ax::NodeEditor::PinKind::Input ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
-        }
-    };
-
-    pins_to_propagate.push(constraint_pin);
-    // Add the equation for the user updated value
-    create_variable(constraint_pin);
-    // P = constraint
-    equations_coefficients.push_back({ associated_variable_index.at(constraint_pin).second });
-    constants.push_back(constraint_value);
-    // We need to process the link here to prevent infinite loop
-    // in which each end triggers an update of the other one
-    process_link(constraint_pin);
-
-    // Second pass, create the equations corresponding to the graph update
-    while (!pins_to_propagate.empty())
+    // Create first the variables related to strongly constrained pins (all but the overflow/secondary pins of merger/customsplitter)
+    for (const Pin* pin : relevant_pins)
     {
-        const Pin* updated_pin = pins_to_propagate.front();
-        pins_to_propagate.pop();
-
-        switch (const Node::Kind kind = updated_pin->node->GetKind(); kind)
+        switch (pin->node->GetKind())
         {
-        case Node::Kind::Craft:
-        case Node::Kind::Group:
-        case Node::Kind::GameSplitter:
-            // For Craft/Group/GameSplitter, we just need to propagate to any connected pin,
-            // will add one equality equation per link
-            for (const auto& p : updated_pin->node->ins)
+        case Node::Kind::CustomSplitter:
+            if (pin->direction == ax::NodeEditor::PinKind::Input || multi_pin_constrained.find(pin) != multi_pin_constrained.end())
             {
-                process_link(p.get());
-            }
-            for (const auto& p : updated_pin->node->outs)
-            {
-                process_link(p.get());
+                create_variable(pin);
             }
             break;
         case Node::Kind::Merger:
-        case Node::Kind::CustomSplitter:
-        {
-            // For Merger/CustomSplitter, it's a bit more tricky depending on who's being updated
-            const Pin* single_pin = kind == Node::Kind::CustomSplitter ? updated_pin->node->ins[0].get() : updated_pin->node->outs[0].get();
-            const std::vector<std::unique_ptr<Pin>>& multi_pin = kind == Node::Kind::CustomSplitter ? updated_pin->node->outs : updated_pin->node->ins;
-
-            // If single pin side is updated or locked, all the unlocked other pins should be updated
-            if ((kind == Node::Kind::CustomSplitter && updated_pin->direction == ax::NodeEditor::PinKind::Input) ||
-                (kind == Node::Kind::Merger && updated_pin->direction == ax::NodeEditor::PinKind::Output) ||
-                single_pin->GetLocked()
-            )
+            if (pin->direction == ax::NodeEditor::PinKind::Output || multi_pin_constrained.find(pin) != multi_pin_constrained.end())
             {
-                // These are all the multi-pin side that will be updated through their link,
-                // so they don't necessarily keep their ratio
+                create_variable(pin);
+            }
+            break;
+        case Node::Kind::Craft:
+        case Node::Kind::Group:
+        case Node::Kind::GameSplitter:
+        case Node::Kind::Sink:
+            create_variable(pin);
+            break;
+        }
+    }
+
+    // Then create variables for the remaining pins (this way they will be the last variables and used later as pivot when solving the equations)
+    for (const Pin* pin : relevant_pins)
+    {
+        create_variable(pin);
+    }
+
+    // Map a variable index to a pin pointer (for variables linked to multiple pins, just select one of them)
+    std::vector<const Pin*> reversed_variable_map(num_variables, nullptr);
+    for (const auto& [p, pp] : associated_variable_index)
+    {
+        reversed_variable_map[pp.first] = p;
+    }
+
+    // Now we can create the main equations linked to this graph operation
+    // The end goal is to solve equations_coefficients * x = constants
+    std::vector<std::vector<FractionalNumber>> equations_coefficients;
+    std::vector<FractionalNumber> constants;
+    // Used to prevent double processing the same link (it would work with duplicated equations but more efficient to avoid creating them in the first place)
+    std::unordered_set<const Link*> processed_links;
+    // used to prevent double processing the same Merger/CustomSplitter node
+    std::unordered_set<const Node*> processed_multi_node;
+
+    // First equation is from the user input
+    // rate * user variable = user constraint
+    {
+        std::vector<FractionalNumber> equation(num_variables);
+        const auto& variable = associated_variable_index.at(constraint_pin);
+        equation[variable.first] = variable.second;
+        equations_coefficients.push_back(equation);
+        constants.push_back(constraint_value);
+    }
+
+    // Then process all pins to add an equality equation per link and a balance equation for all merger/customsplitter
+    for (const Pin* pin : relevant_pins)
+    {
+        if (pin->link != nullptr && processed_links.find(pin->link) == processed_links.end())
+        {
+            // Add an equation for equality
+            // X - Y = 0
+            std::vector<FractionalNumber> equation(num_variables);
+            const std::pair<size_t, FractionalNumber>& start_variable = associated_variable_index.at(pin->link->start);
+            const std::pair<size_t, FractionalNumber>& end_variable = associated_variable_index.at(pin->link->end);
+            equation[start_variable.first] = start_variable.second;
+            equation[end_variable.first] = -1 * end_variable.second;
+            equations_coefficients.push_back(equation);
+            constants.push_back(0);
+            processed_links.insert(pin->link);
+        }
+
+        if ((pin->node->GetKind() == Node::Kind::Merger || pin->node->GetKind() == Node::Kind::CustomSplitter) && processed_multi_node.find(pin->node) == processed_multi_node.end())
+        {
+            // Add an equation sum(inputs) - sum(outputs) = 0
+            std::vector<FractionalNumber> equation(num_variables);
+            FractionalNumber constant = 0;
+
+            for (const std::unique_ptr<Pin>& i : pin->node->ins)
+            {
+                if (i->GetLocked())
+                {
+                    constant -= i->current_rate;
+                }
+                else
+                {
+                    equation[associated_variable_index.at(i.get()).first] = 1;
+                }
+            }
+
+            for (const std::unique_ptr<Pin>& o : pin->node->outs)
+            {
+                if (o->GetLocked())
+                {
+                    constant += o->current_rate;
+                }
+                else
+                {
+                    equation[associated_variable_index.at(o.get()).first] = -1;
+                }
+            }
+            equations_coefficients.push_back(equation);
+            constants.push_back(constant);
+            processed_multi_node.insert(pin->node);
+        }
+    }
+
+    // Reduce the equation matrix using gaussian elimination
+    auto compute_reduced_matrix = [&]() {
+        const size_t num_equations = equations_coefficients.size();
+        std::vector<std::vector<FractionalNumber>> reduced_matrix;
+        // Check sizes are ok
+        if (num_variables == 0)
+        {
+            throw std::runtime_error("Wrong number of variables");
+        }
+        if (constants.size() != equations_coefficients.size())
+        {
+            throw std::runtime_error("Wrong number of constants");
+        }
+        for (const auto& equation : equations_coefficients)
+        {
+            if (equation.size() != num_variables)
+            {
+                throw std::runtime_error("Missing a variable in equation");
+            }
+        }
+
+        // Create the system matrix [equations_coefficients|constants]
+        reduced_matrix = std::vector<std::vector<FractionalNumber>>(num_equations, std::vector<FractionalNumber>(num_variables + 1));
+        for (size_t i = 0; i < num_equations; ++i)
+        {
+            std::copy_n(equations_coefficients[i].begin(), num_variables, reduced_matrix[i].begin());
+            reduced_matrix[i][num_variables] = constants[i];
+        }
+
+#if DEBUG_PROPAGATION
+        // Print matrix before gaussian elimination
+        fprintf(stderr, "\n%zu equations, %zu variables\n", num_equations, num_variables);
+        for (int i = 0; i < num_equations; ++i)
+        {
+            bool is_first = true;
+            for (int j = 0; j < num_variables; ++j)
+            {
+                if (reduced_matrix[i][j].GetNumerator() == 0)
+                {
+                    continue;
+                }
+                fprintf(stderr, "%s%s * p%zu", is_first ? "" : " + ", reduced_matrix[i][j].GetStringFraction().c_str(), reversed_variable_map[j]->id.Get());
+                is_first = false;
+            }
+            fprintf(stderr, " = %s\n", constants[i].GetStringFraction().c_str());
+        }
+#endif
+
+        size_t h = 0;
+        size_t k = 0;
+        // Gaussian elimination loop
+        while (h < num_equations && k < num_variables)
+        {
+            // Find k-th pivot
+            size_t i_max = h;
+            // Max double == max fraction
+            double v_max = std::abs(reduced_matrix[h][k].GetValue());
+            for (size_t i = h + 1; i < num_equations; ++i)
+            {
+                const double abs_val = std::abs(reduced_matrix[i][k].GetValue());
+                if (abs_val > v_max)
+                {
+                    v_max = abs_val;
+                    i_max = i;
+                }
+            }
+
+            // If pivot column is zero
+            if (reduced_matrix[i_max][k].GetNumerator() == 0)
+            {
+                k += 1;
+                continue;
+            }
+
+            // Swap rows if necessary
+            if (i_max != h)
+            {
+                std::swap(reduced_matrix[h], reduced_matrix[i_max]);
+            }
+
+            // Eliminate below pivot
+            for (size_t i = h + 1; i < num_equations; ++i)
+            {
+                // We checked that reduced_matrix[h==i_max (swapped)][k] != 0 above
+                const FractionalNumber factor = reduced_matrix[i][k] / reduced_matrix[h][k];
+                // Set pivot element to 0
+                reduced_matrix[i][k] = 0;
+                // Update remaining elements in row
+                for (size_t j = k + 1; j <= num_variables; ++j)
+                {
+                    reduced_matrix[i][j] -= reduced_matrix[h][j] * factor;
+                }
+            }
+            h += 1;
+            k += 1;
+        }
+
+#if DEBUG_PROPAGATION
+        // Print matrix before gaussian elimination
+        fprintf(stderr, "reduced matrix:\n");
+        for (int i = 0; i < num_equations; ++i)
+        {
+            bool is_first = true;
+            for (int j = 0; j < num_variables; ++j)
+            {
+                if (reduced_matrix[i][j].GetNumerator() == 0)
+                {
+                    continue;
+                }
+                fprintf(stderr, "%s%s * p%zu", is_first ? "" : " + ", reduced_matrix[i][j].GetStringFraction().c_str(), reversed_variable_map[j]->id.Get());
+                is_first = false;
+            }
+            fprintf(stderr, " = %s\n", constants[i].GetStringFraction().c_str());
+        }
+#endif
+
+        return reduced_matrix;
+    };
+
+    std::vector<std::vector<FractionalNumber>> reduced_matrix = compute_reduced_matrix();
+
+    // We had more equations than variables, the only way we have a solution
+    // is if all last lines are full 0 otherwise there is no solution
+    if (num_variables < equations_coefficients.size())
+    {
+        for (size_t i = num_variables; i < equations_coefficients.size(); ++i)
+        {
+            for (size_t j = 0; j < num_variables + 1; ++j)
+            {
+                if (reduced_matrix[i][j] != 0)
+                {
+                    error_time = ax::NodeEditor::GetStyle().FlowDuration;
+                    return false;
+                }
+            }
+        }
+    }
+
+    std::unordered_set<const Pin*> processed_pins;
+    // Loop until we resolved all free variables
+    while (true)
+    {
+        std::unordered_set<int> free_variables;
+        for (int i = 0; i < num_variables; ++i)
+        {
+            free_variables.insert(i);
+        }
+        for (int i = 0; i < equations_coefficients.size(); ++i)
+        {
+            int j = 0;
+            while (j < num_variables && reduced_matrix[i][j].GetNumerator() == 0)
+            {
+                j += 1;
+            }
+            if (j < num_variables)
+            {
+                free_variables.erase(j);
+            }
+        }
+        if (free_variables.empty())
+        {
+            break;
+        }
+
+#if DEBUG_PROPAGATION
+        fprintf(stderr, "\nfree variables\n");
+        for (const auto i : free_variables)
+        {
+            fprintf(stderr, "p%zu\n", static_cast<int>(reversed_variable_map[i]->id.Get()));
+        }
+#endif
+
+        const size_t previous_num_equations = equations_coefficients.size();
+        // Process the first free variable
+        const int free_index = *free_variables.begin();
+        const Pin* pin = reversed_variable_map[free_index];
+
+        // If we haven't met this free pin yet
+        if (processed_pins.find(pin) == processed_pins.end())
+        {
+            switch (pin->node->GetKind())
+            {
+                // I don't think it can happen as we set the variables for the merger/customsplitter at the end but just in case
+            case Node::Kind::Craft:
+            case Node::Kind::Group:
+            case Node::Kind::GameSplitter:
+            case Node::Kind::Sink:
+                // Add an equation so that the pin keeps the same rate it currently has
+                equations_coefficients.push_back(std::vector<FractionalNumber>(num_variables));
+                equations_coefficients.back()[free_index] = 1;
+                constants.push_back(pin->current_rate);
+                break;
+            case Node::Kind::CustomSplitter:
+            case Node::Kind::Merger:
+            {
+                const Pin* single_pin = pin->node->GetKind() == Node::Kind::CustomSplitter ? pin->node->ins[0].get() : pin->node->outs[0].get();
+                const std::vector<std::unique_ptr<Pin>>& multi_pin = pin->node->GetKind() == Node::Kind::CustomSplitter ? pin->node->outs : pin->node->ins;
+
                 std::vector<size_t> already_constrained;
                 FractionalNumber old_sum_not_constrained;
                 FractionalNumber sum_locked;
@@ -807,7 +1043,6 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
                 {
                     if (multi_pin_constrained.find(p.get()) != multi_pin_constrained.end())
                     {
-                        create_variable(p.get());
                         already_constrained.push_back(associated_variable_index.at(p.get()).first);
                     }
                     else if (!p->GetLocked())
@@ -821,221 +1056,114 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
                     }
                 }
 
-                // If single pin is unlocked, we know it already has a variable as it's the updated pin
-                const size_t single_pin_variable_index = single_pin->GetLocked() ? 0 : associated_variable_index.at(single_pin).first;
-
-                // As we can't "overflow" what's left in the other unlocked not constraint pins
-                // we must add a constraint input == sum output
+                // I'm not sure this can happen for a free variable but just in case
                 if (num_unlocked_not_constraint == 0)
                 {
+                    // Add an equation so that the pin keeps the same rate it currently has
                     equations_coefficients.push_back(std::vector<FractionalNumber>(num_variables));
-                    constants.push_back(sum_locked);
-                    if (!single_pin->GetLocked())
-                    {
-                        equations_coefficients.back()[single_pin_variable_index] = 1;
-                    }
-                    else
-                    {
-                        constants.back() -= single_pin->current_rate;
-                    }
+                    equations_coefficients.back()[free_index] = 1;
+                    constants.push_back(pin->current_rate);
+                }
+                else
+                {
+                    // Add an equation to say that each multi pin of this node must keep the same ratio as it had before the update
+                    // We don't add the condition only for this free pin as otherwise it could cause unbalanced update for the node
+                    // This may end up overconstraining the system though need to test it more to be sure
                     for (const auto& p : multi_pin)
                     {
+                        if (p->GetLocked())
+                        {
+                            continue;
+                        }
                         if (multi_pin_constrained.find(p.get()) != multi_pin_constrained.end())
                         {
-                            equations_coefficients.back()[associated_variable_index.at(p.get()).first] = -1;
+                            continue;
                         }
-                    }
-                }
-
-                // Process the link for each multi-pin and create ratio equality equations
-                // for the unlocked pins that don't have their own constraint
-                for (const auto& p : multi_pin)
-                {
-                    if (p->GetLocked())
-                    {
-                        continue;
-                    }
-                    process_link(p.get());
-                    if (multi_pin_constrained.find(p.get()) != multi_pin_constrained.end())
-                    {
-                        continue;
-                    }
-                    create_variable(p.get());
-                    equations_coefficients.push_back(std::vector<FractionalNumber>(num_variables));
-                    const FractionalNumber multiplier =
-                        old_sum_not_constrained == 0 ?
-                            // If old sum was 0, just split evenly: (S - A) / N = P
+                        equations_coefficients.push_back(std::vector<FractionalNumber>(num_variables));
+                        const FractionalNumber multiplier =
+                            old_sum_not_constrained == 0 ?
+                            // If old sum was 0, just split evenly: new_rate - (single_pin - constrained) / num unconstrained = locked
                             FractionalNumber(1, num_unlocked_not_constraint) :
-                            // Else, keep ratio: old_R / sum old_R * (S - A) = P
+                            // Else, keep ratio: new_rate - old_rate / sum(old_rates) * (single_pin - constrained) = locked
                             p->current_rate / old_sum_not_constrained;
-                    if (!single_pin->GetLocked())
-                    {
-                        equations_coefficients.back()[single_pin_variable_index] = -1 * multiplier;
-                    }
-                    for (const auto i : already_constrained)
-                    {
-                        equations_coefficients.back()[i] = multiplier;
-                    }
-                    equations_coefficients.back()[associated_variable_index.at(p.get()).first] = 1;
-                    if (single_pin->GetLocked())
-                    {
-                        constants.push_back(multiplier * (single_pin->current_rate - sum_locked));
-                    }
-                    else
-                    {
-                        constants.push_back(-1 * multiplier * sum_locked);
-                    }
-                }
-            }
-            // If one of the multi-pin side is updated and single pin isn't locked
-            else
-            {
-                // If single pin side doesn't have a variable yet, add the sum constraint equation
-                if (associated_variable_index.find(single_pin) == associated_variable_index.end())
-                {
-                    create_variable(single_pin);
-                    equations_coefficients.push_back(std::vector<FractionalNumber>(num_variables));
-                    equations_coefficients.back()[associated_variable_index.at(single_pin).first] = 1;
-                    FractionalNumber sum_constant;
-                    for (const auto& p : multi_pin)
-                    {
-                        if (relevant_pins.find(p.get()) != relevant_pins.end())
+                        for (const auto i : already_constrained)
                         {
-                            create_variable(p.get());
-                            equations_coefficients.back()[associated_variable_index.at(p.get()).first] = -1;
+                            equations_coefficients.back()[i] = multiplier;
+                        }
+                        equations_coefficients.back()[associated_variable_index.at(p.get()).first] = 1;
+                        if (single_pin->GetLocked())
+                        {
+                            constants.push_back(multiplier * (single_pin->current_rate - sum_locked));
                         }
                         else
                         {
-                            sum_constant += p->current_rate;
+                            equations_coefficients.back()[associated_variable_index.at(single_pin).first] = -1 * multiplier;
+                            constants.push_back(-1 * multiplier * sum_locked);
                         }
                     }
-                    constants.push_back(sum_constant);
-                    process_link(single_pin);
                 }
-                // Otherwise nothing to do
             }
-        }
             break;
-        case Node::Kind::Sink:
-            // Nothing to do
-            break;
-        }
-    }
-
-    // Solve the equations using gaussian elimination
-    const size_t num_equations = equations_coefficients.size();
-    // Check sizes are ok
-    if (num_variables == 0)
-    {
-        throw std::runtime_error("Wrong number of variables");
-    }
-    if (constants.size() != num_equations)
-    {
-        throw std::runtime_error("Wrong number of constants");
-    }
-    if (num_equations < num_variables)
-    {
-        throw std::runtime_error("Not enough equations");
-    }
-    for (const auto& equation : equations_coefficients)
-    {
-        if (equation.size() != num_variables)
-        {
-            throw std::runtime_error("Missing a variable in equation");
-        }
-    }
-
-    // Create augmented matrix [equations_coefficients|constants]
-    std::vector<std::vector<FractionalNumber>> matrix(num_equations, std::vector<FractionalNumber>(num_variables + 1));
-    for (size_t i = 0; i < num_equations; ++i)
-    {
-        std::copy_n(equations_coefficients[i].begin(), num_variables, matrix[i].begin());
-        matrix[i][num_variables] = constants[i];
-    }
-
-    size_t h = 0;
-    size_t k = 0;
-    // Gaussian elimination loop
-    while (h < num_equations && k < num_variables)
-    {
-        // Find k-th pivot
-        size_t i_max = h;
-        // Max double == max fraction
-        double v_max = std::abs(matrix[h][k].GetValue());
-        for (size_t i = h + 1; i < num_equations; ++i)
-        {
-            const double abs_val = std::abs(matrix[i][k].GetValue());
-            if (abs_val > v_max)
-            {
-                v_max = abs_val;
-                i_max = i;
             }
         }
-
-        // If pivot column is zero
-        if (matrix[i_max][k].GetNumerator() == 0)
+        // The ratio constraint wasn't enough, add a "keep current value" equation
+        else
         {
-            k += 1;
-            continue;
+            equations_coefficients.push_back(std::vector<FractionalNumber>(num_variables));
+            equations_coefficients.back()[free_index] = 1;
+            constants.push_back(pin->current_rate);
         }
+        processed_pins.insert(pin);
+        reduced_matrix = compute_reduced_matrix();
 
-        // Swap rows if necessary
-        if (i_max != h)
+        // We added more equations than variables, the only way we have a solution
+        // is if all last lines are full 0 otherwise there is no solution
+        if (num_variables < equations_coefficients.size())
         {
-            std::swap(matrix[h], matrix[i_max]);
-        }
-
-        // Eliminate below pivot
-        for (size_t i = h + 1; i < num_equations; ++i)
-        {
-            // We checked that matrix[h==i_max (swapped)][k] != 0 above
-            const FractionalNumber factor = matrix[i][k] / matrix[h][k];
-            // Set pivot element to 0
-            matrix[i][k] = 0;
-            // Update remaining elements in row
-            for (size_t j = k + 1; j <= num_variables; ++j)
+            bool solution_exists = true;
+            for (size_t i = num_variables; i < equations_coefficients.size(); ++i)
             {
-                matrix[i][j] -= matrix[h][j] * factor;
-            }
-        }
-        h += 1;
-        k += 1;
-    }
-
-    // Check for singular matrix (meaning no solution)
-    if (h < num_variables && matrix[h][h] == 0)
-    {
-        error_time = ax::NodeEditor::GetStyle().FlowDuration;
-        return false;
-    }
-    // We had more equations than variables, the only way we have a solution
-    // is if all last lines are full 0 otherwise there is no solution
-    if (h < num_equations)
-    {
-        for (size_t i = h; i < num_equations; ++i)
-        {
-            for (size_t j = 0; j < num_variables + 1; ++j)
-            {
-                if (matrix[i][j] != 0)
+                for (size_t j = 0; j < num_variables + 1; ++j)
                 {
-                    error_time = ax::NodeEditor::GetStyle().FlowDuration;
-                    return false;
+                    if (reduced_matrix[i][j] != 0)
+                    {
+                        solution_exists = false;
+                        break;
+                    }
                 }
+                if (!solution_exists)
+                {
+                    break;
+                }
+            }
+
+            // If we added too many equations and the system no longer has a solution remove the
+            // previously added equations so the next iteration adds just equality ones instead
+            if (!solution_exists)
+            {
+                equations_coefficients.resize(previous_num_equations);
+                constants.resize(previous_num_equations);
+                reduced_matrix = compute_reduced_matrix();
             }
         }
     }
+
 
     // Back substitution
     std::vector<FractionalNumber> solution(num_variables);
     for (int i = num_variables - 1; i >= 0; --i)
     {
         FractionalNumber sum = 0;
-        for (size_t j = i + 1; j < num_variables; ++j)
+        for (int j = i + 1; j < num_variables; ++j)
         {
-            sum += matrix[i][j] * solution[j];
+            sum += reduced_matrix[i][j] * solution[j];
         }
-        // matrix[i][i] should always be != 0 as we checked it was not a singular matrix above
-        solution[i] = (matrix[i][num_variables] - sum) / matrix[i][i];
+        if (reduced_matrix[i][i].GetNumerator() == 0)
+        {
+            error_time = ax::NodeEditor::GetStyle().FlowDuration;
+            return false;
+        }
+        solution[i] = (reduced_matrix[i][num_variables] - sum) / reduced_matrix[i][i];
     }
 
     // Check for negative solution
@@ -1868,7 +1996,7 @@ void ProductionApp::RenderLeftPanel()
     {
         SaveSettings();
     }
-#ifdef WITH_SPOILERS
+#if WITH_SPOILERS_OPTIONS
     if (ImGui::Checkbox("Show 1.0 new recipes", &settings.show_spoilers))
     {
         SaveSettings();
@@ -2407,6 +2535,10 @@ void ProductionApp::RenderNodes()
                             ImGui::Spring(0.0f);
                             if (zoom_level < 1.5f)
                             {
+#if DEBUG_PROPAGATION
+                                ImGui::TextUnformatted(std::to_string(p->id.Get()).c_str());
+                                ImGui::Spring(0.0f);
+#endif
                                 if (node->IsMerger() || node->IsSink())
                                 {
                                     ImGui::BeginDisabled(node->ins.size() == 1);
@@ -2457,12 +2589,28 @@ void ProductionApp::RenderNodes()
                                 {
                                     frame_tooltips.push_back(p->current_rate.GetStringFraction());
                                 }
+#if DEBUG_PROPAGATION
+                                {
+                                    const bool is_in_graph = graph_update_pins.find(p.get()) != graph_update_pins.end();
+                                    const bool is_multi = graph_update_multi_pins_constrained.find(p.get()) != graph_update_multi_pins_constrained.end();
+                                    // Dark green if multi pin constrained, green if relevant to the graph update
+                                    // Orange if multi pin constrained and error, yellow if relevant to the graph update and error
+                                    if (is_in_graph && is_multi)
+                                    {
+                                        ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImColor(p->error ? 255 : 0, 125, 0), 0.0f, ImDrawFlags_None, 1.0f);
+                                    }
+                                    else if (is_in_graph)
+                                    {
+                                        ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImColor(p->error ? 255 : 0, 255, 0), 0.0f, ImDrawFlags_None, 1.0f);
+                                    }
+                                }
+#else
                                 if (p->error)
                                 {
                                     // Draw red rectangle around pin
                                     ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImColor(255, 0, 0), 0.0f, ImDrawFlags_None, 1.0f);
                                 }
-
+#endif
                                 if (node->IsPowered() || (node->IsSink() && p->item != nullptr))
                                 {
                                     ImGui::Spring(0.0f);
@@ -2629,11 +2777,30 @@ void ProductionApp::RenderNodes()
                                 {
                                     frame_tooltips.push_back(p->current_rate.GetStringFraction());
                                 }
+#if DEBUG_PROPAGATION
+                                {
+                                    const bool is_in_graph = graph_update_pins.find(p.get()) != graph_update_pins.end();
+                                    const bool is_multi = graph_update_multi_pins_constrained.find(p.get()) != graph_update_multi_pins_constrained.end();
+                                    // Dark green if multi pin constrained, green if relevant to the graph update
+                                    // Orange if multi pin constrained and error, yellow if relevant to the graph update and error
+                                    if (is_in_graph && is_multi)
+                                    {
+                                        ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImColor(p->error ? 255 : 0, 125, 0), 0.0f, ImDrawFlags_None, 1.0f);
+                                    }
+                                    else if (is_in_graph)
+                                    {
+                                        ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImColor(p->error ? 255 : 0, 255, 0), 0.0f, ImDrawFlags_None, 1.0f);
+                                    }
+                                }
+#else
                                 if (p->error)
                                 {
                                     // Draw red rectangle around pin
                                     ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImColor(255, 0, 0), 0.0f, ImDrawFlags_None, 1.0f);
                                 }
+#endif
+                                ImGui::Spring(0.0f);
+                                ImGui::TextUnformatted(std::to_string(p->id.Get()).c_str());
                                 ImGui::Spring(0.0f);
                                 if (node->IsCustomSplitter() || node->IsGameSplitter())
                                 {
