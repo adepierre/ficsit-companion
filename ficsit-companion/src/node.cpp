@@ -102,12 +102,12 @@ std::unique_ptr<Node> Node::Deserialize(const ax::NodeEditor::NodeId id, const s
     return nullptr;
 }
 
-PoweredNode::PoweredNode(const ax::NodeEditor::NodeId id) : Node(id), current_rate(1, 1), same_clock_power(0, 1), last_underclock_power(0, 1)
+PoweredNode::PoweredNode(const ax::NodeEditor::NodeId id) : Node(id), current_rate(1, 1), same_clock_power(0, 1), last_underclock_power(0, 1), num_somersloop(0, 1)
 {
 
 }
 
-PoweredNode::PoweredNode(const ax::NodeEditor::NodeId id, const Json::Value& serialized) : Node(id, serialized), same_clock_power(0, 1), last_underclock_power(0, 1)
+PoweredNode::PoweredNode(const ax::NodeEditor::NodeId id, const Json::Value& serialized) : Node(id, serialized), same_clock_power(0, 1), last_underclock_power(0, 1), num_somersloop(0, 1)
 {
     const Kind kind = static_cast<Kind>(serialized["kind"].get<int>());
     if (kind != Kind::Craft && kind != Kind::Group)
@@ -141,7 +141,7 @@ Json::Value PoweredNode::Serialize() const
 }
 
 CraftNode::CraftNode(const ax::NodeEditor::NodeId id, const Recipe* recipe, const std::function<unsigned long long int()>& id_generator) :
-    PoweredNode(id), num_somersloop(0), built(false)
+    PoweredNode(id), built(false)
 {
     ChangeRecipe(recipe, id_generator);
 }
@@ -639,6 +639,7 @@ void GroupNode::UpdateDetails()
     detailed_power_same_clock = {};
     detailed_power_last_underclock = {};
     detailed_sinked_points = {};
+    num_somersloop = FractionalNumber(0, 1);
     for (const auto& n : nodes)
     {
         if (n->IsCraft())
@@ -649,6 +650,7 @@ void GroupNode::UpdateDetails()
             detailed_machines[node->recipe->building->name][node->recipe] += node->current_rate;
             detailed_power_same_clock[node->recipe] += node->same_clock_power;
             detailed_power_last_underclock[node->recipe] += node->last_underclock_power;
+            num_somersloop += node->num_somersloop * static_cast<int>(std::ceil((node->current_rate / FractionalNumber(5, 2)).GetValue()));
         }
         else if (n->IsGroup())
         {
@@ -676,6 +678,7 @@ void GroupNode::UpdateDetails()
             {
                 detailed_power_last_underclock[k] += v;
             }
+            num_somersloop += node->num_somersloop;
         }
         else if (n->IsSink())
         {

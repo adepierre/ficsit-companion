@@ -108,6 +108,8 @@ private:
     /// @brief Focus the view on the next item with the corresponding name
     /// @param item Name of the item to search
     void FocusNextItem(const std::string& item);
+    /// @brief Focus the view on the next node with num somersloop > 0
+    void FocusNextSomersloop();
 
 private:
     /// @brief Used in saved files to track when format change. Used to update files saved with previous versions
@@ -171,4 +173,5 @@ private:
     int next_clicked_recipe;
     std::string last_clicked_item;
     int next_clicked_item;
+    int next_clicked_somersloop;
 };

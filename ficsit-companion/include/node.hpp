@@ -75,6 +75,8 @@ struct PoweredNode : public Node
     /// @brief Power requirements if all machines are at 100% except the last one.
     /// It could be a double, but FractionalNumber already has all string operations
     FractionalNumber last_underclock_power;
+    /// @brief Technically it could be just an int, but FractionalNumber already has all string operations
+    FractionalNumber num_somersloop;
 };
 
 struct CraftNode : public PoweredNode
@@ -92,8 +94,6 @@ struct CraftNode : public PoweredNode
     void ChangeRecipe(const Recipe* recipe, const std::function<unsigned long long int()>& id_generator);
 
     const Recipe* recipe;
-    /// @brief Technically it could be just an int, but FractionalNumber already has all string operations
-    FractionalNumber num_somersloop;
     /// @brief Custom boolean that can be used to track progress on factory building
     bool built;
 };

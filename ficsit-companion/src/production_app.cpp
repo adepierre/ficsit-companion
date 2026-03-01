@@ -119,6 +119,7 @@ ProductionApp::ProductionApp()
     next_clicked_recipe = 0;
     last_clicked_item = "";
     next_clicked_item = 0;
+    next_clicked_somersloop = 0;
 
     LoadSettings();
 }
@@ -1868,6 +1869,7 @@ void ProductionApp::RenderLeftPanel()
     FractionalNumber total_power;
     std::map<const Recipe*, FractionalNumber> detailed_power;
     bool has_variable_power = false;
+    FractionalNumber num_somersloop;
 
     // Gather all craft node stats (ins/outs/machines/power)
     for (const auto& n : nodes)
@@ -1892,6 +1894,7 @@ void ProductionApp::RenderLeftPanel()
             total_power += settings.power_equal_clocks ? node->same_clock_power : node->last_underclock_power;
             detailed_power[node->recipe] += settings.power_equal_clocks ? node->same_clock_power : node->last_underclock_power;
             has_variable_power |= node->recipe->building->variable_power;
+            num_somersloop += node->num_somersloop * static_cast<int>(std::ceil((node->current_rate / FractionalNumber(5, 2)).GetValue()));
         }
         else if (n->IsGroup())
         {
@@ -1935,6 +1938,7 @@ void ProductionApp::RenderLeftPanel()
                 total_sink_points += v;
                 detailed_sink_points[k] += v;
             }
+            num_somersloop += node->num_somersloop;
         }
         else if (n->IsSink())
         {
@@ -1995,6 +1999,41 @@ void ProductionApp::RenderLeftPanel()
     if (ImGui::Checkbox("Show somersloop", &settings.show_somersloop))
     {
         SaveSettings();
+    }
+    if (settings.show_somersloop || num_somersloop.GetNumerator() != 0)
+    {
+        ImGui::SameLine();
+        const float somersloop_width = ImGui::CalcTextSize(num_somersloop.GetStringFraction().c_str()).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+        const float somersloop_display_size = somersloop_width + ImGui::GetTextLineHeightWithSpacing();
+        const float available = ImGui::GetContentRegionAvail().x;
+        if (available > somersloop_display_size)
+        {
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + available - somersloop_display_size);
+        }
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, ImGui::GetStyle().ItemSpacing.y));
+        ImGui::SetNextItemWidth(somersloop_width);
+        ImGui::BeginDisabled();
+        ImGui::InputText("##total_num_somersloop", &num_somersloop.GetStringFraction(), ImGuiInputTextFlags_CharsDecimal);
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("%s", "Minimum number of somersloop required for the whole graph\n(assuming 250% overclock per machine)");
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            {
+                FocusNextSomersloop();
+            }
+        }
+        ImGui::SameLine();
+        ImGui::Image((void*)(intptr_t)somersloop_texture_id, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+        if (ImGui::IsItemClicked())
+        {
+            FocusNextSomersloop();
+        }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("%s", "Minimum number of somersloop required for the whole graph\n(assuming 250% overclock per machine)");
+        }
+        ImGui::PopStyleVar();
     }
 #if WITH_SPOILERS_OPTIONS
     if (ImGui::Checkbox("Show 1.0 new recipes", &settings.show_spoilers))
@@ -3032,7 +3071,24 @@ void ProductionApp::RenderNodes()
                         }
                         if (node->IsGroup())
                         {
-                            ImGui::Spring(1.0f);
+                            GroupNode* group_node = static_cast<GroupNode*>(node.get());
+                            ImGui::Spring(0.0f);
+                            // Override settings if it's not 0 (for example if the production chain is imported)
+                            if (!settings.show_somersloop && group_node->num_somersloop.GetNumerator() == 0)
+                            {
+                                ImGui::Spring(1.0f);
+                            }
+                            else
+                            {
+                                ImGui::Spring(1.0f);
+                                ImGui::SetNextItemWidth(ImGui::CalcTextSize(group_node->num_somersloop.GetStringFraction().c_str()).x + ImGui::GetStyle().FramePadding.x * 2.0f);
+                                ImGui::BeginDisabled();
+                                ImGui::InputText("##somersloop", &group_node->num_somersloop.GetStringFraction(), ImGuiInputTextFlags_CharsDecimal);
+                                ImGui::EndDisabled();
+                                ImGui::Spring(0.0f);
+                                ImGui::Image((void*)(intptr_t)somersloop_texture_id, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
+                                ImGui::Spring(0.0f);
+                            }
                         }
                         else if (node->IsCraft())
                         {
@@ -3045,7 +3101,7 @@ void ProductionApp::RenderNodes()
                                 craft_node->recipe->building->somersloop_mult.GetNumerator() == 0 ||
                                 // Don't display somersloop for power generators
                                 craft_node->recipe->building->power < 0.0
-                                )
+                            )
                             {
                                 ImGui::Spring(1.0f);
                             }
@@ -3116,10 +3172,6 @@ void ProductionApp::RenderNodes()
                                 }
                                 ImGui::Spring(0.0f);
                                 ImGui::Image((void*)(intptr_t)somersloop_texture_id, ImVec2(ImGui::GetTextLineHeightWithSpacing(), ImGui::GetTextLineHeightWithSpacing()));
-                                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                                {
-                                    frame_tooltips.push_back("Alien Production Amplification");
-                                }
                                 ImGui::Spring(0.0f);
                             }
                         }
@@ -3771,4 +3823,32 @@ void ProductionApp::FocusNextItem(const std::string& item)
     ax::NodeEditor::NavigateToSelection();
     ax::NodeEditor::DeselectNode(matching_nodes[next_clicked_item % matching_nodes.size()]->id);
     next_clicked_item = (next_clicked_item + 1) % matching_nodes.size();
+}
+
+void ProductionApp::FocusNextSomersloop()
+{
+    // Get all matching nodes
+    std::vector<const Node*> matching_nodes;
+    for (const auto& n : nodes)
+    {
+        if (!n->IsPowered())
+        {
+            continue;
+        }
+        const PoweredNode* node = static_cast<const PoweredNode*>(n.get());
+        if (node->num_somersloop.GetNumerator() > 0)
+        {
+            matching_nodes.push_back(n.get());
+        }
+    }
+
+    if (matching_nodes.size() == 0)
+    {
+        return;
+    }
+
+    ax::NodeEditor::SelectNode(matching_nodes[next_clicked_somersloop % matching_nodes.size()]->id);
+    ax::NodeEditor::NavigateToSelection();
+    ax::NodeEditor::DeselectNode(matching_nodes[next_clicked_somersloop % matching_nodes.size()]->id);
+    next_clicked_somersloop = (next_clicked_somersloop + 1) % matching_nodes.size();
 }
