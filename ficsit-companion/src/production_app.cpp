@@ -634,7 +634,7 @@ bool ProductionApp::UpdateNodesRate(const Pin* constraint_pin, const FractionalN
                     relevant_pins.insert(single_pin);
                     if (single_pin->link != nullptr)
                     {
-                        pins_to_propagate.push(single_pin->link->start);
+                        pins_to_propagate.push(single_pin->direction == ax::NodeEditor::PinKind::Input ? single_pin->link->start : single_pin->link->end);
                         if (!single_pin->link->flow.has_value())
                         {
                             single_pin->link->flow = single_pin->direction == ax::NodeEditor::PinKind::Input ? ax::NodeEditor::FlowDirection::Backward : ax::NodeEditor::FlowDirection::Forward;
