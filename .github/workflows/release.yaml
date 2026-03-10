@@ -26,24 +26,24 @@ jobs:
       - build
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # Fetch depth 0 to get all tags and commits to generate release note changelog
 
       - name: Download Windows artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ github.event.repository.name }}-Windows
           path: windows
 
       - name: Download Linux artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ github.event.repository.name }}-Linux
           path: linux
 
       - name: Download macOS artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ github.event.repository.name }}-macOS
           path: macos
@@ -89,7 +89,7 @@ jobs:
 
     steps:
       - name: Download web artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ github.event.repository.name }}-web
 
@@ -97,11 +97,11 @@ jobs:
         run: cmake -E tar "xzf" "${{ github.event.repository.name }}.zip"
 
       - name: Upload raw files for pages
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: web
 
       - name: Deploy to GitHub Pages
         id: deployment
-        # Will automatically fetch the artifact "github-pages" uploaded using actions/upload-pages-artifact@v3
+        # Will automatically fetch the artifact "github-pages" uploaded using actions/upload-pages-artifact
         uses: actions/deploy-pages@v4

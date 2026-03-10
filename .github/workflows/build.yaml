@@ -28,7 +28,7 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Linux deps
         if: runner.os == 'Linux'
@@ -37,7 +37,7 @@ jobs:
           sudo apt install -y xorg-dev
 
       - name: Cache SDL/ImGui deps
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/build/_deps
           key: ${{ runner.os }}-deps
@@ -65,7 +65,7 @@ jobs:
         run: cmake -E tar "cf" "${{ github.event.repository.name }}.zip" --format=zip ${{ github.event.repository.name }}/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ github.event.repository.name }}-${{ runner.os }}
           path: ${{ github.workspace }}/build/install/${{ github.event.repository.name }}.zip
@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Emscripten
         run: |
@@ -98,7 +98,7 @@ jobs:
         run: cmake -E tar "cf" "${{ github.event.repository.name }}.zip" --format=zip web/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ github.event.repository.name }}-web
           path: ${{ github.workspace }}/build/${{ github.event.repository.name }}.zip
