@@ -15,6 +15,10 @@ namespace Data
     /// @param game The game name to load (it should match an existing game.json data file)
     void LoadData(const std::string& game);
 
+    /// @brief Reload the recipes for the current game with a given production multiplier
+    /// @param multiplier Multiplier to apply to the recipe inputs
+    void ReloadRecipes(const double multiplier);
+
     /// @brief Get the version of the loaded data
     const std::string& Version();
 

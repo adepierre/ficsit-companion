@@ -175,7 +175,7 @@ void ProductionApp::LoadSettings()
     {
         if (r->alternate)
         {
-            settings.unlocked_alts[r.get()] = json.contains("unlocked_alts") && json["unlocked_alts"].contains(r->name.substr(1)) && json["unlocked_alts"][r->name.substr(1)].get<bool>();
+            settings.unlocked_alts[r->name] = json.contains("unlocked_alts") && json["unlocked_alts"].contains(r->name) && json["unlocked_alts"][r->name].get<bool>();
         }
     }
     settings.power_equal_clocks = json.contains("power_equal_clocks") && json["power_equal_clocks"].get<bool>(); // default false
@@ -197,10 +197,9 @@ void ProductionApp::SaveSettings() const
     serialized["show_somersloop"] = settings.show_somersloop;
 
     Json::Object unlocked;
-    for (const auto& [r, b] : settings.unlocked_alts)
+    for (const auto& [s, b] : settings.unlocked_alts)
     {
-        // Remove the leading "*" from the alt recipe name
-        unlocked[r->name.substr(1)] = b;
+        unlocked[s] = b;
     }
     serialized["unlocked_alts"] = unlocked;
     serialized["power_equal_clocks"] = settings.power_equal_clocks;
@@ -215,6 +214,8 @@ std::string ProductionApp::Serialize() const
     Json::Value output;
     output["save_version"] = SAVE_VERSION;
     output["game_version"] = Data::Version();
+
+    output["production_multiplier_index"] = production_multiplier_index;
 
     Json::Array saved_nodes;
     saved_nodes.reserve(nodes.size());
@@ -294,6 +295,13 @@ void ProductionApp::Deserialize(const std::string& s)
         ax::NodeEditor::DeleteLink(l->id);
     }
     links.clear();
+
+    // Reload recipes if the production multiplier doesn't match
+    if (content["production_multiplier_index"].get<int>() != production_multiplier_index)
+    {
+        production_multiplier_index = content["production_multiplier_index"].get<int>();
+        Data::ReloadRecipes(0.25 * (1 + production_multiplier_index));
+    }
 
     // Load nodes
     std::vector<int> node_indices;
@@ -1973,7 +1981,7 @@ void ProductionApp::RenderLeftPanel()
         {
             if (r->alternate)
             {
-                settings.unlocked_alts[r.get()] = true;
+                settings.unlocked_alts[r->name] = true;
             }
         }
         SaveSettings();
@@ -1990,10 +1998,31 @@ void ProductionApp::RenderLeftPanel()
         {
             if (r->alternate)
             {
-                settings.unlocked_alts[r.get()] = false;
+                settings.unlocked_alts[r->name] = false;
             }
         }
         SaveSettings();
+    }
+
+    ImGui::BeginDisabled(nodes.size() > 0);
+    ImGui::SetNextItemWidth(ImGui::CalcTextSize("0.25").x * 2.0f);
+    if (ImGui::Combo(
+            "Production Multiplier",
+            &production_multiplier_index,
+            "0.25\0" "0.5\0" "0.75\0" "1.0\0" "1.25\0" "1.5\0" "1.75\0" "2.0\0"
+        )
+    )
+    {
+        Data::ReloadRecipes(0.25 * (1 + production_multiplier_index));
+        SaveSession();
+    }
+    ImGui::EndDisabled();
+    if (nodes.size() > 0)
+    {
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("%s", "Production multiplier can only be changed with an empty layout");
+        }
     }
 
     if (ImGui::Checkbox("Show somersloop", &settings.show_somersloop))
@@ -3537,13 +3566,13 @@ void ProductionApp::AddNewNode()
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
-            if (recipes[i]->alternate && ImGui::Checkbox(("##checkbox" + recipes[i]->name).c_str(), &settings.unlocked_alts.at(recipes[i].get())))
+            if (recipes[i]->alternate && ImGui::Checkbox(("##checkbox" + recipes[i]->name).c_str(), &settings.unlocked_alts.at(recipes[i]->name)))
             {
                 SaveSettings();
             }
             ImGui::PopStyleVar();
             ImGui::TableSetColumnIndex(1);
-            ImGui::BeginDisabled(recipes[i]->alternate && !settings.unlocked_alts.at(recipes[i].get()));
+            ImGui::BeginDisabled(recipes[i]->alternate && !settings.unlocked_alts.at(recipes[i]->name));
             if (ImGui::MenuItem(recipes[i]->display_name.c_str()))
             {
                 recipe_index = i + RecipeSelectionIndex::FIRST_REAL_RECIPE_INDEX;

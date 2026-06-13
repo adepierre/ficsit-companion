@@ -223,6 +223,18 @@ bool UpdateSave(Json::Value& save, const int to)
         return true;
     }
 
+    // From 5 to 6, added the production multiplier
+    if (save["save_version"].get<int>() == 5)
+    {
+        save["production_multiplier_index"] = 3;
+        save["save_version"] = 6;
+    }
+
+    if (save["save_version"].get<int>() == to)
+    {
+        return true;
+    }
+
     return false;
 }
 

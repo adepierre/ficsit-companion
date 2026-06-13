@@ -14,7 +14,6 @@
 struct Link;
 struct Node;
 struct Pin;
-struct Recipe;
 
 class ProductionApp : public BaseApp
 {
@@ -113,7 +112,7 @@ private:
 
 private:
     /// @brief Used in saved files to track when format change. Used to update files saved with previous versions
-    static constexpr int SAVE_VERSION = 5;
+    static constexpr int SAVE_VERSION = 6;
 
     /// @brief Window id used for the Add Node popup
     static constexpr std::string_view add_node_popup_id = "Add Node";
@@ -131,7 +130,7 @@ private:
         /// @brief If true, somersloop override will be displayed in the nodes
         bool show_somersloop = false;
         /// @brief For each alt recipes, stores wether or not it's been unlocked yet
-        std::map<const Recipe*, bool> unlocked_alts = {};
+        std::map<std::string, bool> unlocked_alts = {};
         /// @brief If true, will display power info with equal clocks on all machines in a node
         /// If false, it will compute the power for N machines at 100% + an underclocked machine
         bool power_equal_clocks = true;
@@ -174,4 +173,7 @@ private:
     std::string last_clicked_item;
     int next_clicked_item;
     int next_clicked_somersloop;
+
+    /// @brief Index of the selected production multiplier (end multiplier will be 0.25 * (1 + production_multiplier_index))
+    int production_multiplier_index = 3;
 };
