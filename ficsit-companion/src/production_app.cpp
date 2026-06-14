@@ -3066,7 +3066,7 @@ void ProductionApp::RenderNodes()
                         {
                             ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
                         }
-                        if (powered_node->power_multiplier != power_multiplier)
+                        if (std::abs(powered_node->power_multiplier.GetValue() - power_multiplier) > 0.1)
                         {
                             powered_node->UpdatePowerMultiplier(power_multiplier);
                         }
