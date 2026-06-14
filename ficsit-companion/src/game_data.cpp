@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
@@ -122,7 +123,7 @@ namespace Data
             {
                 if (building->production_multiplied)
                 {
-                    inputs.emplace_back(CountedItem(items.at(i["name"].get_string()).get(), FractionalNumber(std::to_string(std::max(round(i["amount"].get<double>() * multiplier), 1.0) * 60.0)) / time));
+                    inputs.emplace_back(CountedItem(items.at(i["name"].get_string()).get(), FractionalNumber(std::to_string(std::max(std::round(i["amount"].get<double>() * multiplier), 1.0) * 60.0)) / time));
                 }
                 else
                 {
