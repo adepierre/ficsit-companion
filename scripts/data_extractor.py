@@ -68,11 +68,14 @@ with open(DOCS_PATH, "r", encoding="utf-16") as f:
 buildings = {
     b["ClassName"]: {
         "name": b["mDisplayName"],
+        # TODO: find why the packager has a multiplier of 1 while not having any sloop slot
+        # I tried to check mProductionShardSlotSize but the smelter has 0 too for some reason ?
         "somersloop_mult": float(b["mProductionShardBoostMultiplier"]),
         "power": -float(b["mPowerProduction"]) if "mPowerProduction" in b else float(b["mPowerConsumption"]),
         "power_exponent": 1.0 if "mPowerProduction" in b else float(b["mPowerConsumptionExponent"]),
         "somersloop_power_exponent": float(b["mProductionBoostPowerConsumptionExponent"]),
         "variable_power": "FGBuildableManufacturerVariablePower" in b["NativeClass"],
+        "production_multiplied": True if b["mCanChangeProductionBoost"] == "True" else False,
     } for b in get_classes(data, BUILDINGS)
 }
 
@@ -82,7 +85,7 @@ items = {
         "icon": c["mSmallIcon"],
         "state": c["mForm"],
         "energy": float(c["mEnergyValue"]),
-        "sink": int(c["mResourceSinkPoints"]) if c["mForm"] == "RF_SOLID" else 0,
+        "sink": int(c["mResourceSinkPoints"]) if (c["mForm"] == "RF_SOLID" and "mResourceSinkPoints" in c) else 0,
     } for c in get_classes(data, ITEMS)
 }
 
@@ -153,12 +156,13 @@ for v in items.values():
     min_resolution = [int(s) for s in relative_path.split("_") if s.isdecimal()][0]
     # Find the smallest image for this item
     min_res_file = os.path.basename(relative_path).split(".")[0] + ".png"
-    for file in os.listdir(folder_path):
-        if "_".join(file.split("_")[:-1]) == icon_start_name:
-            current_res = [int(s) for s in file.split(".")[0].split("_") if s.isdecimal()][0]
-            if current_res < min_resolution:
-                min_resolution = current_res
-                min_res_file = file
+    if os.path.exists(folder_path):
+        for file in os.listdir(folder_path):
+            if "_".join(file.split("_")[:-1]) == icon_start_name:
+                current_res = [int(s) for s in file.split(".")[0].split("_") if s.isdecimal()][0]
+                if current_res < min_resolution:
+                    min_resolution = current_res
+                    min_res_file = file
     if not os.path.exists(os.path.join(folder_path, min_res_file)):
         print("WARNING, path not found", os.path.join(folder_path, min_res_file))
         v["icon"] = ""
@@ -167,14 +171,15 @@ for v in items.values():
     v["icon"] = "icons/" + min_res_file
 
 # Manually copy somersloop icon
-shutil.copy("FactoryGame/Prototype/WAT/UI/Wat_1_64.png", "icons/Wat_1_64.png")
+if os.path.exists("FactoryGame/Prototype/WAT/UI/Wat_1_64.png"):
+    shutil.copy("FactoryGame/Prototype/WAT/UI/Wat_1_64.png", "icons/Wat_1_64.png")
 
 with open("satisfactory.json", "w") as out_file:
     json.dump({
         "version": "",
-        "buildings": list(buildings.values()),
-        "items": [ { "name": v["name"], "icon": v["icon"], "sink": v["sink"] } for v in items.values() if not v in removed],
-        "recipes": list(recipes.values())
+        "buildings": sorted(list(buildings.values()), key=lambda b: b["name"]),
+        "items": sorted([ { "name": v["name"], "icon": v["icon"], "sink": v["sink"] } for v in items.values() if not v in removed], key=lambda i: i["name"]),
+        "recipes": sorted(list(recipes.values()), key=lambda r: r["name"])
     }, out_file, indent=4, ensure_ascii=False)
 
 print("Done! Don't forget to update version in the resulting json file")
