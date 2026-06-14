@@ -102,12 +102,12 @@ std::unique_ptr<Node> Node::Deserialize(const ax::NodeEditor::NodeId id, const s
     return nullptr;
 }
 
-PoweredNode::PoweredNode(const ax::NodeEditor::NodeId id) : Node(id), current_rate(1, 1), same_clock_power(0, 1), last_underclock_power(0, 1), num_somersloop(0, 1)
+PoweredNode::PoweredNode(const ax::NodeEditor::NodeId id) : Node(id), current_rate(1, 1), same_clock_power(0, 1), last_underclock_power(0, 1), num_somersloop(0, 1), power_multiplier(1, 1)
 {
 
 }
 
-PoweredNode::PoweredNode(const ax::NodeEditor::NodeId id, const Json::Value& serialized) : Node(id, serialized), same_clock_power(0, 1), last_underclock_power(0, 1), num_somersloop(0, 1)
+PoweredNode::PoweredNode(const ax::NodeEditor::NodeId id, const Json::Value& serialized) : Node(id, serialized), same_clock_power(0, 1), last_underclock_power(0, 1), num_somersloop(0, 1), power_multiplier(1, 1)
 {
     const Kind kind = static_cast<Kind>(serialized["kind"].get<int>());
     if (kind != Kind::Craft && kind != Kind::Group)
@@ -244,9 +244,14 @@ void CraftNode::ComputePowerUsage()
         std::pow(1.0 + num_somersloop.GetValue() * building->somersloop_mult.GetValue(), building->somersloop_power_exponent) *
         std::pow(current_rate.GetValue() - num_full_machines, building->power_exponent);
     // Round values at 0.001 precision for the power, as we don't have exact fractional values with the exponents anyway
-    same_clock_power = FractionalNumber(static_cast<long long int>(std::round(same_clock_power_double * 1000.0)), 1000);
-    last_underclock_power = FractionalNumber(static_cast<long long int>(std::round(last_underclock_power_double * 1000.0)), 1000);
+    same_clock_power = power_multiplier * FractionalNumber(static_cast<long long int>(std::round(same_clock_power_double * 1000.0)), 1000);
+    last_underclock_power = power_multiplier * FractionalNumber(static_cast<long long int>(std::round(last_underclock_power_double * 1000.0)), 1000);
+}
 
+void CraftNode::UpdatePowerMultiplier(const double m)
+{
+    power_multiplier = FractionalNumber(std::to_string(m));
+    ComputePowerUsage();
 }
 
 void CraftNode::ChangeRecipe(const Recipe* recipe, const std::function<unsigned long long int()>& id_generator)
@@ -466,13 +471,27 @@ void GroupNode::ComputePowerUsage()
     {
         if (n->IsPowered())
         {
-            PoweredNode* powered = static_cast<CraftNode*>(n.get());
+            PoweredNode* powered = static_cast<PoweredNode*>(n.get());
             powered->ComputePowerUsage();
             same_clock_power += powered->same_clock_power;
             last_underclock_power += powered->last_underclock_power;
             variable_power |= powered->HasVariablePower();
         }
     }
+}
+
+void GroupNode::UpdatePowerMultiplier(const double m)
+{
+    power_multiplier = FractionalNumber(std::to_string(m));
+    for (auto& n : nodes)
+    {
+        if (n->IsPowered())
+        {
+            PoweredNode* powered = static_cast<PoweredNode*>(n.get());
+            powered->UpdatePowerMultiplier(m);
+        }
+    }
+    ComputePowerUsage();
 }
 
 void GroupNode::PropagateRateToSubnodes()

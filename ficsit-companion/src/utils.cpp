@@ -235,6 +235,18 @@ bool UpdateSave(Json::Value& save, const int to)
         return true;
     }
 
+    // From 6 to 7, added the power multiplier
+    if (save["save_version"].get<int>() == 6)
+    {
+        save["power_multiplier_index"] = 3;
+        save["save_version"] = 7;
+    }
+
+    if (save["save_version"].get<int>() == to)
+    {
+        return true;
+    }
+
     return false;
 }
 

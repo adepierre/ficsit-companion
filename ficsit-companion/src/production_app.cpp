@@ -216,6 +216,7 @@ std::string ProductionApp::Serialize() const
     output["game_version"] = Data::Version();
 
     output["production_multiplier_index"] = production_multiplier_index;
+    output["power_multiplier_index"] = power_multiplier_index;
 
     Json::Array saved_nodes;
     saved_nodes.reserve(nodes.size());
@@ -302,6 +303,9 @@ void ProductionApp::Deserialize(const std::string& s)
         production_multiplier_index = content["production_multiplier_index"].get<int>();
         Data::ReloadRecipes(0.25 * (1 + production_multiplier_index));
     }
+
+    power_multiplier_index = content["power_multiplier_index"].get<int>();
+    power_multiplier = 0.25 * (1 + power_multiplier_index);
 
     // Load nodes
     std::vector<int> node_indices;
@@ -2025,6 +2029,19 @@ void ProductionApp::RenderLeftPanel()
         }
     }
 
+    ImGui::SetNextItemWidth(ImGui::CalcTextSize("0.25").x * 2.0f);
+    if (ImGui::Combo(
+        "Power Multiplier",
+        &power_multiplier_index,
+        "0.25\0" "0.5\0" "0.75\0" "1.0\0" "1.25\0" "1.5\0" "1.75\0" "2.0\0"
+    )
+        )
+    {
+        power_multiplier = 0.25 * (1 + power_multiplier_index);
+        // Nodes power are updated during the render pass if the multipliers don't match
+        SaveSession();
+    }
+
     if (ImGui::Checkbox("Show somersloop", &settings.show_somersloop))
     {
         SaveSettings();
@@ -3048,6 +3065,10 @@ void ProductionApp::RenderNodes()
                         if (is_locked)
                         {
                             ImGui::PushStyleColor(ImGuiCol_FrameBg, lock_purple);
+                        }
+                        if (powered_node->power_multiplier != power_multiplier)
+                        {
+                            powered_node->UpdatePowerMultiplier(power_multiplier);
                         }
                         (settings.power_equal_clocks ? powered_node->same_clock_power : powered_node->last_underclock_power).RenderInputText("##power", true, false);
                         if (is_locked)

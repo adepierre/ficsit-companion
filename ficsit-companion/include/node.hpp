@@ -67,6 +67,7 @@ struct PoweredNode : public Node
     virtual void UpdateRate(const FractionalNumber& new_rate) = 0;
     virtual void ComputePowerUsage() = 0;
     virtual bool HasVariablePower() const = 0;
+    virtual void UpdatePowerMultiplier(const double m) = 0;
 
     FractionalNumber current_rate;
     /// @brief Power requirement if all machines are at the same clock.
@@ -77,6 +78,8 @@ struct PoweredNode : public Node
     FractionalNumber last_underclock_power;
     /// @brief Technically it could be just an int, but FractionalNumber already has all string operations
     FractionalNumber num_somersloop;
+    /// @brief Current power multiplier
+    FractionalNumber power_multiplier;
 };
 
 struct CraftNode : public PoweredNode
@@ -91,6 +94,7 @@ struct CraftNode : public PoweredNode
     virtual void UpdateRate(const FractionalNumber& new_rate) override;
     virtual bool HasVariablePower() const override;
     virtual void ComputePowerUsage() override;
+    virtual void UpdatePowerMultiplier(const double m) override;
     void ChangeRecipe(const Recipe* recipe, const std::function<unsigned long long int()>& id_generator);
 
     const Recipe* recipe;
@@ -110,6 +114,7 @@ struct GroupNode : public PoweredNode
     virtual void UpdateRate(const FractionalNumber& new_rate) override;
     virtual bool HasVariablePower() const override;
     virtual void ComputePowerUsage() override;
+    virtual void UpdatePowerMultiplier(const double m) override;
     void PropagateRateToSubnodes();
     void SetBuiltState(const bool b);
 

@@ -112,7 +112,7 @@ private:
 
 private:
     /// @brief Used in saved files to track when format change. Used to update files saved with previous versions
-    static constexpr int SAVE_VERSION = 6;
+    static constexpr int SAVE_VERSION = 7;
 
     /// @brief Window id used for the Add Node popup
     static constexpr std::string_view add_node_popup_id = "Add Node";
@@ -176,4 +176,7 @@ private:
 
     /// @brief Index of the selected production multiplier (end multiplier will be 0.25 * (1 + production_multiplier_index))
     int production_multiplier_index = 3;
+    /// @brief Index of the selected power multiplier (end multiplier will be 0.25 * (1 + power_multiplier_index))
+    int power_multiplier_index = 3;
+    double power_multiplier;
 };
