@@ -2011,7 +2011,7 @@ void ProductionApp::RenderLeftPanel()
     ImGui::BeginDisabled(nodes.size() > 0);
     ImGui::SetNextItemWidth(ImGui::CalcTextSize("0.25").x * 2.0f);
     if (ImGui::Combo(
-            "Production Multiplier",
+            "Recipe Inputs Multiplier",
             &production_multiplier_index,
             "0.25\0" "0.5\0" "0.75\0" "1.0\0" "1.25\0" "1.5\0" "1.75\0" "2.0\0"
         )
